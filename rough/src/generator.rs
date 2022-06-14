@@ -37,7 +37,7 @@ impl Default for Generator {
                 .dash_offset(Some(-1.0))
                 .dash_gap(Some(-1.0))
                 .zigzag_offset(Some(-1.0))
-                .seed(Some(0_u64))
+                .seed(Some(345_u64))
                 .disable_multi_stroke(Some(false))
                 .disable_multi_stroke_fill(Some(false))
                 .preserve_vertices(Some(false))
