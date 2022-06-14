@@ -1,2 +1,2 @@
 [workspace]
-members = ["rough"]
+members = ["rough", "kurbo_rough"]

@@ -1,5 +1,9 @@
+#[macro_use]
+extern crate derive_builder;
+
 pub mod core;
 pub mod filler;
+pub mod generator;
 pub mod geometry;
 pub mod renderer;
 
