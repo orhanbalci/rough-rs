@@ -1,3 +1,7 @@
+pub mod kurbo_generator;
+
+pub use kurbo_generator::KurboGenerator;
+
 #[cfg(test)]
 mod tests {
     #[test]

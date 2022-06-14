@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::core::Options;
 use super::core::_c;
 use crate::core::{Op, OpSet, OpSetType, OpType};
@@ -355,8 +357,8 @@ fn _offset<F: Float + Trig + FromPrimitive>(
     ops: &mut Options,
     roughness_gain: Option<F>,
 ) -> F {
-    let rg: F = roughness_gain.unwrap_or_else(|| _c(1.0));
-    _c::<F>(ops.roughness.unwrap_or(1.0) as f32)
+    let rg: F = roughness_gain.unwrap_or(_c(1.0));
+    _c::<F>(ops.roughness.unwrap_or(1.0))
         * rg
         * ((_c::<F>(ops.random() as f32) * (max - min)) + min)
 }
@@ -378,6 +380,13 @@ fn _line<F: Float + Trig + FromPrimitive>(
     mover: bool,
     overlay: bool,
 ) -> Vec<Op<F>> {
+    // println!(
+    //     "Drawing line {},{} to {},{}",
+    //     x1.to_f32().unwrap(),
+    //     y1.to_f32().unwrap(),
+    //     x2.to_f32().unwrap(),
+    //     y2.to_f32().unwrap()
+    // );
     let length_sq = (x1 - x2).powi(2) + (y1 - y2).powi(2);
     let length = length_sq.sqrt();
     let mut roughness_gain = _c(1.0);
@@ -389,7 +398,7 @@ fn _line<F: Float + Trig + FromPrimitive>(
         roughness_gain = _c::<F>(-0.0016668) * length + _c(1.233334);
     }
 
-    let mut offset = _c(o.max_randomness_offset.unwrap_or(0.0) as f32);
+    let mut offset = _c(o.max_randomness_offset.unwrap_or(1.0) as f32);
     if (offset * offset * _c(100.0)) > length_sq {
         offset = length / _c(10.0);
     }
@@ -508,6 +517,12 @@ fn _line<F: Float + Trig + FromPrimitive>(
             ],
         });
     }
+    // for op in ops.iter() {
+    //     for data in op.data.iter(){
+    //         print!("data point {} ", data.to_f32().unwrap());
+    //     }
+    //     println!("");
+    // }
     ops
 }
 
