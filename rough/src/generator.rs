@@ -23,7 +23,7 @@ impl Default for Generator {
             default_options: OptionsBuilder::default()
                 .max_randomness_offset(Some(2.0))
                 .roughness(Some(1.0))
-                .bowing(Some(1.0))
+                .bowing(Some(2.0))
                 .stroke(Some("#000".to_owned()))
                 .stroke_width(Some(1.0))
                 .curve_tightness(Some(0.0))

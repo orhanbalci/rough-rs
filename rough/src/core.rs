@@ -1,6 +1,6 @@
 use euclid::{default::Point2D, Trig};
 use num_traits::{Float, FromPrimitive};
-use rand::{random, rngs::StdRng, RngCore, SeedableRng};
+use rand::{random, rngs::StdRng, RngCore, SeedableRng, Rng};
 
 pub struct Space;
 
@@ -45,17 +45,18 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn random(&mut self) -> u64 {
+    pub fn random(&mut self) -> f64 {
         match &mut self.randomizer {
-            Some(r) => r.next_u64(),
+
+            Some(r) => r.gen(),
             None => match self.seed {
                 Some(s) => {
                     let rnd = self.randomizer.insert(StdRng::seed_from_u64(s));
-                    rnd.next_u64()
+                    rnd.gen()
                 }
                 None => {
                     let rnd = self.randomizer.insert(StdRng::seed_from_u64(random()));
-                    rnd.next_u64()
+                    rnd.gen()
                 }
             },
         }

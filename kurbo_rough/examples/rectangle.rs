@@ -24,8 +24,8 @@ fn main() {
     let rect = generator.rectangle::<f32>(WIDTH as f32 / 2.0, HEIGHT as f32 / 2.0, 200.0, 100.0);
 
     for path in rect.iter() {
-        rc.stroke(path, &Color::BLACK, 2.0 * DPI);
-        rc.fill(path, &Color::RED);
+        rc.stroke(path, &Color::BLACK, 0.01 * DPI);
+        //rc.fill(path, &Color::RED);
     }
 
     rc.finish().unwrap();
