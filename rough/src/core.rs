@@ -62,23 +62,27 @@ impl Options {
     }
 }
 
+#[derive(Clone)]
 pub enum OpType {
     Move,
     BCurveTo,
     LineTo,
 }
 
+#[derive(Clone)]
 pub enum OpSetType {
     Path,
     FillPath,
     FillSketch,
 }
 
+#[derive(Clone)]
 pub struct Op<F: Float + Trig> {
     pub op: OpType,
     pub data: Vec<F>,
 }
 
+#[derive(Clone)]
 pub struct OpSet<F: Float + Trig> {
     pub op_set_type: OpSetType,
     pub ops: Vec<Op<F>>,

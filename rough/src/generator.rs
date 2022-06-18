@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::Float;
@@ -10,6 +8,7 @@ use crate::core::OpSet;
 use crate::core::OpSetType;
 use crate::renderer::ellipse_with_params;
 use crate::renderer::generate_ellipse_params;
+use crate::renderer::linear_path;
 use crate::renderer::rectangle;
 use crate::renderer::solid_fill_polygon;
 
@@ -60,7 +59,7 @@ impl Default for Generator {
 }
 
 impl Generator {
-    fn d<T, F>(&self, name: T, op_sets: Vec<OpSet<F>>) -> Drawable<F>
+    fn d<T, F>(&self, name: T, op_sets: &[OpSet<F>]) -> Drawable<F>
     where
         T: Into<String>,
         F: Float + Trig + FromPrimitive,
@@ -68,7 +67,7 @@ impl Generator {
         Drawable {
             shape: name.into(),
             options: self.default_options.clone(),
-            sets: op_sets,
+            sets: Vec::from_iter(op_sets.iter().cloned()),
         }
     }
 
@@ -78,7 +77,7 @@ impl Generator {
     {
         self.d(
             "line",
-            vec![line(x1, y1, x2, y2, &mut self.default_options.clone())],
+            &[line(x1, y1, x2, y2, &mut self.default_options.clone())],
         )
     }
 
@@ -107,16 +106,13 @@ impl Generator {
             paths.push(outline);
         }
 
-        self.d("rectangle", paths)
+        self.d("rectangle", &paths)
     }
 
-    pub fn ellipse<F: Float + Trig + FromPrimitive>(
-        &self,
-        x: F,
-        y: F,
-        width: F,
-        height: F,
-    ) -> Drawable<F> {
+    pub fn ellipse<F>(&self, x: F, y: F, width: F, height: F) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive,
+    {
         let mut paths = vec![];
         let mut options = self.default_options.clone();
         let ellipse_params = generate_ellipse_params(width, height, &mut options);
@@ -134,6 +130,66 @@ impl Generator {
         if options.stroke.is_some() {
             paths.push(ellipse_response.opset);
         }
-        self.d("ellipse", paths)
+        self.d("ellipse", &paths)
+    }
+
+    pub fn circle<F>(&self, x: F, y: F, diameter: F) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive,
+    {
+        let mut shape = self.ellipse(x, y, diameter, diameter);
+        shape.shape = "circle".into();
+        shape
+    }
+
+    pub fn linear_path<F>(&self, points: &[Point2D<F>]) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive,
+    {
+        let mut options = self.default_options.clone();
+        self.d("linear_path", &[linear_path(points, false, &mut options)])
+    }
+
+    pub fn arc<F>(
+        &self,
+        x: F,
+        y: F,
+        width: F,
+        height: F,
+        start: F,
+        stop: F,
+        closed: bool,
+    ) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive,
+    {
+        let mut options = self.default_options.clone();
+        let mut paths = vec![];
+        let outline =
+            crate::renderer::arc(x, y, width, height, start, stop, closed, true, &mut options);
+        if closed && options.fill == Some(true) {
+            if options.fill_style == Some("solid".into()) {
+                options.disable_multi_stroke = Some(true);
+                let mut shape = crate::renderer::arc(
+                    x,
+                    y,
+                    width,
+                    height,
+                    start,
+                    stop,
+                    true,
+                    false,
+                    &mut options,
+                );
+                shape.op_set_type = OpSetType::FillPath;
+                paths.push(shape);
+            } else {
+                todo!("pattern_fill_arc not implemented");
+            }
+        }
+        if options.stroke.is_some() {
+            paths.push(outline);
+        }
+        self.d("arc", &paths)
     }
 }
