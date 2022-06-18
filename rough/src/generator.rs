@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::Float;
@@ -5,6 +7,9 @@ use num_traits::FromPrimitive;
 
 use crate::core::Drawable;
 use crate::core::OpSet;
+use crate::core::OpSetType;
+use crate::renderer::ellipse_with_params;
+use crate::renderer::generate_ellipse_params;
 use crate::renderer::rectangle;
 use crate::renderer::solid_fill_polygon;
 
@@ -103,5 +108,32 @@ impl Generator {
         }
 
         self.d("rectangle", paths)
+    }
+
+    pub fn ellipse<F: Float + Trig + FromPrimitive>(
+        &self,
+        x: F,
+        y: F,
+        width: F,
+        height: F,
+    ) -> Drawable<F> {
+        let mut paths = vec![];
+        let mut options = self.default_options.clone();
+        let ellipse_params = generate_ellipse_params(width, height, &mut options);
+        let ellipse_response = ellipse_with_params(x, y, &mut options, &ellipse_params);
+        if options.fill == Some(true) {
+            if options.fill_style == Some("solid".into()) {
+                let mut shape = ellipse_with_params(x, y, &mut options, &ellipse_params).opset;
+                shape.op_set_type = OpSetType::FillPath;
+                paths.push(shape);
+            } else {
+                //paths.push(patter_fill_polygon())
+                todo!("pattern fill polygon not implemented");
+            }
+        }
+        if options.stroke.is_some() {
+            paths.push(ellipse_response.opset);
+        }
+        self.d("ellipse", paths)
     }
 }

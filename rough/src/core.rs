@@ -1,6 +1,6 @@
 use euclid::{default::Point2D, Trig};
 use num_traits::{Float, FromPrimitive};
-use rand::{random, rngs::StdRng, RngCore, SeedableRng, Rng};
+use rand::{random, rngs::StdRng, Rng, SeedableRng};
 
 pub struct Space;
 
@@ -23,7 +23,7 @@ pub struct Options {
     pub curve_fitting: Option<f32>,
     pub curve_tightness: Option<f32>,
     pub curve_step_count: Option<f32>,
-    pub fill: Option<String>,
+    pub fill: Option<bool>,
     pub fill_style: Option<String>,
     pub fill_weight: Option<f32>,
     pub hachure_angle: Option<f32>,
@@ -47,7 +47,6 @@ pub struct Options {
 impl Options {
     pub fn random(&mut self) -> f64 {
         match &mut self.randomizer {
-
             Some(r) => r.gen(),
             None => match self.seed {
                 Some(s) => {
