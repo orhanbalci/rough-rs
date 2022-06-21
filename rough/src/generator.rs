@@ -192,4 +192,29 @@ impl Generator {
         }
         self.d("arc", &paths)
     }
+
+    // pub fn curve<F>(&self, points: &[Point2D<F>]) -> Drawable<F> {
+    //     let mut paths = vec![];
+    //     let outline = self.curve(points);
+    //     let mut options = self.default_options.clone();
+    //     if options.fill == Some(true) {}
+    // }
+    // curve(points: Point[], options?: Options): Drawable {
+    //     const o = this._o(options);
+    //     const paths: OpSet[] = [];
+    //     const outline = curve(points, o);
+    //     if (o.fill && o.fill !== NOS && points.length >= 3) {
+    //       const bcurve = curveToBezier(points);
+    //       const polyPoints = pointsOnBezierCurves(bcurve, 10, (1 + o.roughness) / 2);
+    //       if (o.fillStyle === 'solid') {
+    //         paths.push(solidFillPolygon([polyPoints], o));
+    //       } else {
+    //         paths.push(patternFillPolygons([polyPoints], o));
+    //       }
+    //     }
+    //     if (o.stroke !== NOS) {
+    //       paths.push(outline);
+    //     }
+    //     return this._d('curve', paths, o);
+    //   }
 }

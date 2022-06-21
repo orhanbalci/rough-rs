@@ -1,5 +1,5 @@
 [package]
-name = "kurbo_rough"
+name = "rough_piet"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,10 +9,9 @@ edition = "2021"
 rough = {path = "../rough"}
 num-traits = "0.2"
 euclid = "0.22"
-kurbo = "0.8.3"
+piet = "0.5"
 
 [dev-dependencies]
 piet-common = {version = "*", features = ["png"]}
-piet = "*"
 rand = "*"
 rand_distr = "*"
