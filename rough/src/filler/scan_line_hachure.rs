@@ -1,12 +1,11 @@
 use std::cmp::Ordering;
 
-use euclid::{default::Point2D, Trig};
+use euclid::default::Point2D;
+use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 
-use crate::{
-    core::{Options, _c},
-    geometry::{rotate_lines, rotate_points, Line},
-};
+use crate::core::{Options, _c};
+use crate::geometry::{rotate_lines, rotate_points, Line};
 
 #[derive(Clone)]
 struct EdgeEntry<F: Float + FromPrimitive + Trig> {

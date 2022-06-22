@@ -1,4 +1,5 @@
-use euclid::{default::Point2D, Trig};
+use euclid::default::Point2D;
+use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 
 use crate::core::{OpSet, Options};

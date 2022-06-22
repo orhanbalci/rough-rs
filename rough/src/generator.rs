@@ -1,21 +1,17 @@
 use euclid::default::Point2D;
 use euclid::Trig;
-use num_traits::Float;
-use num_traits::FromPrimitive;
+use num_traits::{Float, FromPrimitive};
 
-use crate::core::Drawable;
-use crate::core::OpSet;
-use crate::core::OpSetType;
-use crate::renderer::ellipse_with_params;
-use crate::renderer::generate_ellipse_params;
-use crate::renderer::linear_path;
-use crate::renderer::rectangle;
-use crate::renderer::solid_fill_polygon;
-
-use super::core::Options;
-use super::core::OptionsBuilder;
-
+use super::core::{Options, OptionsBuilder};
 use super::renderer::line;
+use crate::core::{Drawable, OpSet, OpSetType};
+use crate::renderer::{
+    ellipse_with_params,
+    generate_ellipse_params,
+    linear_path,
+    rectangle,
+    solid_fill_polygon,
+};
 
 pub struct Generator {
     default_options: Options,

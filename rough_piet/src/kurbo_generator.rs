@@ -1,10 +1,8 @@
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 use piet::kurbo::{BezPath, PathEl, Point};
-use rough::{
-    core::{Drawable, OpSet, OpSetType, OpType},
-    generator::Generator,
-};
+use rough::core::{Drawable, OpSet, OpSetType, OpType};
+use rough::generator::Generator;
 
 #[derive(Default)]
 pub struct KurboGenerator {

@@ -1,4 +1,5 @@
-use euclid::{default::Point2D, Angle, Translation2D, Trig, Vector2D};
+use euclid::default::Point2D;
+use euclid::{Angle, Translation2D, Trig, Vector2D};
 use num_traits::Float;
 
 #[derive(Clone)]

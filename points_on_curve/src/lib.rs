@@ -1,8 +1,10 @@
-use euclid::{default::Point2D, Trig};
-use num_traits::Float;
-use std::cmp::Ord;
+use std::cmp::{max, min, Ord};
 
-// computes distance squared from a point p to the line segment vw
+use euclid::default::Point2D;
+use euclid::Trig;
+use num_traits::Float;
+
+/// computes distance squared from a point p to the line segment vw
 pub fn distance_to_segment_squared<F>(p: &Point2D<F>, v: &Point2D<F>, w: &Point2D<F>) -> F
 where
     F: Float + Trig + Ord,
@@ -12,7 +14,7 @@ where
         p.distance_to(*v).powi(2)
     } else {
         let mut t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-        t = std::cmp::max(F::zero(), std::cmp::min(F::one(), t));
+        t = max(F::zero(), min(F::one(), t));
         p.distance_to(v.lerp(*w, t))
     }
 }

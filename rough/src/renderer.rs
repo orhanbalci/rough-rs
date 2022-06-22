@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
-use super::core::Options;
-use super::core::_c;
-use crate::core::{Op, OpSet, OpSetType, OpType};
-use euclid::{default::Point2D, Trig};
+use euclid::default::Point2D;
+use euclid::Trig;
 use num_traits::{Float, FloatConst, FromPrimitive};
+
+use super::core::{Options, _c};
+use crate::core::{Op, OpSet, OpSetType, OpType};
 
 pub struct EllipseParams<F: Float> {
     pub rx: F,
