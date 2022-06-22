@@ -1,10 +1,10 @@
 //! This example shows painting a rough rectangle using common-piet crate and
 //! kurbo rough shape generator
 
-use rough_piet::KurboGenerator;
 use piet::{Color, RenderContext};
-use piet_common::kurbo::{Point, Rect, Size};
+use piet_common::kurbo::Rect;
 use piet_common::Device;
+use rough_piet::KurboGenerator;
 
 const WIDTH: usize = 1920;
 const HEIGHT: usize = 1080;
