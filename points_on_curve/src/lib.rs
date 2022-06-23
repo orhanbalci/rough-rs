@@ -4,7 +4,8 @@
 // This property is useful for reasoning about breaking API changes.
 #![deny(unreachable_pub)]
 
-use std::cmp::{max, min, Ord};
+use std::cmp::{max_by, min_by, Ord};
+use std::fmt::Display;
 use std::ops::MulAssign;
 
 use euclid::default::Point2D;
@@ -14,14 +15,24 @@ use num_traits::Float;
 /// computes distance squared from a point p to the line segment vw
 pub fn distance_to_segment_squared<F>(p: &Point2D<F>, v: &Point2D<F>, w: &Point2D<F>) -> F
 where
-    F: Float + Ord,
+    F: Float + PartialOrd + Display,
 {
-    let l2 = v.distance_to(*w);
+    let l2 = v.distance_to(*w).powi(2);
     if l2 == F::zero() {
         p.distance_to(*v).powi(2)
     } else {
         let mut t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-        t = max(F::zero(), min(F::one(), t));
+        t = max_by(
+            F::zero(),
+            min_by(F::one(), t, |a, b| {
+                a.partial_cmp(b)
+                    .expect(&format!("can not compare {} and {}", a, b))
+            }),
+            |a, b| {
+                a.partial_cmp(b)
+                    .expect(&format!("can not compare {} and {}", a, b))
+            },
+        );
         p.distance_to(v.lerp(*w, t)).powi(2)
     }
 }
@@ -63,7 +74,7 @@ pub fn simplify_points<F>(
     new_points: &mut Vec<Point2D<F>>,
 ) -> Vec<Point2D<F>>
 where
-    F: Float + Ord,
+    F: Float + Ord + Display,
 {
     let s = points[start];
     let e = points[end - 1];
@@ -92,7 +103,7 @@ where
 
 pub fn simplify<F>(points: &[Point2D<F>], distance: F) -> Vec<Point2D<F>>
 where
-    F: Float + Ord,
+    F: Float + Ord + Display,
 {
     simplify_points(points, 0, points.len(), distance, &mut vec![])
 }
@@ -146,7 +157,7 @@ pub fn points_on_bezier_curves<F>(
     distance: F,
 ) -> Vec<Point2D<F>>
 where
-    F: Float + Ord + MulAssign,
+    F: Float + Ord + MulAssign + Display,
 {
     let mut new_points = vec![];
     let num_segments = points.len() / 3;
@@ -209,9 +220,31 @@ where
 
 #[cfg(test)]
 mod tests {
+    use euclid::point2;
+
     #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+    fn distance_to_segment_squared() {
+        let expected = 1.0;
+        let result = super::distance_to_segment_squared(
+            &point2(0.0, 1.0),
+            &point2(-1.0, 0.0),
+            &point2(1.0, 0.0),
+        );
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn flatness() {
+        let expected = 9.0;
+        let result = super::flatness(
+            &[
+                point2(0.0, 1.0),
+                point2(1.0, 3.0),
+                point2(2.0, 3.0),
+                point2(3.0, 4.0),
+            ],
+            0,
+        );
+        assert_eq!(expected, result);
     }
 }
