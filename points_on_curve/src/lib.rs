@@ -1,7 +1,14 @@
+// This crate is entirely safe
+#![forbid(unsafe_code)]
+// Ensures that `pub` means published in the public API.
+// This property is useful for reasoning about breaking API changes.
+#![deny(unreachable_pub)]
+
 use std::cmp::{max, min, Ord};
 use std::ops::MulAssign;
 
 use euclid::default::Point2D;
+use euclid::point2;
 use num_traits::Float;
 
 /// computes distance squared from a point p to the line segment vw
@@ -15,7 +22,7 @@ where
     } else {
         let mut t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
         t = max(F::zero(), min(F::one(), t));
-        p.distance_to(v.lerp(*w, t))
+        p.distance_to(v.lerp(*w, t)).powi(2)
     }
 }
 
@@ -152,6 +159,52 @@ where
         return simplify_points(&new_points, 0, new_points.len(), distance, &mut vec![]);
     }
     return new_points;
+}
+
+pub fn curve_to_bezier<F>(points_in: &[Point2D<F>], curve_tightness: F) -> Option<Vec<Point2D<F>>>
+where
+    F: Float,
+{
+    if points_in.len() < 3 {
+        None
+    } else {
+        let mut out = vec![];
+        if points_in.len() == 3 {
+            out.extend_from_slice(points_in);
+            out.push(*points_in.last().unwrap());
+        } else {
+            let mut points = vec![];
+            points.push(points_in[0]);
+            points.push(points_in[0]);
+            for i in 1..points_in.len() {
+                points.push(points_in[1]);
+                if i == points_in.len() - 1 {
+                    points.push(points_in[i]);
+                }
+            }
+            let s = F::one() - curve_tightness;
+            out.push(points[0]);
+            for i in 1..points.len() - 2 {
+                let cached_point = points[i];
+                //let b_0  = cached_point.clone();
+                let b_1 = point2(
+                    cached_point.x
+                        + (s * points[i + 1].x - s * points[i - 1].x) / F::from(6).unwrap(),
+                    cached_point.y
+                        + (s * points[i + 1].y - s * points[i - 1].y) / F::from(6).unwrap(),
+                );
+                let b_2 = point2(
+                    points[i + 1].x + (s * points[i].x - s * points[i + 2].x) / F::from(6).unwrap(),
+                    points[i + 1].y + (s * points[i].y - s * points[i + 2].y) / F::from(6).unwrap(),
+                );
+                let b_3 = point2(points[i + 1].x, points[i + 1].y);
+                out.push(b_1);
+                out.push(b_2);
+                out.push(b_3);
+            }
+        }
+        Some(out)
+    }
 }
 
 #[cfg(test)]

@@ -9,15 +9,15 @@ use crate::geometry::{rotate_lines, rotate_points, Line};
 
 #[derive(Clone)]
 struct EdgeEntry<F: Float + FromPrimitive + Trig> {
-    pub ymin: F,
-    pub ymax: F,
-    pub x: F,
-    pub islope: F,
+    pub(crate) ymin: F,
+    pub(crate) ymax: F,
+    pub(crate) x: F,
+    pub(crate) islope: F,
 }
 
 struct ActiveEdgeEntry<F: Float + FromPrimitive + Trig> {
-    pub s: F,
-    pub edge: EdgeEntry<F>,
+    pub(crate) s: F,
+    pub(crate) edge: EdgeEntry<F>,
 }
 
 pub fn polygon_hachure_lines<F: Float + FromPrimitive + Trig>(

@@ -193,7 +193,9 @@ impl Generator {
     //     let mut paths = vec![];
     //     let outline = self.curve(points);
     //     let mut options = self.default_options.clone();
-    //     if options.fill == Some(true) {}
+    //     if options.fill == Some(true) && points.len() >= 3 {
+    //         let curve =
+    //     }
     // }
     // curve(points: Point[], options?: Options): Drawable {
     //     const o = this._o(options);
