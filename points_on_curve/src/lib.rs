@@ -4,6 +4,7 @@
 // This property is useful for reasoning about breaking API changes.
 #![deny(unreachable_pub)]
 
+use std::borrow::Borrow;
 use std::cmp::{max_by, min_by, Ord};
 use std::fmt::Display;
 use std::ops::MulAssign;
@@ -13,15 +14,19 @@ use euclid::point2;
 use num_traits::Float;
 
 /// computes distance squared from a point p to the line segment vw
-pub fn distance_to_segment_squared<F>(p: &Point2D<F>, v: &Point2D<F>, w: &Point2D<F>) -> F
+pub fn distance_to_segment_squared<F, P>(p: P, v: P, w: P) -> F
 where
     F: Float + PartialOrd + Display,
+    P: Borrow<Point2D<F>>,
 {
-    let l2 = v.distance_to(*w).powi(2);
+    let v_ = v.borrow();
+    let w_ = w.borrow();
+    let p_ = p.borrow();
+    let l2 = v_.distance_to(*w_).powi(2);
     if l2 == F::zero() {
-        p.distance_to(*v).powi(2)
+        p_.distance_to(*v_).powi(2)
     } else {
-        let mut t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+        let mut t = ((p_.x - v_.x) * (w_.x - v_.x) + (p_.y - v_.y) * (w_.y - v_.y)) / l2;
         t = max_by(
             F::zero(),
             min_by(F::one(), t, |a, b| {
@@ -33,7 +38,7 @@ where
                     .expect(&format!("can not compare {} and {}", a, b))
             },
         );
-        p.distance_to(v.lerp(*w, t)).powi(2)
+        p_.distance_to(v_.lerp(*w_, t)).powi(2)
     }
 }
 
@@ -74,14 +79,14 @@ pub fn simplify_points<F>(
     new_points: &mut Vec<Point2D<F>>,
 ) -> Vec<Point2D<F>>
 where
-    F: Float + Ord + Display,
+    F: Float + Display,
 {
     let s = points[start];
     let e = points[end - 1];
     let mut max_dist_sq = F::zero();
     let mut max_ndx = 0;
     for i in start + 1..end - 1 {
-        let distance_sq = distance_to_segment_squared(&points[i], &s, &e);
+        let distance_sq = distance_to_segment_squared(points[i], s, e);
         if distance_sq > max_dist_sq {
             max_dist_sq = distance_sq;
             max_ndx = i;
@@ -103,7 +108,7 @@ where
 
 pub fn simplify<F>(points: &[Point2D<F>], distance: F) -> Vec<Point2D<F>>
 where
-    F: Float + Ord + Display,
+    F: Float + Display,
 {
     simplify_points(points, 0, points.len(), distance, &mut vec![])
 }
@@ -115,7 +120,7 @@ pub fn get_points_on_bezier_curve_with_splitting<F>(
     new_points: &mut Vec<Point2D<F>>,
 ) -> Vec<Point2D<F>>
 where
-    F: Float + Ord + MulAssign,
+    F: Float + MulAssign,
 {
     if flatness(points, offset) < tolerance {
         let p0 = points[offset + 0];
@@ -157,7 +162,7 @@ pub fn points_on_bezier_curves<F>(
     distance: F,
 ) -> Vec<Point2D<F>>
 where
-    F: Float + Ord + MulAssign + Display,
+    F: Float + MulAssign + Display,
 {
     let mut new_points = vec![];
     let num_segments = points.len() / 3;
@@ -226,9 +231,9 @@ mod tests {
     fn distance_to_segment_squared() {
         let expected = 1.0;
         let result = super::distance_to_segment_squared(
-            &point2(0.0, 1.0),
-            &point2(-1.0, 0.0),
-            &point2(1.0, 0.0),
+            point2(0.0, 1.0),
+            point2(-1.0, 0.0),
+            point2(1.0, 0.0),
         );
         assert_eq!(expected, result);
     }
