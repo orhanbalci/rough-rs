@@ -15,6 +15,17 @@ pub struct DrawingSurface {
     height: f32,
 }
 
+#[derive(Clone, PartialEq)]
+pub enum FillStyle {
+    Solid,
+    Hachure,
+    ZigZag,
+    CrossHatch,
+    Dots,
+    Dashed,
+    ZigZagLine,
+}
+
 #[derive(Default, Clone, Builder)]
 pub struct Options {
     pub max_randomness_offset: Option<f32>,
@@ -26,7 +37,7 @@ pub struct Options {
     pub curve_tightness: Option<f32>,
     pub curve_step_count: Option<f32>,
     pub fill: Option<bool>,
-    pub fill_style: Option<String>,
+    pub fill_style: Option<FillStyle>,
     pub fill_weight: Option<f32>,
     pub hachure_angle: Option<f32>,
     pub hachure_gap: Option<f32>,

@@ -4,7 +4,7 @@ use num_traits::{Float, FromPrimitive};
 
 use super::core::{Options, OptionsBuilder};
 use super::renderer::line;
-use crate::core::{Drawable, OpSet, OpSetType};
+use crate::core::{Drawable, FillStyle, OpSet, OpSetType};
 use crate::renderer::{
     ellipse_with_params,
     generate_ellipse_params,
@@ -30,7 +30,7 @@ impl Default for Generator {
                 .curve_fitting(Some(0.95))
                 .curve_step_count(Some(9.0))
                 .fill(None)
-                .fill_style(Some("hachure".to_owned()))
+                .fill_style(Some(FillStyle::Hachure))
                 .fill_weight(Some(-1.0))
                 .hachure_angle(Some(-41.0))
                 .hachure_gap(Some(-1.0))
@@ -91,7 +91,7 @@ impl Generator {
                 Point2D::new(x + width, y + height),
                 Point2D::new(x, y + height),
             ];
-            if options.fill_style == Some("solid".into()) {
+            if options.fill_style == Some(FillStyle::Solid) {
                 paths.push(solid_fill_polygon(&vec![points], &mut options));
             } else {
                 //paths.push(patternFillPolygons([points], o));
@@ -114,7 +114,7 @@ impl Generator {
         let ellipse_params = generate_ellipse_params(width, height, &mut options);
         let ellipse_response = ellipse_with_params(x, y, &mut options, &ellipse_params);
         if options.fill == Some(true) {
-            if options.fill_style == Some("solid".into()) {
+            if options.fill_style == Some(FillStyle::Solid) {
                 let mut shape = ellipse_with_params(x, y, &mut options, &ellipse_params).opset;
                 shape.op_set_type = OpSetType::FillPath;
                 paths.push(shape);
@@ -164,7 +164,7 @@ impl Generator {
         let outline =
             crate::renderer::arc(x, y, width, height, start, stop, closed, true, &mut options);
         if closed && options.fill == Some(true) {
-            if options.fill_style == Some("solid".into()) {
+            if options.fill_style == Some(FillStyle::Solid) {
                 options.disable_multi_stroke = Some(true);
                 let mut shape = crate::renderer::arc(
                     x,
