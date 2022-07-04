@@ -4,8 +4,8 @@ use num_traits::Float;
 
 #[derive(Clone)]
 pub struct Line<F: Float + Trig> {
-    start_point: Point2D<F>,
-    end_point: Point2D<F>,
+    pub start_point: Point2D<F>,
+    pub end_point: Point2D<F>,
 }
 
 impl<F: Float + Trig> Line<F> {

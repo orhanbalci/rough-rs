@@ -1,10 +1,12 @@
 use std::cmp::Ordering;
+use std::marker::PhantomData;
 
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 
-use crate::core::{Options, _c};
+use super::traits::PatternFiller;
+use crate::core::{OpSet, Options, _c};
 use crate::geometry::{rotate_lines, rotate_points, Line};
 
 #[derive(Clone)]
@@ -180,4 +182,52 @@ fn straight_hachure_lines<F: Float + FromPrimitive + Trig>(
     }
 
     return lines;
+}
+
+pub struct ScanlineHachureFiller<F> {
+    _phantom: PhantomData<F>,
+}
+
+impl<F> PatternFiller<F> for ScanlineHachureFiller<F>
+where
+    F: Float + Trig + FromPrimitive,
+{
+    fn fill_polygons(
+        &self,
+        mut polygon_list: Vec<Vec<Point2D<F>>>,
+        o: &mut Options,
+    ) -> crate::core::OpSet<F> {
+        let lines = polygon_hachure_lines(&mut polygon_list, o);
+        let ops = ScanlineHachureFiller::render_lines(lines, o);
+        OpSet {
+            op_set_type: crate::core::OpSetType::FillSketch,
+            ops: ops,
+            size: None,
+            path: None,
+        }
+    }
+}
+
+impl<F: Float + Trig + FromPrimitive> ScanlineHachureFiller<F> {
+    pub fn new() -> Self {
+        ScanlineHachureFiller {
+            _phantom: PhantomData,
+        }
+    }
+
+    fn render_lines(lines: Vec<Line<F>>, o: &mut Options) -> Vec<crate::core::Op<F>> {
+        let mut ops: Vec<crate::core::Op<F>> = vec![];
+        lines.iter().for_each(|l| {
+            ops.extend(crate::renderer::_double_line(
+                l.start_point.x,
+                l.start_point.y,
+                l.end_point.x,
+                l.end_point.y,
+                o,
+                true,
+            ))
+        });
+
+        ops
+    }
 }

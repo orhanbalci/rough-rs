@@ -527,7 +527,7 @@ fn _line<F: Float + Trig + FromPrimitive>(
     ops
 }
 
-fn _double_line<F: Float + Trig + FromPrimitive>(
+pub(crate) fn _double_line<F: Float + Trig + FromPrimitive>(
     x1: F,
     y1: F,
     x2: F,
