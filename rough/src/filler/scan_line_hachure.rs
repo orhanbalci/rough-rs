@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::cmp::Ordering;
 use std::marker::PhantomData;
 
@@ -188,16 +189,13 @@ pub struct ScanlineHachureFiller<F> {
     _phantom: PhantomData<F>,
 }
 
-impl<F> PatternFiller<F> for ScanlineHachureFiller<F>
+impl<F, P> PatternFiller<F, P> for ScanlineHachureFiller<F>
 where
     F: Float + Trig + FromPrimitive,
+    P: BorrowMut<Vec<Vec<Point2D<F>>>>,
 {
-    fn fill_polygons(
-        &self,
-        polygon_list: &mut Vec<Vec<Point2D<F>>>,
-        o: &mut Options,
-    ) -> crate::core::OpSet<F> {
-        let lines = polygon_hachure_lines(polygon_list, o);
+    fn fill_polygons(&self, mut polygon_list: P, o: &mut Options) -> crate::core::OpSet<F> {
+        let lines = polygon_hachure_lines(polygon_list.borrow_mut(), o);
         let ops = ScanlineHachureFiller::render_lines(lines, o);
         OpSet {
             op_set_type: crate::core::OpSetType::FillSketch,

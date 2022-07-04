@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::fmt::Display;
 
 use euclid::default::Point2D;
@@ -850,12 +851,10 @@ fn _bezier_to<F: Float + Trig + FromPrimitive>(
     ops
 }
 
-pub fn pattern_fill_polygons<F>(
-    polygon_list: &mut Vec<Vec<Point2D<F>>>,
-    o: &mut Options,
-) -> OpSet<F>
+pub fn pattern_fill_polygons<F, P>(polygon_list: P, o: &mut Options) -> OpSet<F>
 where
     F: Float + Trig + FromPrimitive,
+    P: BorrowMut<Vec<Vec<Point2D<F>>>>,
 {
     let filler = get_filler(ScanLineHachure);
     filler.fill_polygons(polygon_list, o)
@@ -910,5 +909,5 @@ where
 
     points.push(point2(cx + rx * Float::cos(stp), cy + ry * Float::sin(stp)));
     points.push(point2(cx, cy));
-    pattern_fill_polygons(&mut vec![points], o)
+    pattern_fill_polygons(vec![points], o)
 }
