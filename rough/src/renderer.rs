@@ -1,11 +1,14 @@
 use std::fmt::Display;
 
 use euclid::default::Point2D;
-use euclid::Trig;
+use euclid::{point2, Trig};
 use num_traits::{Float, FloatConst, FromPrimitive};
 
 use super::core::{Options, _c};
 use crate::core::{Op, OpSet, OpSetType, OpType};
+use crate::filler::get_filler;
+use crate::filler::traits::PatternFiller;
+use crate::filler::FillerType::ScanLineHachure;
 
 pub struct EllipseParams<F: Float> {
     pub rx: F,
@@ -845,4 +848,67 @@ fn _bezier_to<F: Float + Trig + FromPrimitive>(
         i += 1;
     }
     ops
+}
+
+pub fn pattern_fill_polygons<F>(
+    polygon_list: &mut Vec<Vec<Point2D<F>>>,
+    o: &mut Options,
+) -> OpSet<F>
+where
+    F: Float + Trig + FromPrimitive,
+{
+    let filler = get_filler(ScanLineHachure);
+    filler.fill_polygons(polygon_list, o)
+}
+
+pub fn pattern_fill_arc<F>(
+    x: F,
+    y: F,
+    width: F,
+    height: F,
+    start: F,
+    stop: F,
+    o: &mut Options,
+) -> OpSet<F>
+where
+    F: Float + FromPrimitive + Trig,
+{
+    let cx = x;
+    let cy = y;
+    let mut rx = F::abs(width / _c(2.0));
+    let mut ry = F::abs(height / _c(2.0));
+
+    rx = rx + _offset_opt(rx * _c(0.01), o, None);
+    ry = ry + _offset_opt(ry * _c(0.01), o, None);
+
+    let mut strt = start;
+    let mut stp = stop;
+    let two_pi = _c::<F>(f32::PI()) * _c::<F>(2.0);
+
+    while strt < _c(0.0) {
+        strt = strt + two_pi;
+        stp = stp + two_pi;
+    }
+
+    if (stp - strt) > two_pi {
+        strt = F::zero();
+        stp = two_pi;
+    }
+
+    let increment = (stp / strt) / o.curve_step_count.map(|a| _c(a)).unwrap_or(_c(1.0));
+    let mut points: Vec<Point2D<F>> = vec![];
+
+    let mut angle = strt;
+
+    while angle <= stp {
+        points.push(point2(
+            cx + rx * Float::cos(angle),
+            cy + ry * Float::sin(angle),
+        ));
+        angle = angle + increment;
+    }
+
+    points.push(point2(cx + rx * Float::cos(stp), cy + ry * Float::sin(stp)));
+    points.push(point2(cx, cy));
+    pattern_fill_polygons(&mut vec![points], o)
 }

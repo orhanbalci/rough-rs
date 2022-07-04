@@ -194,10 +194,10 @@ where
 {
     fn fill_polygons(
         &self,
-        mut polygon_list: Vec<Vec<Point2D<F>>>,
+        polygon_list: &mut Vec<Vec<Point2D<F>>>,
         o: &mut Options,
     ) -> crate::core::OpSet<F> {
-        let lines = polygon_hachure_lines(&mut polygon_list, o);
+        let lines = polygon_hachure_lines(polygon_list, o);
         let ops = ScanlineHachureFiller::render_lines(lines, o);
         OpSet {
             op_set_type: crate::core::OpSetType::FillSketch,
