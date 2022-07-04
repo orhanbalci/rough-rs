@@ -21,7 +21,8 @@ impl KurboGenerator {
                     todo!("fill path not implemented");
                 }
                 OpSetType::FillSketch => {
-                    todo!("fill sketch not implemented");
+                    //todo!("fill sketch not implemented");
+                    result.push(KurboGenerator::opset_to_shape(&set));
                 }
             }
         }

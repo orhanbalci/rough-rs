@@ -15,7 +15,7 @@ pub struct DrawingSurface {
     height: f32,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum FillStyle {
     Solid,
     Hachure,
@@ -36,7 +36,7 @@ pub struct Options {
     pub curve_fitting: Option<f32>,
     pub curve_tightness: Option<f32>,
     pub curve_step_count: Option<f32>,
-    pub fill: Option<bool>,
+    pub fill: bool,
     pub fill_style: Option<FillStyle>,
     pub fill_weight: Option<f32>,
     pub hachure_angle: Option<f32>,

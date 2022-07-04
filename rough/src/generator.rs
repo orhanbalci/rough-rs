@@ -9,6 +9,7 @@ use crate::renderer::{
     ellipse_with_params,
     generate_ellipse_params,
     linear_path,
+    pattern_fill_polygons,
     rectangle,
     solid_fill_polygon,
 };
@@ -29,7 +30,7 @@ impl Default for Generator {
                 .curve_tightness(Some(0.0))
                 .curve_fitting(Some(0.95))
                 .curve_step_count(Some(9.0))
-                .fill(None)
+                .fill(true)
                 .fill_style(Some(FillStyle::Hachure))
                 .fill_weight(Some(-1.0))
                 .hachure_angle(Some(-41.0))
@@ -84,7 +85,7 @@ impl Generator {
         let mut paths = vec![];
         let mut options = self.default_options.clone();
         let outline = rectangle(x, y, width, height, &mut options);
-        if options.fill.is_some() {
+        if options.fill {
             let points = vec![
                 Point2D::new(x, y),
                 Point2D::new(x + width, y),
@@ -94,8 +95,7 @@ impl Generator {
             if options.fill_style == Some(FillStyle::Solid) {
                 paths.push(solid_fill_polygon(&vec![points], &mut options));
             } else {
-                //paths.push(patternFillPolygons([points], o));
-                todo!("pattern_fill_polygons is not implemented yet");
+                paths.push(pattern_fill_polygons(vec![points], &mut options));
             }
         }
         if options.stroke.is_some() {
@@ -113,7 +113,7 @@ impl Generator {
         let mut options = self.default_options.clone();
         let ellipse_params = generate_ellipse_params(width, height, &mut options);
         let ellipse_response = ellipse_with_params(x, y, &mut options, &ellipse_params);
-        if options.fill == Some(true) {
+        if options.fill{
             if options.fill_style == Some(FillStyle::Solid) {
                 let mut shape = ellipse_with_params(x, y, &mut options, &ellipse_params).opset;
                 shape.op_set_type = OpSetType::FillPath;
@@ -163,7 +163,7 @@ impl Generator {
         let mut paths = vec![];
         let outline =
             crate::renderer::arc(x, y, width, height, start, stop, closed, true, &mut options);
-        if closed && options.fill == Some(true) {
+        if closed && options.fill {
             if options.fill_style == Some(FillStyle::Solid) {
                 options.disable_multi_stroke = Some(true);
                 let mut shape = crate::renderer::arc(
