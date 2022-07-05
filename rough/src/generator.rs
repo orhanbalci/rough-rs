@@ -113,7 +113,7 @@ impl Generator {
         let mut options = self.default_options.clone();
         let ellipse_params = generate_ellipse_params(width, height, &mut options);
         let ellipse_response = ellipse_with_params(x, y, &mut options, &ellipse_params);
-        if options.fill{
+        if options.fill {
             if options.fill_style == Some(FillStyle::Solid) {
                 let mut shape = ellipse_with_params(x, y, &mut options, &ellipse_params).opset;
                 shape.op_set_type = OpSetType::FillPath;

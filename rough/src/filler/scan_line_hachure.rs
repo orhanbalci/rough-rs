@@ -138,7 +138,7 @@ fn straight_hachure_lines<F: Float + FromPrimitive + Trig>(
                 .iter()
                 .enumerate()
                 .find(|(_ind, v)| v.ymin > y)
-                .map(|(ind, _v)| ind );
+                .map(|(ind, _v)| ind);
 
             if let Some(indx) = ix {
                 let removed_elements = edges.splice(0..indx + 1, vec![]);
