@@ -14,7 +14,7 @@ use euclid::point2;
 use num_traits::Float;
 
 /// computes distance squared from a point p to the line segment vw
-/// 
+///
 /// # examples
 /// ```
 /// use points_on_curve::distance_to_segment_squared;
