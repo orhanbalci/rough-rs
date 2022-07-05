@@ -1,12 +1,12 @@
 [package]
 name = "points_on_curve"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Points on Bezier Curves"
 repository = "https://github.com/orhanbalci/rough-rs.git"
 homepage = "https://github.com/orhanbalci"
-keywords = ["graphics","bezier"]
+keywords = ["graphics", "bezier"]
 categories = ["Graphics"]
 license = "MIT"
 readme = "README.md"
