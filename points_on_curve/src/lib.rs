@@ -5,7 +5,7 @@
 #![deny(unreachable_pub)]
 
 use std::borrow::Borrow;
-use std::cmp::{max_by, min_by, Ord};
+use std::cmp::{max_by, min_by};
 use std::fmt::Display;
 use std::ops::MulAssign;
 
@@ -14,6 +14,19 @@ use euclid::point2;
 use num_traits::Float;
 
 /// computes distance squared from a point p to the line segment vw
+/// 
+/// # examples
+/// ```
+/// use points_on_curve::distance_to_segment_squared;
+/// use euclid::point2;
+/// let expected = 1.0;
+/// let result = distance_to_segment_squared(
+///     point2(0.0, 1.0),
+///     point2(-1.0, 0.0),
+///     point2(1.0, 0.0),
+/// );
+/// assert_eq!(expected, result);
+/// ```
 pub fn distance_to_segment_squared<F, P>(p: P, v: P, w: P) -> F
 where
     F: Float + PartialOrd + Display,

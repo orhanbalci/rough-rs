@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 euclid = "0.22"
 num-traits = "0.2"
+
+[dev-dependencies]
+piet-common = {version = "*", features = ["png"]}
+piet = "0.5"
