@@ -1,8 +1,56 @@
-// This crate is entirely safe
 #![forbid(unsafe_code)]
-// Ensures that `pub` means published in the public API.
-// This property is useful for reasoning about breaking API changes.
 #![deny(unreachable_pub)]
+#![deny(missing_docs)]
+
+//!
+//! This crate is a rustlang port of [points-on-curve](https://github.com/pshihn/bezier-points) npm package written by
+//! [@pshihn](https://github.com/pshihn).
+//!
+//! This package exposes functions to sample points on a bezier curve with certain tolerance.
+//! There is also a utility funtion to simplify the shape to use fewer points.
+//! This can really be useful when estimating lines/polygons for curves in WebGL or for Hit/Collision detections.
+//! Reverse of this operation is also supported meaning given some points generate bezier curve points passing through this points
+//!
+//!
+//! ## 📦 Cargo.toml
+//!
+//! ```toml
+//! [dependencies]
+//! points_on_curve = "0.1"
+//! ```
+//!
+//! ## 🔧 Example
+//!
+//! ```rust
+//! use euclid::{default, point2};
+//! use points_on_curve::points_on_bezier_curves;
+//!
+//! let input = vec![
+//!         point2(70.0, 240.0),
+//!         point2(145.0, 60.0),
+//!         point2(275.0, 90.0),
+//!         point2(300.0, 230.0),
+//!     ];
+//! let result_015 = points_on_bezier_curves(&input, 0.2, Some(0.15));
+//!
+//! ```
+//!
+//!
+//! ## 🖨️ Output
+//!
+//! ```text
+//!
+//! ```
+//!
+//! ## Details
+//!
+//! ## 🔭 Examples
+//!
+//! For more examples have a look at the
+//! [examples](https://github.com/orhanbalci/rough-rs/blob/main/points_on_curve/examples) folder.
+//!
+//!
+//!
 
 use std::borrow::Borrow;
 use std::cmp::{max_by, min_by};
@@ -65,13 +113,16 @@ where
     let p3 = points[offset + 2];
     let p4 = points[offset + 3];
 
-    let mut ux = F::from(3).unwrap() * p2.x - F::from(2).unwrap() * p1.x - p4.x;
+    let const_3 = F::from(3).unwrap();
+    let const_2 = F::from(2).unwrap();
+
+    let mut ux = const_3 * p2.x - const_2 * p1.x - p4.x;
     ux *= ux;
-    let mut uy = F::from(3).unwrap() * p2.y - F::from(2).unwrap() * p1.y - p4.y;
+    let mut uy = const_3 * p2.y - const_2 * p1.y - p4.y;
     uy *= uy;
-    let mut vx = F::from(3).unwrap() * p3.x - F::from(2).unwrap() * p4.x - p1.x;
+    let mut vx = const_3 * p3.x - const_2 * p4.x - p1.x;
     vx *= vx;
-    let mut vy = F::from(3).unwrap() * p3.y - F::from(2).unwrap() * p4.y - p1.y;
+    let mut vy = const_3 * p3.y - const_2 * p4.y - p1.y;
     vy *= vy;
     if ux < vx {
         ux = vx;
@@ -82,8 +133,6 @@ where
     ux + uy
 }
 
-/// Ramer–Douglas–Peucker algorithm
-/// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
 fn simplify_points<F>(
     points: &[Point2D<F>],
     start: usize,
@@ -119,6 +168,8 @@ where
     new_points.to_vec()
 }
 
+/// Simplifies given points on curve by reducing number of points using Ramer–Douglas–Peucker algorithm
+/// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
 pub fn simplify<F>(points: &[Point2D<F>], distance: F) -> Vec<Point2D<F>>
 where
     F: Float + Display,
@@ -169,6 +220,8 @@ where
     return new_points.to_vec();
 }
 
+/// Samples points on a Bezier Curve. If distance parameter is given does simplification on sampled points
+/// and reduces number of points that represents given Bezier Curve.
 pub fn points_on_bezier_curves<F>(
     points: &[Point2D<F>],
     tolerance: F,
@@ -192,6 +245,7 @@ where
     return new_points;
 }
 
+/// Generates Bezier Curve parameters passing through given points
 pub fn curve_to_bezier<F>(points_in: &[Point2D<F>], curve_tightness: F) -> Option<Vec<Point2D<F>>>
 where
     F: Float,
