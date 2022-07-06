@@ -1,4 +1,4 @@
-# points_on_curve 
+# points_on_curve 〰️ 📌
 
 [![Crates.io](https://img.shields.io/crates/v/points_on_curve.svg)](https://crates.io/crates/points_on_curve)
 [![Documentation](https://docs.rs/points_on_curve/badge.svg)](https://docs.rs/points_on_curve)
