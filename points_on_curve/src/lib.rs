@@ -57,6 +57,7 @@ use std::cmp::{max_by, min_by};
 use std::fmt::Display;
 use std::ops::MulAssign;
 
+pub use euclid;
 use euclid::default::Point2D;
 use euclid::point2;
 use num_traits::Float;
