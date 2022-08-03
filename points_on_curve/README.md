@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/points_on_curve.svg)](https://crates.io/crates/points_on_curve)
 [![Documentation](https://docs.rs/points_on_curve/badge.svg)](https://docs.rs/points_on_curve)
-[![License](https://img.shields.io/github/license/orhanbalci/points_on_curve.svg)](https://github.com/orhanbalci/points_on_curve/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/orhanbalci/points_on_curve.svg)](https://github.com/orhanbalci/rough-rs/blob/main/points_on_curve/LICENSE)
 
 <!-- cargo-sync-readme start -->
 
