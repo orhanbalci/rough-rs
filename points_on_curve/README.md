@@ -45,7 +45,6 @@ This picture shows computed points with 4 different distance values 0.15, 0.75, 
 
 ![tolerance](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/points_on_curve/assets/tolerance.png)
 
-## Details
 
 ## 🔭 Examples
 
