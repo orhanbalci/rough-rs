@@ -41,10 +41,9 @@ let result_015 = points_on_bezier_curves(&input, 0.2, Some(0.15));
 
 
 ## 🖨️ Output
+This picture shows computed points with 4 different distance values 0.15, 0.75, 1.5 and 3.0 with tolerance 2.0.
 
-```text
-
-```
+![tolerance](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/points_on_curve/assets/tolerance.png)
 
 ## Details
 
