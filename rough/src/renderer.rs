@@ -1,5 +1,4 @@
 use std::borrow::BorrowMut;
-use std::fmt::Display;
 
 use euclid::default::Point2D;
 use euclid::{point2, Trig};

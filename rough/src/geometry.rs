@@ -2,7 +2,7 @@ use euclid::default::Point2D;
 use euclid::{Angle, Translation2D, Trig, Vector2D};
 use num_traits::Float;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Line<F: Float + Trig> {
     pub start_point: Point2D<F>,
     pub end_point: Point2D<F>,

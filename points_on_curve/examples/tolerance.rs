@@ -19,6 +19,11 @@ fn main() {
     let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1.0).unwrap();
     let mut rc = bitmap.render_context();
 
+    let background_color = Color::from_hex_str("96C0B7").unwrap();
+    let stroke_color = Color::from_hex_str("725752").unwrap();
+    let sketch_color = Color::from_hex_str("FEF6C9").unwrap();
+
+
     let input = vec![
         point2(70.0, 240.0),
         point2(145.0, 60.0),
@@ -29,7 +34,7 @@ fn main() {
 
     rc.fill(
         Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
-        &Color::from_hex_str("96C0B7").unwrap(),
+        &background_color,
     );
 
     let original_curve = CubicBez::new(
@@ -43,7 +48,7 @@ fn main() {
 
     rc.stroke(
         original_curve,
-        &Color::from_hex_str("725752").unwrap(),
+        &stroke_color,
         0.01 * DPI,
     );
 
@@ -51,7 +56,7 @@ fn main() {
         let circle = Circle::new(Point::from(p.to_tuple()), 1.0);
         rc.stroke(
             circle,
-            &Color::from_hex_str("FEF6C9").unwrap(),
+            &sketch_color,
             dpi_multiplier * DPI,
         );
     });
@@ -85,7 +90,8 @@ fn draw_point_on_curve(
     let dpi_multiplier = 0.05;
 
     let curve = *translation * *original_curve;
-    rc.stroke(curve, &Color::from_hex_str("725752").unwrap(), 0.01 * DPI);
+    let stroke_color = Color::from_hex_str("725752").unwrap();
+    rc.stroke(curve, &stroke_color, 0.01 * DPI);
 
     estimation.iter().for_each(|p| {
         let mut circle = Circle::new(Point::from(p.to_tuple()), 1.0);

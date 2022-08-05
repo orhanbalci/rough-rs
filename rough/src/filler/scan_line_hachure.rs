@@ -18,6 +18,18 @@ struct EdgeEntry<F: Float + FromPrimitive + Trig> {
     pub(crate) islope: F,
 }
 
+impl<F: Float + FromPrimitive + Trig> std::fmt::Display for EdgeEntry<F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return f.write_str(&format!(
+            "ymin={} ymax={} x={} islope={}",
+            self.ymin.to_f64().unwrap(),
+            self.ymax.to_f64().unwrap(),
+            self.x.to_f64().unwrap(),
+            self.islope.to_f64().unwrap()
+        ));
+    }
+}
+
 struct ActiveEdgeEntry<F: Float + FromPrimitive + Trig> {
     pub(crate) s: F,
     pub(crate) edge: EdgeEntry<F>,
@@ -54,10 +66,10 @@ pub fn polygon_hachure_lines<F: Float + FromPrimitive + Trig>(
     return lines;
 }
 
-fn straight_hachure_lines<F: Float + FromPrimitive + Trig>(
-    polygon_list: &mut Vec<Vec<Point2D<F>>>,
-    gap: F,
-) -> Vec<Line<F>> {
+fn straight_hachure_lines<F>(polygon_list: &mut Vec<Vec<Point2D<F>>>, gap: F) -> Vec<Line<F>>
+where
+    F: Float + FromPrimitive + Trig,
+{
     let mut vertex_array: Vec<Vec<Point2D<F>>> = vec![];
     for polygon in polygon_list.iter_mut() {
         if polygon.first() != polygon.last() {
@@ -141,7 +153,13 @@ fn straight_hachure_lines<F: Float + FromPrimitive + Trig>(
                 .map(|(ind, _v)| ind);
 
             if let Some(indx) = ix {
-                let removed_elements = edges.splice(0..indx + 1, vec![]);
+                let removed_elements = edges.splice(0..indx, vec![]);
+
+                removed_elements
+                    .into_iter()
+                    .for_each(|ee| active_edges.push(ActiveEdgeEntry { s: y, edge: ee }));
+            } else {
+                let removed_elements = edges.splice(0..edges.len(), vec![]);
 
                 removed_elements
                     .into_iter()
@@ -150,6 +168,7 @@ fn straight_hachure_lines<F: Float + FromPrimitive + Trig>(
         }
 
         active_edges.retain(|ae| ae.edge.ymax > y);
+
         active_edges.sort_by(|ae1, ae2| {
             if ae1.edge.x == ae2.edge.x {
                 Ordering::Equal
@@ -177,7 +196,7 @@ fn straight_hachure_lines<F: Float + FromPrimitive + Trig>(
         active_edges.iter_mut().for_each(|ae| {
             ae.edge.x = ae.edge.x + (gap * ae.edge.islope);
         });
-        if lines.is_empty() || active_edges.is_empty() {
+        if edges.is_empty() && active_edges.is_empty() {
             break;
         }
     }
@@ -227,5 +246,63 @@ impl<F: Float + Trig + FromPrimitive> ScanlineHachureFiller<F> {
         });
 
         ops
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use euclid::point2;
+
+    use crate::geometry::Line;
+
+    #[test]
+    fn straight_hachure_lines() {
+        let mut input = vec![vec![
+            point2(0.0, 0.0),
+            point2(0.0, 1.0),
+            point2(1.0, 1.0),
+            point2(1.0, 0.0),
+        ]];
+        let expected = vec![
+            Line::from(&[point2(0.0, 0.0), point2(1.0, 0.0)]),
+            Line::from(&[
+                point2(0.0, 0.10000000149011612),
+                point2(1.0, 0.10000000149011612),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.20000000298023224),
+                point2(1.0, 0.20000000298023224),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.30000000447034836),
+                point2(1.0, 0.30000000447034836),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.4000000059604645),
+                point2(1.0, 0.4000000059604645),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.5000000074505806),
+                point2(1.0, 0.5000000074505806),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.6000000089406967),
+                point2(1.0, 0.6000000089406967),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.7000000104308128),
+                point2(1.0, 0.7000000104308128),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.800000011920929),
+                point2(1.0, 0.800000011920929),
+            ]),
+            Line::from(&[
+                point2(0.0, 0.9000000134110451),
+                point2(1.0, 0.9000000134110451),
+            ]),
+        ];
+        let result = super::straight_hachure_lines(&mut input, 0.1);
+        assert_eq!(expected, result);
     }
 }

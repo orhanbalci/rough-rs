@@ -26,20 +26,23 @@ fn main() {
         rect_width,
         rect_height,
     );
+    let background_color = Color::from_hex_str("96C0B7").unwrap();
+    let stroke_color = Color::from_hex_str("725752").unwrap();
+    let sketch_color = Color::from_hex_str("FEF6C9").unwrap();
 
     rc.fill(
         Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
-        &Color::RED,
+        &background_color,
     );
 
     for path in rect.iter() {
-        rc.stroke(path, &Color::BLACK, 0.01 * DPI);
+        rc.stroke(path, &stroke_color, 0.01 * DPI);
     }
 
     rc.finish().unwrap();
     std::mem::drop(rc);
 
     bitmap
-        .save_to_file("temp-image.png")
+        .save_to_file("rectangle.png")
         .expect("file save error");
 }
