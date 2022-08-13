@@ -75,7 +75,7 @@ impl Options {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum OpType {
     Move,
     BCurveTo,

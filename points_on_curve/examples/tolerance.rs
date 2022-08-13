@@ -23,7 +23,6 @@ fn main() {
     let stroke_color = Color::from_hex_str("725752").unwrap();
     let sketch_color = Color::from_hex_str("FEF6C9").unwrap();
 
-
     let input = vec![
         point2(70.0, 240.0),
         point2(145.0, 60.0),
@@ -46,19 +45,11 @@ fn main() {
 
     let dpi_multiplier = 0.05;
 
-    rc.stroke(
-        original_curve,
-        &stroke_color,
-        0.01 * DPI,
-    );
+    rc.stroke(original_curve, &stroke_color, 0.01 * DPI);
 
     result_015.iter().for_each(|p| {
         let circle = Circle::new(Point::from(p.to_tuple()), 1.0);
-        rc.stroke(
-            circle,
-            &sketch_color,
-            dpi_multiplier * DPI,
-        );
+        rc.stroke(circle, &sketch_color, dpi_multiplier * DPI);
     });
 
     let translation = TranslateScale::translate(Vec2::new(370.0, 0.0));

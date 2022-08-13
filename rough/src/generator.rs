@@ -119,8 +119,10 @@ impl Generator {
                 shape.op_set_type = OpSetType::FillPath;
                 paths.push(shape);
             } else {
-                //paths.push(patter_fill_polygon())
-                todo!("pattern fill polygon not implemented");
+                paths.push(pattern_fill_polygons(
+                    vec![ellipse_response.estimated_points],
+                    &mut options,
+                ));
             }
         }
         if options.stroke.is_some() {

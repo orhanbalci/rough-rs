@@ -83,4 +83,15 @@ impl KurboGenerator {
         let drawable = self.gen.rectangle(x, y, width, height);
         KurboGenerator::drawing_to_shape(&drawable)
     }
+
+    pub fn ellipse<F: Trig + Float + FromPrimitive>(
+        &self,
+        x: F,
+        y: F,
+        width: F,
+        height: F,
+    ) -> Vec<BezPath> {
+        let drawable = self.gen.ellipse(x, y, width, height);
+        KurboGenerator::drawing_to_shape(&drawable)
+    }
 }
