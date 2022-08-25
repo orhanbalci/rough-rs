@@ -1,14 +1,20 @@
+use std::fmt::Display;
+use std::ops::MulAssign;
+
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
+use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
 
 use super::core::{Options, OptionsBuilder};
 use super::renderer::line;
-use crate::core::{Drawable, FillStyle, OpSet, OpSetType};
+use crate::core::{Drawable, FillStyle, OpSet, OpSetType, _c};
 use crate::renderer::{
+    curve,
     ellipse_with_params,
     generate_ellipse_params,
     linear_path,
+    pattern_fill_arc,
     pattern_fill_polygons,
     rectangle,
     solid_fill_polygon,
@@ -182,7 +188,15 @@ impl Generator {
                 shape.op_set_type = OpSetType::FillPath;
                 paths.push(shape);
             } else {
-                todo!("pattern_fill_arc not implemented");
+                paths.push(pattern_fill_arc(
+                    x,
+                    y,
+                    width,
+                    height,
+                    start,
+                    stop,
+                    &mut options,
+                ));
             }
         }
         if options.stroke.is_some() {
@@ -191,30 +205,33 @@ impl Generator {
         self.d("arc", &paths)
     }
 
-    // pub fn curve<F>(&self, points: &[Point2D<F>]) -> Drawable<F> {
-    //     let mut paths = vec![];
-    //     let outline = self.curve(points);
-    //     let mut options = self.default_options.clone();
-    //     if options.fill == Some(true) && points.len() >= 3 {
-    //         let curve =
-    //     }
-    // }
-    // curve(points: Point[], options?: Options): Drawable {
-    //     const o = this._o(options);
-    //     const paths: OpSet[] = [];
-    //     const outline = curve(points, o);
-    //     if (o.fill && o.fill !== NOS && points.length >= 3) {
-    //       const bcurve = curveToBezier(points);
-    //       const polyPoints = pointsOnBezierCurves(bcurve, 10, (1 + o.roughness) / 2);
-    //       if (o.fillStyle === 'solid') {
-    //         paths.push(solidFillPolygon([polyPoints], o));
-    //       } else {
-    //         paths.push(patternFillPolygons([polyPoints], o));
-    //       }
-    //     }
-    //     if (o.stroke !== NOS) {
-    //       paths.push(outline);
-    //     }
-    //     return this._d('curve', paths, o);
-    //   }
+    pub fn curve<F>(&self, points: &[Point2D<F>]) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive + MulAssign + Display,
+    {
+        let mut paths = vec![];
+        let mut options = self.default_options.clone();
+        let outline = curve(points, &mut options);
+        if options.fill && points.len() >= 3 {
+            let curve = curve_to_bezier(points, _c(0.0));
+            if let Some(crv) = curve {
+                let poly_points = points_on_bezier_curves(
+                    &crv,
+                    _c(10.0),
+                    Some((_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(0.0)) / _c(2.0))),
+                );
+                if options.fill_style == Some(FillStyle::Solid) {
+                    paths.push(solid_fill_polygon(&vec![poly_points], &mut options));
+                } else {
+                    paths.push(pattern_fill_polygons(&mut vec![poly_points], &mut options));
+                }
+            }
+        }
+
+        if options.stroke.is_some() {
+            paths.push(outline);
+        }
+
+        self.d("curve", &paths)
+    }
 }
