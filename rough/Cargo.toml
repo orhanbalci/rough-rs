@@ -19,6 +19,7 @@ euclid = "0.22"
 rand = "0.8"
 num-traits = "0.2"
 derive_builder = "*"
+svgtypes = "0.8"
 
 [dev-dependencies]
 plotlib = "0.5"

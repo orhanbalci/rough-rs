@@ -218,7 +218,7 @@ impl Generator {
                 let poly_points = points_on_bezier_curves(
                     &crv,
                     _c(10.0),
-                    Some((_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(0.0)) / _c(2.0))),
+                    Some(_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(0.0)) / _c(2.0)),
                 );
                 if options.fill_style == Some(FillStyle::Solid) {
                     paths.push(solid_fill_polygon(&vec![poly_points], &mut options));
@@ -234,4 +234,11 @@ impl Generator {
 
         self.d("curve", &paths)
     }
+
+    // TODO add polygon function
+    // TODO add path function
+    // TODO add ops_to_path function
+    // TODO add to_paths function
+    // TODO add fill_sketch function
+    // TODO path function needs points_on_path which in turn needs svg path parsing use svgtypes crate for this task
 }
