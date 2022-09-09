@@ -11,4 +11,5 @@ pub mod core;
 pub mod filler;
 pub mod generator;
 pub mod geometry;
+pub mod points_on_path;
 pub mod renderer;
