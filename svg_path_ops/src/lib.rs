@@ -3,21 +3,21 @@ use std::f64::consts::PI;
 
 use svgtypes::PathSegment;
 
-pub fn absolutize<'a>(
+pub fn absolutize(
     path_segments: impl Iterator<Item = impl Borrow<PathSegment>>,
 ) -> impl Iterator<Item = PathSegment> {
     let mut result = vec![];
     let (mut cx, mut cy, mut subx, mut suby) = (0.0, 0.0, 0.0, 0.0);
     for segment in path_segments {
-        match segment.borrow() {
-            &PathSegment::MoveTo { abs: true, x, y } => {
+        match *segment.borrow() {
+            PathSegment::MoveTo { abs: true, x, y } => {
                 cx = x;
                 cy = y;
                 subx = x;
                 suby = y;
-                result.push(segment.borrow().clone())
+                result.push(*segment.borrow())
             }
-            &PathSegment::MoveTo { abs: false, x, y } => {
+            PathSegment::MoveTo { abs: false, x, y } => {
                 cx += x;
                 cy += y;
                 result.push(PathSegment::MoveTo {
@@ -28,12 +28,12 @@ pub fn absolutize<'a>(
                 subx = cx;
                 suby = cy;
             }
-            &PathSegment::LineTo { abs: true, x, y } => {
-                result.push(segment.borrow().clone());
+            PathSegment::LineTo { abs: true, x, y } => {
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            &PathSegment::LineTo { abs: false, x, y } => {
+            PathSegment::LineTo { abs: false, x, y } => {
                 cx += x;
                 cy += y;
                 result.push(PathSegment::LineTo {
@@ -42,7 +42,7 @@ pub fn absolutize<'a>(
                     y: cy,
                 });
             }
-            &PathSegment::CurveTo {
+            PathSegment::CurveTo {
                 abs: true,
                 x1: _,
                 y1: _,
@@ -51,11 +51,11 @@ pub fn absolutize<'a>(
                 x,
                 y,
             } => {
-                result.push(segment.borrow().clone());
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            &PathSegment::CurveTo {
+            PathSegment::CurveTo {
                 abs: false,
                 x1,
                 y1,
@@ -76,18 +76,18 @@ pub fn absolutize<'a>(
                 cx += x;
                 cy += y;
             }
-            &PathSegment::Quadratic {
+            PathSegment::Quadratic {
                 abs: true,
                 x1: _,
                 y1: _,
                 x,
                 y,
             } => {
-                result.push(segment.borrow().clone());
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            &PathSegment::Quadratic {
+            PathSegment::Quadratic {
                 abs: false,
                 x1,
                 y1,
@@ -104,7 +104,7 @@ pub fn absolutize<'a>(
                 cx += x;
                 cy += y;
             }
-            &PathSegment::EllipticalArc {
+            PathSegment::EllipticalArc {
                 abs: true,
                 rx: _,
                 ry: _,
@@ -114,11 +114,11 @@ pub fn absolutize<'a>(
                 x,
                 y,
             } => {
-                result.push(segment.borrow().clone());
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            &PathSegment::EllipticalArc {
+            PathSegment::EllipticalArc {
                 abs: false,
                 rx,
                 ry,
@@ -141,34 +141,34 @@ pub fn absolutize<'a>(
                     y: cy,
                 });
             }
-            &PathSegment::HorizontalLineTo { abs: true, x } => {
-                result.push(segment.borrow().clone());
+            PathSegment::HorizontalLineTo { abs: true, x } => {
+                result.push(*segment.borrow());
                 cx = x;
             }
-            &PathSegment::HorizontalLineTo { abs: false, x } => {
+            PathSegment::HorizontalLineTo { abs: false, x } => {
                 cx += x;
                 result.push(PathSegment::HorizontalLineTo { abs: true, x: cx });
             }
-            &PathSegment::VerticalLineTo { abs: true, y } => {
-                result.push(segment.borrow().clone());
+            PathSegment::VerticalLineTo { abs: true, y } => {
+                result.push(*segment.borrow());
                 cy = y;
             }
-            &PathSegment::VerticalLineTo { abs: false, y } => {
+            PathSegment::VerticalLineTo { abs: false, y } => {
                 cy += y;
                 result.push(PathSegment::VerticalLineTo { abs: true, y: cy });
             }
-            &PathSegment::SmoothCurveTo {
+            PathSegment::SmoothCurveTo {
                 abs: true,
                 x2: _,
                 y2: _,
                 x,
                 y,
             } => {
-                result.push(segment.borrow().clone());
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            &PathSegment::SmoothCurveTo {
+            PathSegment::SmoothCurveTo {
                 abs: false,
                 x2,
                 y2,
@@ -185,12 +185,12 @@ pub fn absolutize<'a>(
                 cx += x;
                 cy += y;
             }
-            &PathSegment::SmoothQuadratic { abs: true, x, y } => {
-                result.push(segment.borrow().clone());
+            PathSegment::SmoothQuadratic { abs: true, x, y } => {
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            &PathSegment::SmoothQuadratic { abs: false, x, y } => {
+            PathSegment::SmoothQuadratic { abs: false, x, y } => {
                 cx += x;
                 cy += y;
                 result.push(PathSegment::SmoothQuadratic {
@@ -199,15 +199,15 @@ pub fn absolutize<'a>(
                     y: cy,
                 });
             }
-            &PathSegment::ClosePath { .. } => {
-                result.push(segment.borrow().clone());
+            PathSegment::ClosePath { .. } => {
+                result.push(*segment.borrow());
                 cx = subx;
                 cy = suby;
             }
         }
     }
 
-    return result.into_iter();
+    result.into_iter()
 }
 
 // pub fn normalize<'a>(
@@ -218,7 +218,7 @@ pub fn absolutize<'a>(
 fn rotate(x: f64, y: f64, angle_rad: f64) -> (f64, f64) {
     let rotated_x = x * angle_rad.cos() - y * angle_rad.sin();
     let rotated_y = x * angle_rad.sin() + y * angle_rad.cos();
-    return (rotated_x, rotated_y);
+    (rotated_x, rotated_y)
 }
 
 //  porting ts library to rust https://github.com/pshihn/path-data-parser
@@ -279,17 +279,17 @@ pub fn arc_to_cubic_curves(
         }
 
         if f1 < 0.0 {
-            f1 = PI * 2.0 + f1;
+            f1 += PI * 2.0;
         }
         if f2 < 0.0 {
-            f2 = PI * 2.0 + f2;
+            f2 += PI * 2.0;
         }
 
         if sweep_flag > 0.0 && f1 > f2 {
-            f1 = f1 - PI * 2.0;
+            f1 -= PI * 2.0;
         }
         if sweep_flag <= 0.0 && f2 > f1 {
-            f2 = f2 - PI * 2.0;
+            f2 -= PI * 2.0;
         }
     }
 
@@ -342,7 +342,7 @@ pub fn arc_to_cubic_curves(
     if recursive.is_some() {
         let mut ret_val = vec![m2, m3, m4];
         ret_val.append(&mut params);
-        return ret_val;
+        ret_val
     } else {
         let mut ret_val = vec![m2, m3, m4];
         ret_val.append(&mut params);
@@ -353,6 +353,6 @@ pub fn arc_to_cubic_curves(
             let r3 = rotate(params[i + 2][0], params[i + 2][1], angle_rad);
             curves.push(vec![r1.0, r1.1, r2.0, r2.1, r3.0, r3.1]);
         }
-        return curves;
+        curves
     }
 }

@@ -51,7 +51,7 @@ pub fn polygon_hachure_lines<F: Float + FromPrimitive + Trig>(
     if angle != 0.0 {
         polygon_list
             .iter_mut()
-            .for_each(|polygon| *polygon = rotate_points(&polygon, &center, _c(angle)))
+            .for_each(|polygon| *polygon = rotate_points(polygon, &center, _c(angle)))
     }
 
     let mut lines = straight_hachure_lines(polygon_list, _c(gap));
@@ -59,14 +59,14 @@ pub fn polygon_hachure_lines<F: Float + FromPrimitive + Trig>(
     if angle != 0.0 {
         polygon_list
             .iter_mut()
-            .for_each(|polygon| *polygon = rotate_points(&polygon, &center, _c(-angle)));
+            .for_each(|polygon| *polygon = rotate_points(polygon, &center, _c(-angle)));
         lines = rotate_lines(&lines, &center, _c(-angle));
     }
 
     return lines;
 }
 
-fn straight_hachure_lines<F>(polygon_list: &mut Vec<Vec<Point2D<F>>>, gap: F) -> Vec<Line<F>>
+fn straight_hachure_lines<F>(polygon_list: &mut [Vec<Point2D<F>>], gap: F) -> Vec<Line<F>>
 where
     F: Float + FromPrimitive + Trig,
 {
@@ -74,10 +74,9 @@ where
     for polygon in polygon_list.iter_mut() {
         if polygon.first() != polygon.last() {
             polygon.push(
-                polygon
+                *polygon
                     .first()
-                    .expect("can not get first element of polygon")
-                    .clone(),
+                    .expect("can not get first element of polygon"),
             );
         }
         if polygon.len() > 2 {
@@ -142,7 +141,7 @@ where
     }
 
     let mut active_edges: Vec<ActiveEdgeEntry<F>> = Vec::new();
-    let mut y = edges.iter().next().unwrap().ymin;
+    let mut y = edges.first().unwrap().ymin;
 
     loop {
         if !edges.is_empty() {
