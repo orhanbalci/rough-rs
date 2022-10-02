@@ -240,5 +240,5 @@ impl Generator {
     // TODO add ops_to_path function
     // TODO add to_paths function
     // TODO add fill_sketch function
-    // TODO path function needs points_on_path which in turn needs svg path parsing use svgtypes crate for this task
+    // TODO path function needs points_on_path (dependencies are implemented)
 }
