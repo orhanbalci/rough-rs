@@ -210,10 +210,220 @@ pub fn absolutize(
     result.into_iter()
 }
 
-// pub fn normalize<'a>(
-//     path_segments: impl Iterator<Item = impl Borrow<PathSegment>>,
-// ) -> impl Iterator<Item = PathSegment> {
-// }
+pub fn normalize<'a>(
+    path_segments: impl Iterator<Item = impl Borrow<PathSegment>>,
+) -> impl Iterator<Item = PathSegment> {
+    let mut out = vec![];
+
+    let mut cx = 0.0;
+    let mut cy = 0.0;
+    let mut subx = 0.0;
+    let mut suby = 0.0;
+    let mut lcx = 0.0;
+    let mut lcy = 0.0;
+    let mut last_type: PathSegment;
+
+    for segment in path_segments {
+        last_type = *segment.borrow();
+        match *segment.borrow() {
+            PathSegment::MoveTo { abs: true, x, y } => {
+                out.push(*segment.borrow());
+                cx = x;
+                cy = y;
+                subx = x;
+                suby = y;
+            }
+            PathSegment::CurveTo {
+                abs: true,
+                x1: _,
+                y1: _,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
+                out.push(*segment.borrow());
+                cx = x;
+                cy = y;
+                lcx = x2;
+                lcy = y2;
+            }
+            PathSegment::LineTo { abs: true, x, y } => {
+                out.push(*segment.borrow());
+                cx = x;
+                cy = y;
+            }
+            PathSegment::HorizontalLineTo { abs: true, x } => {
+                cx = x;
+                out.push(PathSegment::LineTo {
+                    abs: true,
+                    x: cx,
+                    y: cy,
+                });
+            }
+            PathSegment::VerticalLineTo { abs: true, y } => {
+                cy = y;
+                out.push(PathSegment::LineTo {
+                    abs: true,
+                    x: cx,
+                    y: cy,
+                });
+            }
+            PathSegment::SmoothCurveTo {
+                abs: true,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
+                let cx1;
+                let cy1;
+                if matches!(last_type, PathSegment::CurveTo { .. })
+                    || matches!(last_type, PathSegment::SmoothCurveTo { .. })
+                {
+                    cx1 = cx + (cx - lcx);
+                    cy1 = cy + (cy - lcy);
+                } else {
+                    cx1 = cx;
+                    cy1 = cy;
+                }
+                out.push(PathSegment::CurveTo {
+                    abs: true,
+                    x1: cx1,
+                    y1: cy1,
+                    x2,
+                    y2,
+                    x,
+                    y,
+                });
+                lcx = x2;
+                lcy = y2;
+                cx = x;
+                cy = y;
+            }
+            PathSegment::SmoothQuadratic { abs: true, x, y } => {
+                let x1;
+                let y1;
+                if matches!(last_type, PathSegment::Quadratic { .. })
+                    || matches!(last_type, PathSegment::SmoothQuadratic { .. })
+                {
+                    x1 = cx + (cx - lcx);
+                    y1 = cy + (cy - lcy);
+                } else {
+                    x1 = cx;
+                    y1 = cy;
+                }
+                let cx1 = cx + 2.0 * (x1 - cx) / 3.0;
+                let cy1 = cy + 2.0 * (y1 - cy) / 3.0;
+                let cx2 = x + 2.0 * (x1 - x) / 3.0;
+                let cy2 = y + 2.0 * (y1 - y) / 3.0;
+                out.push(PathSegment::CurveTo {
+                    abs: true,
+                    x1: cx1,
+                    y1: cy1,
+                    x2: cx2,
+                    y2: cy2,
+                    x,
+                    y,
+                });
+                lcx = x1;
+                lcy = y1;
+                cx = x;
+                cy = y;
+            }
+            PathSegment::Quadratic {
+                abs: true,
+                x1,
+                y1,
+                x,
+                y,
+            } => {
+                let cx1 = cx + 2.0 * (x1 - cx) / 3.0;
+                let cy1 = cy + 2.0 * (y1 - cy) / 3.0;
+                let cx2 = x + 2.0 * (x1 - x) / 3.0;
+                let cy2 = y + 2.0 * (y1 - y) / 3.0;
+                out.push(PathSegment::CurveTo {
+                    abs: true,
+                    x1: cx1,
+                    y1: cy1,
+                    x2: cx2,
+                    y2: cy2,
+                    x,
+                    y,
+                });
+                lcx = x1;
+                lcy = y1;
+                cx = x;
+                cy = y;
+            }
+            PathSegment::EllipticalArc {
+                abs: true,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                x,
+                y,
+            } => {
+                let r1 = rx.abs();
+                let r2 = ry.abs();
+                let angle = x_axis_rotation;
+                let large_arc_flag = large_arc;
+                let sweep_flag = sweep;
+                if r1 == 0.0 || r2 == 0.0 {
+                    out.push(PathSegment::CurveTo {
+                        abs: true,
+                        x1: cx,
+                        y1: cy,
+                        x2: x,
+                        y2: y,
+                        x,
+                        y,
+                    });
+                    cx = x;
+                    cy = y;
+                } else {
+                    if cx != x || cy != y {
+                        let curves = arc_to_cubic_curves(
+                            cx,
+                            cy,
+                            x,
+                            y,
+                            r1,
+                            r2,
+                            angle,
+                            large_arc_flag,
+                            sweep_flag,
+                            None,
+                        );
+                        for curve in curves.iter() {
+                            out.push(PathSegment::CurveTo {
+                                abs: true,
+                                x1: curve[0],
+                                y1: curve[1],
+                                x2: curve[2],
+                                y2: curve[3],
+                                x: curve[4],
+                                y: curve[5],
+                            })
+                        }
+                        cx = x;
+                        cy = y;
+                    }
+                }
+            }
+            PathSegment::ClosePath { abs: true } => {
+                out.push(*segment.borrow());
+                cx = subx;
+                cy = suby;
+            }
+            _ => panic!("Not expecting none absolute path!"),
+        }
+    }
+
+    out.into_iter()
+}
 
 fn rotate(x: f64, y: f64, angle_rad: f64) -> (f64, f64) {
     let rotated_x = x * angle_rad.cos() - y * angle_rad.sin();
@@ -230,8 +440,8 @@ pub fn arc_to_cubic_curves(
     mut r1: f64,
     mut r2: f64,
     angle: f64,
-    large_arc_flag: f64,
-    sweep_flag: f64,
+    large_arc_flag: bool,
+    sweep_flag: bool,
     recursive: Option<[f64; 4]>,
 ) -> Vec<Vec<f64>> {
     let angle_rad = angle.to_radians();
@@ -285,10 +495,10 @@ pub fn arc_to_cubic_curves(
             f2 += PI * 2.0;
         }
 
-        if sweep_flag > 0.0 && f1 > f2 {
+        if sweep_flag && f1 > f2 {
             f1 -= PI * 2.0;
         }
-        if sweep_flag <= 0.0 && f2 > f1 {
+        if !sweep_flag && f2 > f1 {
             f2 -= PI * 2.0;
         }
     }
@@ -299,7 +509,7 @@ pub fn arc_to_cubic_curves(
         let x2old = x2;
         let y2old = y2;
 
-        if sweep_flag > 0.0 && f2 > f1 {
+        if sweep_flag && f2 > f1 {
             f2 = f1 + (PI * 120.0 / 180.0) * (1.0);
         } else {
             f2 = f1 + (PI * 120.0 / 180.0) * (-1.0);
@@ -315,7 +525,7 @@ pub fn arc_to_cubic_curves(
             r1,
             r2,
             angle,
-            0.0,
+            false,
             sweep_flag,
             Some([f2, f2old, cx, cy]),
         );
