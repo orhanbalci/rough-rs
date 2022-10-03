@@ -200,7 +200,7 @@ pub fn absolutize(
                 });
             }
             PathSegment::ClosePath { .. } => {
-                result.push(*segment.borrow());
+                result.push(PathSegment::ClosePath { abs: true });
                 cx = subx;
                 cy = suby;
             }
@@ -564,5 +564,105 @@ pub fn arc_to_cubic_curves(
             curves.push(vec![r1.0, r1.1, r2.0, r2.1, r3.0, r3.1]);
         }
         curves
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use svgtypes::{PathParser, PathSegment};
+
+    use super::absolutize;
+
+    #[test]
+    pub fn absolutize_happy_path() {
+        let path: String = "m 0 0 c 3 -0.6667 6 -1.3333 9 -2 a 1 1 0 0 0 -8 -1 a 1 1 0 0 0 -2 0 l 0 4 v 2 h 8 q 4 -10 9 -5 t -6 8 z".into();
+        let path_parser = PathParser::from(path.as_ref());
+        let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
+        let mut absolute = absolutize(path_segments.iter());
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::MoveTo {
+                abs: true,
+                x: 0.0,
+                y: 0.0
+            }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::CurveTo {
+                abs: true,
+                x1: 3.0,
+                y1: -0.6667,
+                x2: 6.0,
+                y2: -1.3333,
+                x: 9.0,
+                y: -2.0
+            }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::EllipticalArc {
+                abs: true,
+                rx: 1.0,
+                ry: 1.0,
+                x_axis_rotation: 0.0,
+                large_arc: false,
+                sweep: false,
+                x: 1.0,
+                y: -3.0
+            }
+        );
+
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::EllipticalArc {
+                abs: true,
+                rx: 1.0,
+                ry: 1.0,
+                x_axis_rotation: 0.0,
+                large_arc: false,
+                sweep: false,
+                x: -1.0,
+                y: -3.0
+            }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::LineTo {
+                abs: true,
+                x: -1.0,
+                y: 1.0
+            }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::VerticalLineTo { abs: true, y: 3.0 }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::HorizontalLineTo { abs: true, x: 7.0 }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::Quadratic {
+                abs: true,
+                x1: 11.0,
+                y1: -7.0,
+                x: 16.0,
+                y: -2.0
+            }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::SmoothQuadratic {
+                abs: true,
+                x: 10.0,
+                y: 6.0
+            }
+        );
+        assert_eq!(
+            absolute.next().unwrap(),
+            PathSegment::ClosePath { abs: true }
+        );
     }
 }
