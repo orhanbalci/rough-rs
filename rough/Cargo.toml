@@ -15,6 +15,7 @@ readme = "README.md"
 
 [dependencies]
 points_on_curve = {path = "../points_on_curve", version = "0.1.0"}
+svg_path_ops = {path= "../svg_path_ops", version = "0.1.0"}
 euclid = "0.22"
 rand = "0.8"
 num-traits = "0.2"

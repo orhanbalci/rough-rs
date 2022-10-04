@@ -119,3 +119,7 @@ pub struct PathInfo {
 pub fn _c<U: Float + FromPrimitive>(inp: f32) -> U {
     U::from(inp).expect("can not parse from f32")
 }
+
+pub fn _cc<U: Float + FromPrimitive>(inp: f64) -> U {
+    U::from(inp).expect("can not parse from f64")
+}
