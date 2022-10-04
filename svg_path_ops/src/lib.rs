@@ -20,11 +20,7 @@ pub fn absolutize(
             PathSegment::MoveTo { abs: false, x, y } => {
                 cx += x;
                 cy += y;
-                result.push(PathSegment::MoveTo {
-                    abs: true,
-                    x: cx,
-                    y: cy,
-                });
+                result.push(PathSegment::MoveTo { abs: true, x: cx, y: cy });
                 subx = cx;
                 suby = cy;
             }
@@ -36,34 +32,14 @@ pub fn absolutize(
             PathSegment::LineTo { abs: false, x, y } => {
                 cx += x;
                 cy += y;
-                result.push(PathSegment::LineTo {
-                    abs: true,
-                    x: cx,
-                    y: cy,
-                });
+                result.push(PathSegment::LineTo { abs: true, x: cx, y: cy });
             }
-            PathSegment::CurveTo {
-                abs: true,
-                x1: _,
-                y1: _,
-                x2: _,
-                y2: _,
-                x,
-                y,
-            } => {
+            PathSegment::CurveTo { abs: true, x1: _, y1: _, x2: _, y2: _, x, y } => {
                 result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            PathSegment::CurveTo {
-                abs: false,
-                x1,
-                y1,
-                x2,
-                y2,
-                x,
-                y,
-            } => {
+            PathSegment::CurveTo { abs: false, x1, y1, x2, y2, x, y } => {
                 result.push(PathSegment::CurveTo {
                     abs: true,
                     x1: x1 + cx,
@@ -76,24 +52,12 @@ pub fn absolutize(
                 cx += x;
                 cy += y;
             }
-            PathSegment::Quadratic {
-                abs: true,
-                x1: _,
-                y1: _,
-                x,
-                y,
-            } => {
+            PathSegment::Quadratic { abs: true, x1: _, y1: _, x, y } => {
                 result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            PathSegment::Quadratic {
-                abs: false,
-                x1,
-                y1,
-                x,
-                y,
-            } => {
+            PathSegment::Quadratic { abs: false, x1, y1, x, y } => {
                 result.push(PathSegment::Quadratic {
                     abs: true,
                     x1: x1 + cx,
@@ -157,24 +121,12 @@ pub fn absolutize(
                 cy += y;
                 result.push(PathSegment::VerticalLineTo { abs: true, y: cy });
             }
-            PathSegment::SmoothCurveTo {
-                abs: true,
-                x2: _,
-                y2: _,
-                x,
-                y,
-            } => {
+            PathSegment::SmoothCurveTo { abs: true, x2: _, y2: _, x, y } => {
                 result.push(*segment.borrow());
                 cx = x;
                 cy = y;
             }
-            PathSegment::SmoothCurveTo {
-                abs: false,
-                x2,
-                y2,
-                x,
-                y,
-            } => {
+            PathSegment::SmoothCurveTo { abs: false, x2, y2, x, y } => {
                 result.push(PathSegment::SmoothCurveTo {
                     abs: true,
                     x2: x2 + cx,
@@ -193,11 +145,7 @@ pub fn absolutize(
             PathSegment::SmoothQuadratic { abs: false, x, y } => {
                 cx += x;
                 cy += y;
-                result.push(PathSegment::SmoothQuadratic {
-                    abs: true,
-                    x: cx,
-                    y: cy,
-                });
+                result.push(PathSegment::SmoothQuadratic { abs: true, x: cx, y: cy });
             }
             PathSegment::ClosePath { .. } => {
                 result.push(PathSegment::ClosePath { abs: true });
@@ -233,15 +181,7 @@ pub fn normalize<'a>(
                 subx = x;
                 suby = y;
             }
-            PathSegment::CurveTo {
-                abs: true,
-                x1: _,
-                y1: _,
-                x2,
-                y2,
-                x,
-                y,
-            } => {
+            PathSegment::CurveTo { abs: true, x1: _, y1: _, x2, y2, x, y } => {
                 out.push(*segment.borrow());
                 cx = x;
                 cy = y;
@@ -255,27 +195,13 @@ pub fn normalize<'a>(
             }
             PathSegment::HorizontalLineTo { abs: true, x } => {
                 cx = x;
-                out.push(PathSegment::LineTo {
-                    abs: true,
-                    x: cx,
-                    y: cy,
-                });
+                out.push(PathSegment::LineTo { abs: true, x: cx, y: cy });
             }
             PathSegment::VerticalLineTo { abs: true, y } => {
                 cy = y;
-                out.push(PathSegment::LineTo {
-                    abs: true,
-                    x: cx,
-                    y: cy,
-                });
+                out.push(PathSegment::LineTo { abs: true, x: cx, y: cy });
             }
-            PathSegment::SmoothCurveTo {
-                abs: true,
-                x2,
-                y2,
-                x,
-                y,
-            } => {
+            PathSegment::SmoothCurveTo { abs: true, x2, y2, x, y } => {
                 let cx1;
                 let cy1;
                 if matches!(last_type, PathSegment::CurveTo { .. })
@@ -287,15 +213,7 @@ pub fn normalize<'a>(
                     cx1 = cx;
                     cy1 = cy;
                 }
-                out.push(PathSegment::CurveTo {
-                    abs: true,
-                    x1: cx1,
-                    y1: cy1,
-                    x2,
-                    y2,
-                    x,
-                    y,
-                });
+                out.push(PathSegment::CurveTo { abs: true, x1: cx1, y1: cy1, x2, y2, x, y });
                 lcx = x2;
                 lcy = y2;
                 cx = x;
@@ -331,13 +249,7 @@ pub fn normalize<'a>(
                 cx = x;
                 cy = y;
             }
-            PathSegment::Quadratic {
-                abs: true,
-                x1,
-                y1,
-                x,
-                y,
-            } => {
+            PathSegment::Quadratic { abs: true, x1, y1, x, y } => {
                 let cx1 = cx + 2.0 * (x1 - cx) / 3.0;
                 let cy1 = cy + 2.0 * (y1 - cy) / 3.0;
                 let cx2 = x + 2.0 * (x1 - x) / 3.0;
@@ -582,11 +494,7 @@ mod test {
         let mut absolute = absolutize(path_segments.iter());
         assert_eq!(
             absolute.next().unwrap(),
-            PathSegment::MoveTo {
-                abs: true,
-                x: 0.0,
-                y: 0.0
-            }
+            PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 }
         );
         assert_eq!(
             absolute.next().unwrap(),
@@ -629,11 +537,7 @@ mod test {
         );
         assert_eq!(
             absolute.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: -1.0,
-                y: 1.0
-            }
+            PathSegment::LineTo { abs: true, x: -1.0, y: 1.0 }
         );
         assert_eq!(
             absolute.next().unwrap(),
@@ -645,21 +549,11 @@ mod test {
         );
         assert_eq!(
             absolute.next().unwrap(),
-            PathSegment::Quadratic {
-                abs: true,
-                x1: 11.0,
-                y1: -7.0,
-                x: 16.0,
-                y: -2.0
-            }
+            PathSegment::Quadratic { abs: true, x1: 11.0, y1: -7.0, x: 16.0, y: -2.0 }
         );
         assert_eq!(
             absolute.next().unwrap(),
-            PathSegment::SmoothQuadratic {
-                abs: true,
-                x: 10.0,
-                y: 6.0
-            }
+            PathSegment::SmoothQuadratic { abs: true, x: 10.0, y: 6.0 }
         );
         assert_eq!(
             absolute.next().unwrap(),
@@ -723,11 +617,7 @@ mod test {
         let mut normalized = super::normalize(absolute);
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::MoveTo {
-                abs: true,
-                x: 5.5,
-                y: 0.5
-            }
+            PathSegment::MoveTo { abs: true, x: 5.5, y: 0.5 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -743,11 +633,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 10.0,
-                y: 0.0,
-            }
+            PathSegment::LineTo { abs: true, x: 10.0, y: 0.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -775,19 +661,11 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 9.0,
-                y: 1.0,
-            }
+            PathSegment::LineTo { abs: true, x: 9.0, y: 1.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 9.0,
-                y: 2.0700000000000003,
-            }
+            PathSegment::LineTo { abs: true, x: 9.0, y: 2.0700000000000003 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -815,11 +693,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 13.354,
-                y: 15.146,
-            }
+            PathSegment::LineTo { abs: true, x: 13.354, y: 15.146 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -847,11 +721,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 11.722,
-                y: 14.929,
-            }
+            PathSegment::LineTo { abs: true, x: 11.722, y: 14.929 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -880,11 +750,7 @@ mod test {
 
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 3.3540000000000005,
-                y: 15.854,
-            }
+            PathSegment::LineTo { abs: true, x: 3.3540000000000005, y: 15.854 }
         );
 
         assert_eq!(
@@ -945,19 +811,11 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 7.0,
-                y: 1.0,
-            }
+            PathSegment::LineTo { abs: true, x: 7.0, y: 1.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 5.999,
-                y: 1.0,
-            }
+            PathSegment::LineTo { abs: true, x: 5.999, y: 1.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -977,11 +835,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::MoveTo {
-                abs: true,
-                x: 0.86,
-                y: 5.387,
-            }
+            PathSegment::MoveTo { abs: true, x: 0.86, y: 5.387 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -1025,11 +879,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::MoveTo {
-                abs: true,
-                x: 13.5,
-                y: 1.0,
-            }
+            PathSegment::MoveTo { abs: true, x: 13.5, y: 1.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -1085,11 +935,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::MoveTo {
-                abs: true,
-                x: 8.5,
-                y: 5.0,
-            }
+            PathSegment::MoveTo { abs: true, x: 8.5, y: 5.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -1117,20 +963,12 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 7.5,
-                y: 8.882
-            }
+            PathSegment::LineTo { abs: true, x: 7.5, y: 8.882 }
         );
 
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 6.053,
-                y: 11.776,
-            }
+            PathSegment::LineTo { abs: true, x: 6.053, y: 11.776 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -1158,11 +996,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 8.447,
-                y: 9.224,
-            }
+            PathSegment::LineTo { abs: true, x: 8.447, y: 9.224 }
         );
         assert_eq!(
             normalized.next().unwrap(),
@@ -1178,11 +1012,7 @@ mod test {
         );
         assert_eq!(
             normalized.next().unwrap(),
-            PathSegment::LineTo {
-                abs: true,
-                x: 8.5,
-                y: 5.0,
-            }
+            PathSegment::LineTo { abs: true, x: 8.5, y: 5.0 }
         );
         assert_eq!(
             normalized.next().unwrap(),

@@ -226,9 +226,7 @@ where
 
 impl<F: Float + Trig + FromPrimitive> ScanlineHachureFiller<F> {
     pub fn new() -> Self {
-        ScanlineHachureFiller {
-            _phantom: PhantomData,
-        }
+        ScanlineHachureFiller { _phantom: PhantomData }
     }
 
     fn render_lines(lines: Vec<Line<F>>, o: &mut Options) -> Vec<crate::core::Op<F>> {

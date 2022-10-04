@@ -61,15 +61,7 @@ where
                 append_pending_curve(&mut current_points, &mut pending_curve);
                 current_points.push(Point2D::new(_cc::<F>(x), _cc::<F>(y)));
             }
-            PathSegment::CurveTo {
-                abs: true,
-                x1,
-                y1,
-                x2,
-                y2,
-                x,
-                y,
-            } => {
+            PathSegment::CurveTo { abs: true, x1, y1, x2, y2, x, y } => {
                 if pending_curve.is_empty() {
                     let last_point = if !current_points.is_empty() {
                         current_points.last().unwrap()

@@ -271,10 +271,7 @@ pub fn arc<F: Float + Trig + FromPrimitive>(
                 false,
             ));
         } else {
-            ops.push(Op {
-                op: OpType::LineTo,
-                data: vec![cx, cy],
-            });
+            ops.push(Op { op: OpType::LineTo, data: vec![cx, cy] });
             ops.push(Op {
                 op: OpType::LineTo,
                 data: vec![cx + rx * Float::cos(strt), cy + ry * Float::sin(strt)],
@@ -791,10 +788,7 @@ fn _bezier_to<F: Float + Trig + FromPrimitive>(
     let mut i = 0;
     while i < iterations {
         if i == 0 {
-            ops.push(Op {
-                op: OpType::Move,
-                data: vec![current.x, current.y],
-            });
+            ops.push(Op { op: OpType::Move, data: vec![current.x, current.y] });
         } else {
             ops.push(Op {
                 op: OpType::Move,
