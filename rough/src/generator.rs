@@ -20,6 +20,7 @@ use crate::renderer::{
     pattern_fill_polygons,
     rectangle,
     solid_fill_polygon,
+    svg_path,
 };
 
 pub struct Generator {
@@ -276,7 +277,7 @@ impl Generator {
                 (_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(1.0))) / _c::<F>(2.0)
             };
 
-            let sets = points_on_path(d, Some(_c(1.0)), Some(distance));
+            let sets = points_on_path(d.clone(), Some(_c(1.0)), Some(distance));
             if options.fill.is_some() {
                 if options.fill_style == Some(FillStyle::Solid) {
                     paths.push(solid_fill_polygon(&sets, &mut options));
@@ -290,8 +291,7 @@ impl Generator {
                     sets.iter()
                         .for_each(|s| paths.push(linear_path(s, false, &mut options)));
                 } else {
-                    // TODO implement svg_path in renderer
-                    // paths.push(svg_path(d, &mut options));
+                    paths.push(svg_path(d.clone(), &mut options));
                 }
             }
 
