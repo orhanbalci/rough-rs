@@ -896,6 +896,7 @@ where
 #[cfg(test)]
 mod test {
     use euclid::point2;
+    use palette::Srgb;
     use plotlib::page::Page;
     use plotlib::repr::Plot;
     use plotlib::style::{PointMarker, PointStyle};
@@ -909,12 +910,12 @@ mod test {
             .max_randomness_offset(Some(2.0))
             .roughness(Some(1.0))
             .bowing(Some(2.0))
-            .stroke(Some("#000".to_owned()))
+            .stroke(Some(Srgb::new(0.0, 0.0, 0.0)))
             .stroke_width(Some(1.0))
             .curve_tightness(Some(0.0))
             .curve_fitting(Some(0.95))
             .curve_step_count(Some(9.0))
-            .fill(true)
+            .fill(Some(Srgb::new(0.0, 0.0, 0.0)))
             .fill_style(Some(crate::core::FillStyle::Hachure))
             .fill_weight(Some(-1.0))
             .hachure_angle(Some(-41.0))

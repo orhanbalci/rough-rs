@@ -4,11 +4,13 @@ use std::ops::MulAssign;
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
+use palette::Srgb;
 use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
 
 use super::core::{Options, OptionsBuilder};
 use super::renderer::line;
 use crate::core::{Drawable, FillStyle, OpSet, OpSetType, _c};
+use crate::points_on_path::points_on_path;
 use crate::renderer::{
     curve,
     ellipse_with_params,
@@ -31,12 +33,12 @@ impl Default for Generator {
                 .max_randomness_offset(Some(2.0))
                 .roughness(Some(1.0))
                 .bowing(Some(2.0))
-                .stroke(Some("#000".to_owned()))
+                .stroke(Some(Srgb::new(0.0, 0.0, 0.0)))
                 .stroke_width(Some(1.0))
                 .curve_tightness(Some(0.0))
                 .curve_fitting(Some(0.95))
                 .curve_step_count(Some(9.0))
-                .fill(true)
+                .fill(Some(Srgb::new(0.0, 0.0, 0.0)))
                 .fill_style(Some(FillStyle::Hachure))
                 .fill_weight(Some(-1.0))
                 .hachure_angle(Some(-41.0))
@@ -91,7 +93,7 @@ impl Generator {
         let mut paths = vec![];
         let mut options = self.default_options.clone();
         let outline = rectangle(x, y, width, height, &mut options);
-        if options.fill {
+        if options.fill.is_some() {
             let points = vec![
                 Point2D::new(x, y),
                 Point2D::new(x + width, y),
@@ -119,7 +121,7 @@ impl Generator {
         let mut options = self.default_options.clone();
         let ellipse_params = generate_ellipse_params(width, height, &mut options);
         let ellipse_response = ellipse_with_params(x, y, &mut options, &ellipse_params);
-        if options.fill {
+        if options.fill.is_some() {
             if options.fill_style == Some(FillStyle::Solid) {
                 let mut shape = ellipse_with_params(x, y, &mut options, &ellipse_params).opset;
                 shape.op_set_type = OpSetType::FillPath;
@@ -171,7 +173,7 @@ impl Generator {
         let mut paths = vec![];
         let outline =
             crate::renderer::arc(x, y, width, height, start, stop, closed, true, &mut options);
-        if closed && options.fill {
+        if closed && options.fill.is_some() {
             if options.fill_style == Some(FillStyle::Solid) {
                 options.disable_multi_stroke = Some(true);
                 let mut shape = crate::renderer::arc(
@@ -212,7 +214,7 @@ impl Generator {
         let mut paths = vec![];
         let mut options = self.default_options.clone();
         let outline = curve(points, &mut options);
-        if options.fill && points.len() >= 3 {
+        if options.fill.is_some() && points.len() >= 3 {
             let curve = curve_to_bezier(points, _c(0.0));
             if let Some(crv) = curve {
                 let poly_points = points_on_bezier_curves(
@@ -235,8 +237,67 @@ impl Generator {
         self.d("curve", &paths)
     }
 
-    // TODO add polygon function
-    // TODO add path function
+    pub fn polygon<F>(&self, points: &[Point2D<F>]) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive + MulAssign + Display,
+    {
+        let mut options = self.default_options.clone();
+        let mut paths = vec![];
+        let outline = linear_path(points, true, &mut options);
+        if options.fill.is_some() {
+            if options.fill_style == Some(FillStyle::Solid) {
+                paths.push(solid_fill_polygon(&vec![points.to_vec()], &mut options));
+            } else {
+                paths.push(pattern_fill_polygons(
+                    &mut vec![points.to_vec()],
+                    &mut options,
+                ));
+            }
+        }
+        if options.stroke.is_some() {
+            paths.push(outline);
+        }
+        self.d("polygon", &paths)
+    }
+
+    pub fn path<F>(&self, d: String) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive + MulAssign + Display,
+    {
+        let mut options = self.default_options.clone();
+        let mut paths = vec![];
+        if d.is_empty() {
+            return self.d("path", &paths);
+        } else {
+            let simplified = options.simplification.map(|a| a < 1.0).unwrap_or(false);
+            let distance = if simplified {
+                _c::<F>(4.0) - _c::<F>(4.0) * _c::<F>(options.simplification.unwrap())
+            } else {
+                (_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(1.0))) / _c::<F>(2.0)
+            };
+
+            let sets = points_on_path(d, Some(_c(1.0)), Some(distance));
+            if options.fill.is_some() {
+                if options.fill_style == Some(FillStyle::Solid) {
+                    paths.push(solid_fill_polygon(&sets, &mut options));
+                } else {
+                    paths.push(pattern_fill_polygons(sets.clone(), &mut options));
+                }
+            }
+
+            if options.stroke.is_some() {
+                if simplified {
+                    sets.iter()
+                        .for_each(|s| paths.push(linear_path(s, false, &mut options)));
+                } else {
+                    // TODO implement svg_path in renderer
+                    // paths.push(svg_path(d, &mut options));
+                }
+            }
+
+            return self.d("path", &paths);
+        }
+    }
     // TODO add ops_to_path function
     // TODO add to_paths function
     // TODO add fill_sketch function

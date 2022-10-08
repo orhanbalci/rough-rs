@@ -1,6 +1,7 @@
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
+use palette::Srgb;
 use rand::rngs::StdRng;
 use rand::{random, Rng, SeedableRng};
 
@@ -31,12 +32,12 @@ pub struct Options {
     pub max_randomness_offset: Option<f32>,
     pub roughness: Option<f32>,
     pub bowing: Option<f32>,
-    pub stroke: Option<String>,
+    pub stroke: Option<Srgb>,
     pub stroke_width: Option<f32>,
     pub curve_fitting: Option<f32>,
     pub curve_tightness: Option<f32>,
     pub curve_step_count: Option<f32>,
-    pub fill: bool,
+    pub fill: Option<Srgb>,
     pub fill_style: Option<FillStyle>,
     pub fill_weight: Option<f32>,
     pub hachure_angle: Option<f32>,
