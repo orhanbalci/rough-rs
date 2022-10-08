@@ -3,9 +3,11 @@ use std::borrow::BorrowMut;
 use euclid::default::Point2D;
 use euclid::{point2, Trig};
 use num_traits::{Float, FloatConst, FromPrimitive};
+use svg_path_ops::{absolutize, normalize};
+use svgtypes::{PathParser, PathSegment};
 
 use super::core::{Options, _c};
-use crate::core::{Op, OpSet, OpSetType, OpType};
+use crate::core::{Op, OpSet, OpSetType, OpType, _cc};
 use crate::filler::get_filler;
 use crate::filler::traits::PatternFiller;
 use crate::filler::FillerType::ScanLineHachure;
@@ -891,6 +893,80 @@ where
     points.push(point2(cx + rx * Float::cos(stp), cy + ry * Float::sin(stp)));
     points.push(point2(cx, cy));
     pattern_fill_polygons(vec![points], o)
+}
+
+pub fn svg_path<F>(path: String, o: &mut Options) -> OpSet<F>
+where
+    F: Float + FromPrimitive + Trig,
+{
+    let mut ops = vec![];
+    let mut first = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
+    let mut current = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
+    let path_parser = PathParser::from(path.as_ref());
+    let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
+    let normalized_segments = normalize(absolutize(path_segments.iter()));
+    for segment in normalized_segments {
+        match segment {
+            PathSegment::MoveTo { abs: true, x, y } => {
+                let ro = _c::<F>(1.0) * _c::<F>(o.max_randomness_offset.unwrap_or(0.0));
+                let pv = o.preserve_vertices.unwrap_or(false);
+                ops.push(Op {
+                    op: OpType::Move,
+                    data: vec![
+                        if pv {
+                            _cc::<F>(x)
+                        } else {
+                            _cc::<F>(x) + _offset_opt(ro, o, None)
+                        },
+                        if pv {
+                            _cc::<F>(y)
+                        } else {
+                            _cc::<F>(y) + _offset_opt(ro, o, None)
+                        },
+                    ],
+                });
+                current = Point2D::new(_cc::<F>(x), _cc::<F>(y));
+                first = Point2D::new(_cc::<F>(x), _cc::<F>(y));
+            }
+            PathSegment::LineTo { abs: true, x, y } => {
+                ops.extend(_double_line(
+                    _cc::<F>(x),
+                    _cc::<F>(y),
+                    _cc::<F>(x),
+                    _cc::<F>(y),
+                    o,
+                    false,
+                ));
+                current = Point2D::new(_cc::<F>(x), _cc::<F>(y));
+            }
+            PathSegment::CurveTo { abs: true, x1, y1, x2, y2, x, y } => {
+                ops.extend(_bezier_to(
+                    _cc::<F>(x1),
+                    _cc::<F>(y1),
+                    _cc::<F>(x2),
+                    _cc::<F>(y2),
+                    _cc::<F>(x),
+                    _cc::<F>(y),
+                    &current,
+                    o,
+                ));
+                current = Point2D::new(_cc::<F>(x), _cc::<F>(y));
+            }
+            PathSegment::ClosePath { abs: true } => {
+                ops.extend(_double_line(
+                    current.x, current.y, first.x, first.y, o, false,
+                ));
+                current = Point2D::new(first.x, first.y);
+            }
+            _ => panic!("Unexpected segment type"),
+        }
+    }
+    return OpSet {
+        op_set_type: OpSetType::Path,
+        ops,
+        size: None,
+        path: None,
+    };
 }
 
 #[cfg(test)]
