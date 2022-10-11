@@ -7,14 +7,13 @@ use num_traits::{Float, FromPrimitive};
 use palette::Srgb;
 use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
 
-use super::core::{Options, OptionsBuilder};
-use super::renderer::line;
-use crate::core::{Drawable, FillStyle, OpSet, OpSetType, OpType, _c};
+use crate::core::{Drawable, FillStyle, OpSet, OpSetType, OpType, Options, OptionsBuilder, _c};
 use crate::points_on_path::points_on_path;
 use crate::renderer::{
     curve,
     ellipse_with_params,
     generate_ellipse_params,
+    line,
     linear_path,
     pattern_fill_arc,
     pattern_fill_polygons,
