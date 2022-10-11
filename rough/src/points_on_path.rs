@@ -84,14 +84,14 @@ where
 
     append_pending_points(&mut current_points, &mut pending_curve);
 
-    if distance.is_none() {
-        sets
-    } else {
+    if let Some(dst) = distance {
         let mut out = vec![];
         for set in sets.iter() {
-            let simplified_set = simplify(set, distance.unwrap());
+            let simplified_set = simplify(set, dst);
             out.push(simplified_set);
         }
         out
+    } else {
+        sets
     }
 }

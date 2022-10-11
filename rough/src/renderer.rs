@@ -1,4 +1,5 @@
 use std::borrow::BorrowMut;
+use std::fmt::Display;
 
 use euclid::default::Point2D;
 use euclid::{point2, Trig};
@@ -967,6 +968,44 @@ where
         size: None,
         path: None,
     };
+}
+
+pub fn ops_to_path<F>(mut drawing: OpSet<F>, fixed_decimals: Option<u32>) -> String
+where
+    F: Float + FromPrimitive + Trig + Display,
+{
+    let mut path = String::new();
+
+    for item in drawing.ops.iter_mut() {
+        if let Some(fd) = fixed_decimals {
+            let pow: u32 = 10u32.pow(fd);
+            item.data.iter_mut().for_each(|p| {
+                *p = (*p * F::from(pow).unwrap()).round() / F::from(pow).unwrap();
+            });
+        }
+
+        match item.op {
+            OpType::Move => {
+                path.push_str(&format!("M{} {} ", item.data[0], item.data[1]));
+            }
+            OpType::BCurveTo => {
+                path.push_str(&format!(
+                    "C{} {}, {} {}, {} {} ",
+                    item.data[0],
+                    item.data[1],
+                    item.data[2],
+                    item.data[3],
+                    item.data[4],
+                    item.data[5]
+                ));
+            }
+            OpType::LineTo => {
+                path.push_str(&format!("L{} {}, ", item.data[0], item.data[1]));
+            }
+        }
+    }
+
+    return path;
 }
 
 #[cfg(test)]
