@@ -158,7 +158,7 @@ pub fn absolutize(
     result.into_iter()
 }
 
-pub fn normalize<'a>(
+pub fn normalize(
     path_segments: impl Iterator<Item = impl Borrow<PathSegment>>,
 ) -> impl Iterator<Item = PathSegment> {
     let mut out = vec![];
@@ -295,34 +295,32 @@ pub fn normalize<'a>(
                     });
                     cx = x;
                     cy = y;
-                } else {
-                    if cx != x || cy != y {
-                        let curves = arc_to_cubic_curves(
-                            cx,
-                            cy,
-                            x,
-                            y,
-                            r1,
-                            r2,
-                            angle,
-                            large_arc_flag,
-                            sweep_flag,
-                            None,
-                        );
-                        for curve in curves.iter() {
-                            out.push(PathSegment::CurveTo {
-                                abs: true,
-                                x1: curve[0],
-                                y1: curve[1],
-                                x2: curve[2],
-                                y2: curve[3],
-                                x: curve[4],
-                                y: curve[5],
-                            })
-                        }
-                        cx = x;
-                        cy = y;
+                } else if cx != x || cy != y {
+                    let curves = arc_to_cubic_curves(
+                        cx,
+                        cy,
+                        x,
+                        y,
+                        r1,
+                        r2,
+                        angle,
+                        large_arc_flag,
+                        sweep_flag,
+                        None,
+                    );
+                    for curve in curves.iter() {
+                        out.push(PathSegment::CurveTo {
+                            abs: true,
+                            x1: curve[0],
+                            y1: curve[1],
+                            x2: curve[2],
+                            y2: curve[3],
+                            x: curve[4],
+                            y: curve[5],
+                        })
                     }
+                    cx = x;
+                    cy = y;
                 }
             }
             PathSegment::ClosePath { abs: true } => {

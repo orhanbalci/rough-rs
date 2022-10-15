@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 use std::ops::MulAssign;
 
 use euclid::default::Point2D;
@@ -7,7 +7,17 @@ use num_traits::{Float, FromPrimitive};
 use palette::Srgb;
 use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
 
-use crate::core::{Drawable, FillStyle, OpSet, OpSetType, OpType, Options, OptionsBuilder, _c};
+use crate::core::{
+    Drawable,
+    FillStyle,
+    OpSet,
+    OpSetType,
+    OpType,
+    Options,
+    OptionsBuilder,
+    PathInfo,
+    _c,
+};
 use crate::points_on_path::points_on_path;
 use crate::renderer::{
     curve,
@@ -267,7 +277,7 @@ impl Generator {
         let mut options = self.default_options.clone();
         let mut paths = vec![];
         if d.is_empty() {
-            return self.d("path", &paths);
+            self.d("path", &paths)
         } else {
             let simplified = options.simplification.map(|a| a < 1.0).unwrap_or(false);
             let distance = if simplified {
@@ -290,11 +300,11 @@ impl Generator {
                     sets.iter()
                         .for_each(|s| paths.push(linear_path(s, false, &mut options)));
                 } else {
-                    paths.push(svg_path(d.clone(), &mut options));
+                    paths.push(svg_path(d, &mut options));
                 }
             }
 
-            return self.d("path", &paths);
+            self.d("path", &paths)
         }
     }
 
@@ -314,10 +324,12 @@ impl Generator {
 
             match item.op {
                 OpType::Move => {
-                    path.push_str(&format!("M{} {} ", item.data[0], item.data[1]));
+                    write!(&mut path, "L{} {} ", item.data[0], item.data[1])
+                        .expect("Failed to write path string");
                 }
                 OpType::BCurveTo => {
-                    path.push_str(&format!(
+                    write!(
+                        &mut path,
                         "C{} {}, {} {}, {} {} ",
                         item.data[0],
                         item.data[1],
@@ -325,17 +337,57 @@ impl Generator {
                         item.data[3],
                         item.data[4],
                         item.data[5]
-                    ));
+                    )
+                    .expect("Failed to write path string");
                 }
                 OpType::LineTo => {
-                    path.push_str(&format!("L{} {}, ", item.data[0], item.data[1]));
+                    write!(&mut path, "L{} {}, ", item.data[0], item.data[1])
+                        .expect("Failed to write path string");
                 }
             }
         }
 
-        return path;
+        path
     }
 
-    // TODO add to_paths function
-    // TODO add fill_sketch function
+    pub fn to_paths<F>(drawable: Drawable<F>) -> Vec<PathInfo>
+    where
+        F: Float + FromPrimitive + Trig + Display,
+    {
+        let sets = drawable.sets;
+        let o = drawable.options;
+        let mut path_infos = vec![];
+        for drawing in sets.iter() {
+            let path_info = match drawing.op_set_type {
+                OpSetType::Path => PathInfo {
+                    d: Self::ops_to_path(drawing.clone(), None),
+                    stroke: o.stroke,
+                    stroke_width: o.stroke_width,
+                    fill: None,
+                },
+
+                OpSetType::FillPath => PathInfo {
+                    d: Self::ops_to_path(drawing.clone(), None),
+                    stroke: None,
+                    stroke_width: Some(0.0f32),
+                    fill: o.fill,
+                },
+                OpSetType::FillSketch => {
+                    let fill_weight = if o.fill_weight.unwrap_or(0.0) < 0.0 {
+                        o.stroke_width.unwrap_or(0.0) / 2.0
+                    } else {
+                        o.fill_weight.unwrap_or(0.0)
+                    };
+                    PathInfo {
+                        d: Self::ops_to_path(drawing.clone(), None),
+                        stroke: o.fill,
+                        stroke_width: Some(fill_weight),
+                        fill: None,
+                    }
+                }
+            };
+            path_infos.push(path_info);
+        }
+        path_infos
+    }
 }

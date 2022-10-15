@@ -15,18 +15,18 @@ impl KurboGenerator {
         for set in drawable.sets.iter() {
             match set.op_set_type {
                 OpSetType::Path => {
-                    result.push(KurboGenerator::opset_to_shape(&set));
+                    result.push(KurboGenerator::opset_to_shape(set));
                 }
                 OpSetType::FillPath => {
                     todo!("fill path not implemented");
                 }
                 OpSetType::FillSketch => {
                     //todo!("fill sketch not implemented");
-                    result.push(KurboGenerator::opset_to_shape(&set));
+                    result.push(KurboGenerator::opset_to_shape(set));
                 }
             }
         }
-        return result;
+        result
     }
 
     fn opset_to_shape<F: Trig + Float + FromPrimitive>(op_set: &OpSet<F>) -> BezPath {
@@ -59,7 +59,7 @@ impl KurboGenerator {
                 }
             }
         }
-        return path;
+        path
     }
 
     pub fn line<F: Trig + Float + FromPrimitive>(

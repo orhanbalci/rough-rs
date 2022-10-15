@@ -111,10 +111,10 @@ pub struct Drawable<F: Float + Trig> {
 }
 
 pub struct PathInfo {
-    d: String,
-    stroke: String,
-    stroke_width: i32,
-    fill: Option<String>,
+    pub d: String,
+    pub stroke: Option<Srgb>,
+    pub stroke_width: Option<f32>,
+    pub fill: Option<Srgb>,
 }
 
 pub fn _c<U: Float + FromPrimitive>(inp: f32) -> U {

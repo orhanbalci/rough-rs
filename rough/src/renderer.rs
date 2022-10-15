@@ -1,5 +1,4 @@
 use std::borrow::BorrowMut;
-use std::fmt::Display;
 
 use euclid::default::Point2D;
 use euclid::{point2, Trig};
@@ -13,7 +12,7 @@ use crate::filler::get_filler;
 use crate::filler::traits::PatternFiller;
 use crate::filler::FillerType::ScanLineHachure;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct EllipseParams<F: Float> {
     pub rx: F,
     pub ry: F,
@@ -318,12 +317,12 @@ pub fn solid_fill_polygon<F: Float + Trig + FromPrimitive>(
             })
         }
     }
-    return OpSet {
+    OpSet {
         op_set_type: OpSetType::FillPath,
         ops,
         size: None,
         path: None,
-    };
+    }
 }
 
 pub fn rand_offset<F: Float + Trig + FromPrimitive>(x: F, o: &mut Options) -> F {
@@ -362,7 +361,7 @@ fn _offset<F: Float + Trig + FromPrimitive>(
     ops: &mut Options,
     roughness_gain: Option<F>,
 ) -> F {
-    let rg: F = roughness_gain.unwrap_or(_c(1.0));
+    let rg: F = roughness_gain.unwrap_or_else(|| _c(1.0));
     _c::<F>(ops.roughness.unwrap_or(1.0))
         * rg
         * ((_c::<F>(ops.random() as f32) * (max - min)) + min)
@@ -387,7 +386,7 @@ fn _line<F: Float + Trig + FromPrimitive>(
 ) -> Vec<Op<F>> {
     let length_sq = (x1 - x2).powi(2) + (y1 - y2).powi(2);
     let length = length_sq.sqrt();
-    let mut roughness_gain = _c(1.0);
+    let roughness_gain;
     if length < _c(200.0_f32) {
         roughness_gain = _c(1.0);
     } else if length > _c(500.0) {
@@ -728,7 +727,7 @@ pub(crate) fn _compute_ellipse_points<F: Float + Trig + FromPrimitive>(
                 + _c::<F>(0.9) * ry * Float::sin(rad_offset + overlap * _c(0.5)),
         ));
     }
-    return vec![all_points, core_points];
+    vec![all_points, core_points]
 }
 
 fn _arc<F: Float + Trig + FromPrimitive>(
@@ -781,7 +780,7 @@ fn _bezier_to<F: Float + Trig + FromPrimitive>(
         _c(o.max_randomness_offset.unwrap_or(1.0)),
         _c(o.max_randomness_offset.unwrap_or(1.0) + 0.3),
     ];
-    let mut f: Point2D<F> = Point2D::new(_c(0.0), _c(0.0));
+    let mut f: Point2D<F>;
     let iterations = if o.disable_multi_stroke.unwrap_or(false) {
         1
     } else {
@@ -878,7 +877,7 @@ where
         stp = two_pi;
     }
 
-    let increment = (stp / strt) / o.curve_step_count.map(|a| _c(a)).unwrap_or(_c(1.0));
+    let increment = (stp / strt) / o.curve_step_count.map(|a| _c(a)).unwrap_or_else(|| _c(1.0));
     let mut points: Vec<Point2D<F>> = vec![];
 
     let mut angle = strt;
@@ -962,50 +961,12 @@ where
             _ => panic!("Unexpected segment type"),
         }
     }
-    return OpSet {
+    OpSet {
         op_set_type: OpSetType::Path,
         ops,
         size: None,
         path: None,
-    };
-}
-
-pub fn ops_to_path<F>(mut drawing: OpSet<F>, fixed_decimals: Option<u32>) -> String
-where
-    F: Float + FromPrimitive + Trig + Display,
-{
-    let mut path = String::new();
-
-    for item in drawing.ops.iter_mut() {
-        if let Some(fd) = fixed_decimals {
-            let pow: u32 = 10u32.pow(fd);
-            item.data.iter_mut().for_each(|p| {
-                *p = (*p * F::from(pow).unwrap()).round() / F::from(pow).unwrap();
-            });
-        }
-
-        match item.op {
-            OpType::Move => {
-                path.push_str(&format!("M{} {} ", item.data[0], item.data[1]));
-            }
-            OpType::BCurveTo => {
-                path.push_str(&format!(
-                    "C{} {}, {} {}, {} {} ",
-                    item.data[0],
-                    item.data[1],
-                    item.data[2],
-                    item.data[3],
-                    item.data[4],
-                    item.data[5]
-                ));
-            }
-            OpType::LineTo => {
-                path.push_str(&format!("L{} {}, ", item.data[0], item.data[1]));
-            }
-        }
     }
-
-    return path;
 }
 
 #[cfg(test)]
@@ -1237,7 +1198,7 @@ mod test {
     #[test]
     fn curve() {
         let result = _curve(
-            &vec![
+            &[
                 point2(0.0, 0.0),
                 point2(1.0, 1.0),
                 point2(2.0, 0.0),

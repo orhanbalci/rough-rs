@@ -93,11 +93,11 @@ where
             F::zero(),
             min_by(F::one(), t, |a, b| {
                 a.partial_cmp(b)
-                    .expect(&format!("can not compare {} and {}", a, b))
+                    .unwrap_or_else(|| panic!("can not compare {} and {}", a, b))
             }),
             |a, b| {
                 a.partial_cmp(b)
-                    .expect(&format!("can not compare {} and {}", a, b))
+                    .unwrap_or_else(|| panic!("can not compare {} and {}", a, b))
             },
         );
         p_.distance_to(v_.lerp(*w_, t)).powi(2)
@@ -109,7 +109,7 @@ pub fn flatness<F>(points: &[Point2D<F>], offset: usize) -> F
 where
     F: Float + MulAssign,
 {
-    let p1 = points[offset + 0];
+    let p1 = points[offset];
     let p2 = points[offset + 1];
     let p3 = points[offset + 2];
     let p4 = points[offset + 3];
@@ -148,11 +148,11 @@ where
     let e = points[end - 1];
     let mut max_dist_sq = F::zero();
     let mut max_ndx = 0;
-    for i in start + 1..end - 1 {
-        let distance_sq = distance_to_segment_squared(points[i], s, e);
+    for p in points.iter().enumerate().take(end - 1).skip(start + 1) {
+        let distance_sq = distance_to_segment_squared(*p.1, s, e);
         if distance_sq > max_dist_sq {
             max_dist_sq = distance_sq;
-            max_ndx = i;
+            max_ndx = p.0;
         }
     }
 
@@ -188,7 +188,7 @@ where
     F: Float + MulAssign,
 {
     if flatness(points, offset) < tolerance {
-        let p0 = points[offset + 0];
+        let p0 = points[offset];
         if !new_points.is_empty() {
             let d = new_points.last().unwrap().distance_to(p0);
             if d > F::one() {
@@ -200,7 +200,7 @@ where
         new_points.push(points[offset + 3]);
     } else {
         let t = F::from(0.5).unwrap();
-        let p1 = points[offset + 0];
+        let p1 = points[offset];
         let p2 = points[offset + 1];
         let p3 = points[offset + 2];
         let p4 = points[offset + 3];
@@ -218,7 +218,7 @@ where
         get_points_on_bezier_curve_with_splitting(&[red, r2, q3, p4], 0, tolerance, new_points);
     }
 
-    return new_points.to_vec();
+    new_points.to_vec()
 }
 
 /// Samples points on a Bezier Curve. If distance parameter is given does simplification on sampled points
@@ -243,7 +243,7 @@ where
             return simplify_points(&new_points, 0, new_points.len(), dst, &mut vec![]);
         }
     }
-    return new_points;
+    new_points
 }
 
 /// Generates Bezier Curve parameters passing through given points
