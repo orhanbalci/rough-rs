@@ -27,35 +27,97 @@ pub enum FillStyle {
     ZigZagLine,
 }
 
-#[derive(Default, Clone, Builder)]
+#[derive(Clone, Builder)]
+#[builder(setter(strip_option))]
 pub struct Options {
+    #[builder(default = "None")]
     pub max_randomness_offset: Option<f32>,
+    #[builder(default = "None")]
     pub roughness: Option<f32>,
+    #[builder(default = "None")]
     pub bowing: Option<f32>,
+    #[builder(default = "None")]
     pub stroke: Option<Srgb>,
+    #[builder(default = "None")]
     pub stroke_width: Option<f32>,
+    #[builder(default = "None")]
     pub curve_fitting: Option<f32>,
+    #[builder(default = "None")]
     pub curve_tightness: Option<f32>,
+    #[builder(default = "None")]
     pub curve_step_count: Option<f32>,
+    #[builder(default = "None")]
     pub fill: Option<Srgb>,
+    #[builder(default = "None")]
     pub fill_style: Option<FillStyle>,
+    #[builder(default = "None")]
     pub fill_weight: Option<f32>,
+    #[builder(default = "None")]
     pub hachure_angle: Option<f32>,
+    #[builder(default = "None")]
     pub hachure_gap: Option<f32>,
+    #[builder(default = "None")]
     pub simplification: Option<f32>,
+    #[builder(default = "None")]
     pub dash_offset: Option<f32>,
+    #[builder(default = "None")]
     pub dash_gap: Option<f32>,
+    #[builder(default = "None")]
     pub zigzag_offset: Option<f32>,
+    #[builder(default = "None")]
     pub seed: Option<u64>,
+    #[builder(default = "None")]
     pub stroke_line_dash: Option<Vec<f32>>,
+    #[builder(default = "None")]
     pub stroke_line_dash_offset: Option<f32>,
+    #[builder(default = "None")]
     pub fill_line_dash: Option<Vec<f32>>,
+    #[builder(default = "None")]
     pub fill_line_dash_offset: Option<f32>,
+    #[builder(default = "None")]
     pub disable_multi_stroke: Option<bool>,
+    #[builder(default = "None")]
     pub disable_multi_stroke_fill: Option<bool>,
+    #[builder(default = "None")]
     pub preserve_vertices: Option<bool>,
+    #[builder(default = "None")]
     pub fixed_decimal_place_digits: Option<f32>,
+    #[builder(default = "None")]
     pub randomizer: Option<StdRng>,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Options {
+            max_randomness_offset: Some(2.0),
+            roughness: Some(1.0),
+            bowing: Some(2.0),
+            stroke: Some(Srgb::new(0.0, 0.0, 0.0)),
+            stroke_width: Some(1.0),
+            curve_tightness: Some(0.0),
+            curve_fitting: Some(0.95),
+            curve_step_count: Some(9.0),
+            fill: Some(Srgb::new(0.0, 0.0, 0.0)),
+            fill_style: Some(FillStyle::Hachure),
+            fill_weight: Some(-1.0),
+            hachure_angle: Some(-41.0),
+            hachure_gap: Some(-1.0),
+            dash_offset: Some(-1.0),
+            dash_gap: Some(-1.0),
+            zigzag_offset: Some(-1.0),
+            seed: Some(345_u64),
+            disable_multi_stroke: Some(false),
+            disable_multi_stroke_fill: Some(false),
+            preserve_vertices: Some(false),
+            simplification: Some(1.0),
+            stroke_line_dash: None,
+            stroke_line_dash_offset: None,
+            fill_line_dash: None,
+            fill_line_dash_offset: None,
+            fixed_decimal_place_digits: None,
+            randomizer: None,
+        }
+    }
 }
 
 impl Options {
