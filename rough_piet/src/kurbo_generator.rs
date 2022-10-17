@@ -276,4 +276,12 @@ impl KurboGenerator {
             .arc(x, y, width, height, start, stop, closed, &self.options);
         drawable.to_kurbo_drawable()
     }
+
+    pub fn curve<F: Trig + Float + FromPrimitive + MulAssign + Display>(
+        &self,
+        points: &[Point2D<F>],
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.curve(points, &self.options);
+        drawable.to_kurbo_drawable()
+    }
 }
