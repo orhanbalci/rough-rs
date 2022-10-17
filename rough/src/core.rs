@@ -30,55 +30,55 @@ pub enum FillStyle {
 #[derive(Clone, Builder)]
 #[builder(setter(strip_option))]
 pub struct Options {
-    #[builder(default = "None")]
+    #[builder(default = "Some(2.0)")]
     pub max_randomness_offset: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(1.0)")]
     pub roughness: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(2.0)")]
     pub bowing: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(Srgb::new(0.0, 0.0, 0.0))")]
     pub stroke: Option<Srgb>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(1.0)")]
     pub stroke_width: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(0.95)")]
     pub curve_fitting: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(0.0)")]
     pub curve_tightness: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(9.0)")]
     pub curve_step_count: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(Srgb::new(0.0, 0.0, 0.0))")]
     pub fill: Option<Srgb>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(FillStyle::Hachure)")]
     pub fill_style: Option<FillStyle>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(-1.0)")]
     pub fill_weight: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(-41.0)")]
     pub hachure_angle: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(-1.0)")]
     pub hachure_gap: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(1.0)")]
     pub simplification: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(-1.0)")]
     pub dash_offset: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(-1.0)")]
     pub dash_gap: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(-1.0)")]
     pub zigzag_offset: Option<f32>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(345_u64)")]
     pub seed: Option<u64>,
     #[builder(default = "None")]
-    pub stroke_line_dash: Option<Vec<f32>>,
+    pub stroke_line_dash: Option<Vec<f64>>,
     #[builder(default = "None")]
-    pub stroke_line_dash_offset: Option<f32>,
+    pub stroke_line_dash_offset: Option<f64>,
     #[builder(default = "None")]
-    pub fill_line_dash: Option<Vec<f32>>,
+    pub fill_line_dash: Option<Vec<f64>>,
     #[builder(default = "None")]
-    pub fill_line_dash_offset: Option<f32>,
-    #[builder(default = "None")]
+    pub fill_line_dash_offset: Option<f64>,
+    #[builder(default = "Some(false)")]
     pub disable_multi_stroke: Option<bool>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(false)")]
     pub disable_multi_stroke_fill: Option<bool>,
-    #[builder(default = "None")]
+    #[builder(default = "Some(false)")]
     pub preserve_vertices: Option<bool>,
     #[builder(default = "None")]
     pub fixed_decimal_place_digits: Option<f32>,

@@ -1,15 +1,17 @@
 //! This example shows painting a rough rectangle using common-piet crate and
 //! kurbo rough shape generator
 
+use palette::{Pixel, Srgb};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
 use piet_common::Device;
+use rough::core::{FillStyle, OptionsBuilder};
 use rough_piet::KurboGenerator;
 
 const WIDTH: usize = 1920;
 const HEIGHT: usize = 1080;
 /// For now, assume pixel density (dots per inch)
-const DPI: f64 = 96.;
+const DPI: f32 = 96.;
 
 /// Feature "png" needed for save_to_file() and it's disabled by default for optional dependencies
 /// cargo run --example mondrian --features png
@@ -17,7 +19,14 @@ fn main() {
     let mut device = Device::new().unwrap();
     let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1.0).unwrap();
     let mut rc = bitmap.render_context();
-    let generator = KurboGenerator::default();
+    let options = OptionsBuilder::default()
+        .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
+        .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+        .fill_style(FillStyle::Hachure)
+        .fill_weight(DPI * 0.01)
+        .build()
+        .unwrap();
+    let generator = KurboGenerator::new(options);
     let rect_width = 1000.0;
     let rect_height = 500.0;
     let rect = generator.rectangle::<f32>(
@@ -27,17 +36,12 @@ fn main() {
         rect_height,
     );
     let background_color = Color::from_hex_str("96C0B7").unwrap();
-    let stroke_color = Color::from_hex_str("725752").unwrap();
-    let sketch_color = Color::from_hex_str("FEF6C9").unwrap();
 
     rc.fill(
         Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
         &background_color,
     );
-
-    for path in rect.iter() {
-        rc.stroke(path, &stroke_color, 0.01 * DPI);
-    }
+    rect.draw(&mut rc);
 
     rc.finish().unwrap();
     std::mem::drop(rc);

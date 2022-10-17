@@ -52,34 +52,54 @@ impl Generator {
         Generator { default_options: options }
     }
 
-    fn d<T, F>(&self, name: T, op_sets: &[OpSet<F>]) -> Drawable<F>
+    fn d<T, F>(&self, name: T, op_sets: &[OpSet<F>], options: &Option<Options>) -> Drawable<F>
     where
         T: Into<String>,
         F: Float + Trig + FromPrimitive,
     {
         Drawable {
             shape: name.into(),
-            options: self.default_options.clone(),
+            options: options
+                .clone()
+                .unwrap_or_else(|| self.default_options.clone()),
             sets: Vec::from_iter(op_sets.iter().cloned()),
         }
     }
 
-    pub fn line<F>(&self, x1: F, y1: F, x2: F, y2: F) -> Drawable<F>
+    pub fn line<F>(&self, x1: F, y1: F, x2: F, y2: F, options: &Option<Options>) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
         self.d(
             "line",
-            &[line(x1, y1, x2, y2, &mut self.default_options.clone())],
+            &[line(
+                x1,
+                y1,
+                x2,
+                y2,
+                &mut options
+                    .clone()
+                    .unwrap_or_else(|| self.default_options.clone()),
+            )],
+            options,
         )
     }
 
-    pub fn rectangle<F>(&self, x: F, y: F, width: F, height: F) -> Drawable<F>
+    pub fn rectangle<F>(
+        &self,
+        x: F,
+        y: F,
+        width: F,
+        height: F,
+        options: &Option<Options>,
+    ) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
         let mut paths = vec![];
-        let mut options = self.default_options.clone();
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
         let outline = rectangle(x, y, width, height, &mut options);
         if options.fill.is_some() {
             let points = vec![
@@ -98,15 +118,24 @@ impl Generator {
             paths.push(outline);
         }
 
-        self.d("rectangle", &paths)
+        self.d("rectangle", &paths, &Some(options))
     }
 
-    pub fn ellipse<F>(&self, x: F, y: F, width: F, height: F) -> Drawable<F>
+    pub fn ellipse<F>(
+        &self,
+        x: F,
+        y: F,
+        width: F,
+        height: F,
+        options: &Option<Options>,
+    ) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
         let mut paths = vec![];
-        let mut options = self.default_options.clone();
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
         let ellipse_params = generate_ellipse_params(width, height, &mut options);
         let ellipse_response = ellipse_with_params(x, y, &mut options, &ellipse_params);
         if options.fill.is_some() {
@@ -124,24 +153,30 @@ impl Generator {
         if options.stroke.is_some() {
             paths.push(ellipse_response.opset);
         }
-        self.d("ellipse", &paths)
+        self.d("ellipse", &paths, &Some(options))
     }
 
-    pub fn circle<F>(&self, x: F, y: F, diameter: F) -> Drawable<F>
+    pub fn circle<F>(&self, x: F, y: F, diameter: F, options: &Option<Options>) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
-        let mut shape = self.ellipse(x, y, diameter, diameter);
+        let mut shape = self.ellipse(x, y, diameter, diameter, options);
         shape.shape = "circle".into();
         shape
     }
 
-    pub fn linear_path<F>(&self, points: &[Point2D<F>]) -> Drawable<F>
+    pub fn linear_path<F>(&self, points: &[Point2D<F>], options: &Option<Options>) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
-        let mut options = self.default_options.clone();
-        self.d("linear_path", &[linear_path(points, false, &mut options)])
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
+        self.d(
+            "linear_path",
+            &[linear_path(points, false, &mut options)],
+            &Some(options),
+        )
     }
 
     pub fn arc<F>(
@@ -153,11 +188,14 @@ impl Generator {
         start: F,
         stop: F,
         closed: bool,
+        options: &Option<Options>,
     ) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
-        let mut options = self.default_options.clone();
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
         let mut paths = vec![];
         let outline =
             crate::renderer::arc(x, y, width, height, start, stop, closed, true, &mut options);
@@ -192,15 +230,17 @@ impl Generator {
         if options.stroke.is_some() {
             paths.push(outline);
         }
-        self.d("arc", &paths)
+        self.d("arc", &paths, &Some(options))
     }
 
-    pub fn curve<F>(&self, points: &[Point2D<F>]) -> Drawable<F>
+    pub fn curve<F>(&self, points: &[Point2D<F>], options: &Option<Options>) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive + MulAssign + Display,
     {
         let mut paths = vec![];
-        let mut options = self.default_options.clone();
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
         let outline = curve(points, &mut options);
         if options.fill.is_some() && points.len() >= 3 {
             let curve = curve_to_bezier(points, _c(0.0));
@@ -222,14 +262,16 @@ impl Generator {
             paths.push(outline);
         }
 
-        self.d("curve", &paths)
+        self.d("curve", &paths, &Some(options))
     }
 
-    pub fn polygon<F>(&self, points: &[Point2D<F>]) -> Drawable<F>
+    pub fn polygon<F>(&self, points: &[Point2D<F>], options: &Option<Options>) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive + MulAssign + Display,
     {
-        let mut options = self.default_options.clone();
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
         let mut paths = vec![];
         let outline = linear_path(points, true, &mut options);
         if options.fill.is_some() {
@@ -245,17 +287,17 @@ impl Generator {
         if options.stroke.is_some() {
             paths.push(outline);
         }
-        self.d("polygon", &paths)
+        self.d("polygon", &paths, &Some(options))
     }
 
-    pub fn path<F>(&self, d: String) -> Drawable<F>
+    pub fn path<F>(&self, d: String, options: &Option<Options>) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive + MulAssign + Display,
     {
-        let mut options = self.default_options.clone();
+        let mut options = options.clone().unwrap_or(self.default_options.clone());
         let mut paths = vec![];
         if d.is_empty() {
-            self.d("path", &paths)
+            self.d("path", &paths, &Some(options))
         } else {
             let simplified = options.simplification.map(|a| a < 1.0).unwrap_or(false);
             let distance = if simplified {
@@ -282,7 +324,7 @@ impl Generator {
                 }
             }
 
-            self.d("path", &paths)
+            self.d("path", &paths, &Some(options))
         }
     }
 

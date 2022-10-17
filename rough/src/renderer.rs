@@ -972,7 +972,6 @@ where
 #[cfg(test)]
 mod test {
     use euclid::point2;
-    use palette::Srgb;
     use plotlib::page::Page;
     use plotlib::repr::Plot;
     use plotlib::style::{PointMarker, PointStyle};

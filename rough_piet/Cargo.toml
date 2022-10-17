@@ -18,6 +18,7 @@ rough = {path = "../rough", version = "0.1.0"}
 num-traits = "0.2"
 euclid = "0.22"
 piet = "0.5"
+palette = "0.6"
 
 [dev-dependencies]
 piet-common = {version = "*", features = ["png"]}
