@@ -284,4 +284,12 @@ impl KurboGenerator {
         let drawable = self.gen.curve(points, &self.options);
         drawable.to_kurbo_drawable()
     }
+
+    pub fn path<F: Trig + Float + FromPrimitive + MulAssign + Display>(
+        &self,
+        svg_path: String,
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.path(svg_path, &self.options);
+        drawable.to_kurbo_drawable()
+    }
 }
