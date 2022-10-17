@@ -240,4 +240,13 @@ impl KurboGenerator {
         let drawable = self.gen.circle(x, y, diameter, &self.options);
         drawable.to_kurbo_drawable()
     }
+
+    pub fn linear_path<F: Trig + Float + FromPrimitive>(
+        &self,
+        points: &[Point2D<F>],
+        close: bool,
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.linear_path(points, close, &self.options);
+        drawable.to_kurbo_drawable()
+    }
 }

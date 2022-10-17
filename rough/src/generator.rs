@@ -165,7 +165,12 @@ impl Generator {
         shape
     }
 
-    pub fn linear_path<F>(&self, points: &[Point2D<F>], options: &Option<Options>) -> Drawable<F>
+    pub fn linear_path<F>(
+        &self,
+        points: &[Point2D<F>],
+        close: bool,
+        options: &Option<Options>,
+    ) -> Drawable<F>
     where
         F: Float + Trig + FromPrimitive,
     {
@@ -174,7 +179,7 @@ impl Generator {
             .unwrap_or_else(|| self.default_options.clone());
         self.d(
             "linear_path",
-            &[linear_path(points, false, &mut options)],
+            &[linear_path(points, close, &mut options)],
             &Some(options),
         )
     }
