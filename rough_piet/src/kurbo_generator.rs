@@ -230,4 +230,14 @@ impl KurboGenerator {
         let drawable = self.gen.ellipse(x, y, width, height, &self.options);
         drawable.to_kurbo_drawable()
     }
+
+    pub fn circle<F: Trig + Float + FromPrimitive>(
+        &self,
+        x: F,
+        y: F,
+        diameter: F,
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.circle(x, y, diameter, &self.options);
+        drawable.to_kurbo_drawable()
+    }
 }

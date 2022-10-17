@@ -19,7 +19,7 @@ svg_path_ops = {path= "../svg_path_ops", version = "0.1.0"}
 euclid = "0.22"
 rand = "0.8"
 num-traits = "0.2"
-derive_builder = "*"
+derive_builder = "0.11"
 svgtypes = "0.8"
 palette = "0.6"
 
