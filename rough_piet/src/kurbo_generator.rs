@@ -1,3 +1,6 @@
+use std::fmt::Display;
+use std::ops::MulAssign;
+
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
@@ -247,6 +250,14 @@ impl KurboGenerator {
         close: bool,
     ) -> KurboDrawable<F> {
         let drawable = self.gen.linear_path(points, close, &self.options);
+        drawable.to_kurbo_drawable()
+    }
+
+    pub fn polygon<F: Trig + Float + FromPrimitive + MulAssign + Display>(
+        &self,
+        points: &[Point2D<F>]
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.polygon(points, &self.options);
         drawable.to_kurbo_drawable()
     }
 }
