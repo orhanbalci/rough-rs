@@ -255,9 +255,25 @@ impl KurboGenerator {
 
     pub fn polygon<F: Trig + Float + FromPrimitive + MulAssign + Display>(
         &self,
-        points: &[Point2D<F>]
+        points: &[Point2D<F>],
     ) -> KurboDrawable<F> {
         let drawable = self.gen.polygon(points, &self.options);
+        drawable.to_kurbo_drawable()
+    }
+
+    pub fn arc<F: Trig + Float + FromPrimitive>(
+        &self,
+        x: F,
+        y: F,
+        width: F,
+        height: F,
+        start: F,
+        stop: F,
+        closed: bool,
+    ) -> KurboDrawable<F> {
+        let drawable = self
+            .gen
+            .arc(x, y, width, height, start, stop, closed, &self.options);
         drawable.to_kurbo_drawable()
     }
 }

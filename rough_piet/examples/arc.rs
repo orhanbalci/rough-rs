@@ -1,7 +1,7 @@
-//! This example shows painting a rough circle using common-piet crate and
+//! This example shows painting a rough ellipse using common-piet crate and
 //! kurbo rough shape generator
 
-use euclid::Point2D;
+use num_traits::FloatConst;
 use palette::{Pixel, Srgb};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
@@ -28,24 +28,24 @@ fn main() {
         .build()
         .unwrap();
     let generator = KurboGenerator::new(options);
-    let points = [
-        Point2D::new(0.0, HEIGHT as f32 / 2.0),
-        Point2D::new(WIDTH as f32 / 2.0, HEIGHT as f32),
-        Point2D::new(WIDTH as f32, HEIGHT as f32 / 2.0),
-        Point2D::new(WIDTH as f32 / 2.0, 0.0),
-    ];
-    let linear_path = generator.linear_path::<f32>(&points, true);
+    let arc_paths = generator.arc::<f32>(
+        (WIDTH as f32) / 2.0,
+        (HEIGHT as f32) / 2.0,
+        WIDTH as f32,
+        HEIGHT as f32,
+        -f32::PI() / 2.0,
+        f32::PI() / 2.0,
+        false,
+    );
     let background_color = Color::from_hex_str("96C0B7").unwrap();
 
     rc.fill(
         Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
         &background_color,
     );
-    linear_path.draw(&mut rc);
+    arc_paths.draw(&mut rc);
     rc.finish().unwrap();
     std::mem::drop(rc);
 
-    bitmap
-        .save_to_file("linear_path.png")
-        .expect("file save error");
+    bitmap.save_to_file("arc.png").expect("file save error");
 }
