@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/svg_path_ops.svg)](https://crates.io/crates/svg_path_ops)
 [![Documentation](https://docs.rs/svg_path_ops/badge.svg)](https://docs.rs/svg_path_ops)
-[![License](https://img.shields.io/github/license/orhanbalci/rough-rs/tree/main/svg_path_ops.svg)](https://github.com/orhanbalci/rough-rs/blob/main/svg_path_ops/LICENSE)
+[![License](https://img.shields.io/github/license/orhanbalci/rough-rs.svg)](https://github.com/orhanbalci/rough-rs/blob/main/svg_path_ops/LICENSE)
 
 <!-- cargo-sync-readme start -->
 
