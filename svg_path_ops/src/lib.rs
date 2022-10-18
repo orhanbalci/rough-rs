@@ -88,7 +88,7 @@
 //!     absolute.next().unwrap(),
 //!     PathSegment::ClosePath { abs: true }
 //! );
-//!```
+//! ```
 
 use std::borrow::Borrow;
 use std::f64::consts::PI;
