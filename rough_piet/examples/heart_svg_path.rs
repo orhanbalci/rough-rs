@@ -1,7 +1,6 @@
 //! This example shows painting a rough circle using common-piet crate and
 //! kurbo rough shape generator
 
-use euclid::Point2D;
 use palette::{Pixel, Srgb};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;

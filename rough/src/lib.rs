@@ -13,3 +13,6 @@ pub mod generator;
 pub mod geometry;
 pub mod points_on_path;
 pub mod renderer;
+
+pub use palette::Srgb;
+pub use palette::Pixel;

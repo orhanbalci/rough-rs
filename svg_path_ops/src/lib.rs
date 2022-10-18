@@ -1,8 +1,102 @@
+//!
+//! This crate includes utility functions to work with svg paths. Works on types from [svgtypes](https://github.com/RazrFalcon/svgtypes)
+//! crate.
+//!
+//! This package exposes functions to manipulate svg paths with simplification purposes.
+//!
+//!
+//! ## 📦 Cargo.toml
+//!
+//! ```toml
+//! [dependencies]
+//! svg_path_ops = "0.1"
+//! ```
+//!
+//! ## 🔧 Example
+//!
+//! ```rust
+//! use svgtypes::{PathParser, PathSegment};
+//!
+//! let path: String = "m 0 0 c 3 -0.6667 6 -1.3333 9 -2 a 1 1 0 0 0 -8 -1 a 1 1 0 0 0 -2 0 l 0 4 v 2 h 8 q 4 -10 9 -5 t -6 8 z".into();
+//! let path_parser = PathParser::from(path.as_ref());
+//! let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
+//! let mut absolute = absolutize(path_segments.iter());
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::CurveTo {
+//!         abs: true,
+//!         x1: 3.0,
+//!         y1: -0.6667,
+//!         x2: 6.0,
+//!         y2: -1.3333,
+//!         x: 9.0,
+//!         y: -2.0
+//!     }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::EllipticalArc {
+//!         abs: true,
+//!         rx: 1.0,
+//!         ry: 1.0,
+//!         x_axis_rotation: 0.0,
+//!         large_arc: false,
+//!         sweep: false,
+//!         x: 1.0,
+//!         y: -3.0
+//!     }
+//! );
+//!
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::EllipticalArc {
+//!         abs: true,
+//!         rx: 1.0,
+//!         ry: 1.0,
+//!         x_axis_rotation: 0.0,
+//!         large_arc: false,
+//!         sweep: false,
+//!         x: -1.0,
+//!         y: -3.0
+//!     }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::LineTo { abs: true, x: -1.0, y: 1.0 }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::VerticalLineTo { abs: true, y: 3.0 }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::HorizontalLineTo { abs: true, x: 7.0 }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::Quadratic { abs: true, x1: 11.0, y1: -7.0, x: 16.0, y: -2.0 }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::SmoothQuadratic { abs: true, x: 10.0, y: 6.0 }
+//! );
+//! assert_eq!(
+//!     absolute.next().unwrap(),
+//!     PathSegment::ClosePath { abs: true }
+//! );
+//!
+
 use std::borrow::Borrow;
 use std::f64::consts::PI;
 
-use svgtypes::PathSegment;
+pub use svgtypes::PathSegment;
 
+/// Translates relative commands to absolute commands. All commands that use relative positions (lower-case ones),
+/// turns into absolute position commands (upper-case ones).
 pub fn absolutize(
     path_segments: impl Iterator<Item = impl Borrow<PathSegment>>,
 ) -> impl Iterator<Item = PathSegment> {
@@ -158,6 +252,9 @@ pub fn absolutize(
     result.into_iter()
 }
 
+/// Normalize takes a list of absolute segments and outputs a list of segments with only four commands: M, L, C, Z. So every segment is described as move, line, or a bezier curve (cubic).
+/// This is useful when translating SVG paths to non SVG mediums - Canvas, or some other graphics platform. Most such platforms will support lines and bezier curves.
+/// It also simplifies the cases to consider when modifying these segments.
 pub fn normalize(
     path_segments: impl Iterator<Item = impl Borrow<PathSegment>>,
 ) -> impl Iterator<Item = PathSegment> {
@@ -341,8 +438,7 @@ fn rotate(x: f64, y: f64, angle_rad: f64) -> (f64, f64) {
     (rotated_x, rotated_y)
 }
 
-//  porting ts library to rust https://github.com/pshihn/path-data-parser
-pub fn arc_to_cubic_curves(
+fn arc_to_cubic_curves(
     x1: f64,
     y1: f64,
     mut x2: f64,
