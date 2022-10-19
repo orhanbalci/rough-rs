@@ -4,6 +4,12 @@
 // This property is useful for reasoning about breaking API changes.
 #![deny(unreachable_pub)]
 
+//!
+//! This crate is a rustlang port of [Rough.js](https://github.com/rough-stuff/rough) npm package written by
+//! [@pshihn](https://github.com/pshihn).
+//!
+//! This package exposes functions to generate rough drawing primitives which looks like hand drawn sketches.
+//!
 #[macro_use]
 extern crate derive_builder;
 
@@ -14,5 +20,4 @@ pub mod geometry;
 pub mod points_on_path;
 pub mod renderer;
 
-pub use palette::Srgb;
-pub use palette::Pixel;
+pub use palette::{Pixel, Srgb};

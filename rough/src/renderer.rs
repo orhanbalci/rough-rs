@@ -24,6 +24,26 @@ pub struct EllipseResult<F: Float + FromPrimitive + Trig> {
     pub estimated_points: Vec<Point2D<F>>,
 }
 
+/// Constructs a line primitive that can be rendered into relevant context
+/// # Arguments
+/// * `x1` - Line start point x coordinate
+/// * `y1` - Line start point y coordinate
+/// * `x2` - Line end point x coordinate
+/// * `y2` - Line end point y coordinate
+/// * `o`  - Line generation options
+///
+/// # Example
+/// ```rust
+/// use rough::renderer::line;
+/// use rough::core::OptionsBuilder;
+/// use rough::core::OpSetType;
+///
+/// let mut o = OptionsBuilder::default().build().unwrap();
+/// let result = line(0.0, 0.0, 1.0, 0.0, &mut o);
+/// assert_eq!(result.op_set_type, OpSetType::Path);
+/// assert_eq!(result.size, None);
+/// assert_eq!(result.path, None);
+/// ```
 pub fn line<F: Float + Trig + FromPrimitive>(
     x1: F,
     y1: F,

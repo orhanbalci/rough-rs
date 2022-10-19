@@ -145,7 +145,7 @@ pub enum OpType {
     LineTo,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OpSetType {
     Path,
     FillPath,

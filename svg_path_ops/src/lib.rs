@@ -16,6 +16,7 @@
 //!
 //! ```rust
 //! use svgtypes::{PathParser, PathSegment};
+//! use svg_path_ops::absolutize;
 //!
 //! let path: String = "m 0 0 c 3 -0.6667 6 -1.3333 9 -2 a 1 1 0 0 0 -8 -1 a 1 1 0 0 0 -2 0 l 0 4 v 2 h 8 q 4 -10 9 -5 t -6 8 z".into();
 //! let path_parser = PathParser::from(path.as_ref());
