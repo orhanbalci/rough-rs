@@ -295,7 +295,7 @@ pub fn solid_fill_polygon<F: Float + Trig + FromPrimitive>(
     let mut ops = vec![];
     for polygon in polygon_list {
         if polygon.len() > 2 {
-            let rand_offset = _c(options.max_randomness_offset.unwrap_or(0.0));
+            let rand_offset = _c(options.max_randomness_offset.unwrap_or(2.0));
             polygon.iter().enumerate().for_each(|(ind, point)| {
                 if ind == 0 {
                     ops.push(Op {
@@ -395,18 +395,18 @@ fn _line<F: Float + Trig + FromPrimitive>(
         roughness_gain = _c::<F>(-0.0016668) * length + _c(1.233334);
     }
 
-    let mut offset = _c(o.max_randomness_offset.unwrap_or(1.0) as f32);
+    let mut offset = _c(o.max_randomness_offset.unwrap_or(2.0) as f32);
     if (offset * offset * _c(100.0)) > length_sq {
         offset = length / _c(10.0);
     }
     let half_offset = offset / _c(2.0);
     let diverge_point = _c::<F>(0.2) + _c::<F>(o.random() as f32) * _c(0.2);
     let mut mid_disp_x = _c::<F>(o.bowing.unwrap_or(1.0) as f32)
-        * _c(o.max_randomness_offset.unwrap_or(1.0) as f32)
+        * _c(o.max_randomness_offset.unwrap_or(2.0) as f32)
         * (y2 - y1)
         / _c(200.0);
     let mut mid_disp_y = _c::<F>(o.bowing.unwrap_or(1.0) as f32)
-        * _c(o.max_randomness_offset.unwrap_or(1.0) as f32)
+        * _c(o.max_randomness_offset.unwrap_or(2.0) as f32)
         * (x1 - x2)
         / _c(200.0);
     mid_disp_x = _offset_opt(mid_disp_x, o, Some(roughness_gain));
@@ -574,7 +574,7 @@ pub(crate) fn _curve<F: Float + Trig + FromPrimitive>(
             i += 1;
         }
         if let Some(cp) = close_point {
-            let ro = _c(o.max_randomness_offset.unwrap_or(0.0));
+            let ro = _c(o.max_randomness_offset.unwrap_or(2.0));
             ops.push(Op {
                 op: OpType::LineTo,
                 data: vec![
@@ -777,8 +777,8 @@ fn _bezier_to<F: Float + Trig + FromPrimitive>(
 ) -> Vec<Op<F>> {
     let mut ops: Vec<Op<F>> = Vec::new();
     let ros = [
-        _c(o.max_randomness_offset.unwrap_or(1.0)),
-        _c(o.max_randomness_offset.unwrap_or(1.0) + 0.3),
+        _c(o.max_randomness_offset.unwrap_or(2.0)),
+        _c(o.max_randomness_offset.unwrap_or(2.0) + 0.3),
     ];
     let mut f: Point2D<F>;
     let iterations = if o.disable_multi_stroke.unwrap_or(false) {
@@ -908,7 +908,7 @@ where
     for segment in normalized_segments {
         match segment {
             PathSegment::MoveTo { abs: true, x, y } => {
-                let ro = _c::<F>(1.0) * _c::<F>(o.max_randomness_offset.unwrap_or(0.0));
+                let ro = _c::<F>(1.0) * _c::<F>(o.max_randomness_offset.unwrap_or(2.0));
                 let pv = o.preserve_vertices.unwrap_or(false);
                 ops.push(Op {
                     op: OpType::Move,
