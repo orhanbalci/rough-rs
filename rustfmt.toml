@@ -3,3 +3,4 @@ group_imports = "StdExternalCrate"
 imports_layout = "HorizontalVertical"
 struct_lit_width = 50
 struct_variant_width = 50
+format_code_in_doc_comments = true

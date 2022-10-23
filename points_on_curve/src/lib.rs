@@ -26,13 +26,12 @@
 //! use points_on_curve::points_on_bezier_curves;
 //!
 //! let input = vec![
-//!         point2(70.0, 240.0),
-//!         point2(145.0, 60.0),
-//!         point2(275.0, 90.0),
-//!         point2(300.0, 230.0),
-//!     ];
+//!     point2(70.0, 240.0),
+//!     point2(145.0, 60.0),
+//!     point2(275.0, 90.0),
+//!     point2(300.0, 230.0),
+//! ];
 //! let result_015 = points_on_bezier_curves(&input, 0.2, Some(0.15));
-//!
 //! ```
 //!
 //!
@@ -47,9 +46,6 @@
 //!
 //! For more examples have a look at the
 //! [examples](https://github.com/orhanbalci/rough-rs/blob/main/points_on_curve/examples) folder.
-//!
-//!
-//!
 
 use std::borrow::Borrow;
 use std::cmp::{max_by, min_by};
@@ -65,14 +61,10 @@ use num_traits::Float;
 ///
 /// # examples
 /// ```
-/// use points_on_curve::distance_to_segment_squared;
 /// use euclid::point2;
+/// use points_on_curve::distance_to_segment_squared;
 /// let expected = 1.0;
-/// let result = distance_to_segment_squared(
-///     point2(0.0, 1.0),
-///     point2(-1.0, 0.0),
-///     point2(1.0, 0.0),
-/// );
+/// let result = distance_to_segment_squared(point2(0.0, 1.0), point2(-1.0, 0.0), point2(1.0, 0.0));
 /// assert_eq!(expected, result);
 /// ```
 pub fn distance_to_segment_squared<F, P>(p: P, v: P, w: P) -> F

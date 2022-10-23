@@ -9,7 +9,6 @@
 //! [@pshihn](https://github.com/pshihn).
 //!
 //! This package exposes functions to generate rough drawing primitives which looks like hand drawn sketches.
-//!
 #[macro_use]
 extern crate derive_builder;
 

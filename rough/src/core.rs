@@ -138,7 +138,7 @@ impl Options {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum OpType {
     Move,
     BCurveTo,
@@ -152,13 +152,13 @@ pub enum OpSetType {
     FillSketch,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Op<F: Float + Trig> {
     pub op: OpType,
     pub data: Vec<F>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OpSet<F: Float + Trig> {
     pub op_set_type: OpSetType,
     pub ops: Vec<Op<F>>,

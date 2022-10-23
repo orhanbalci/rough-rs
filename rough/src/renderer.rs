@@ -33,16 +33,61 @@ pub struct EllipseResult<F: Float + FromPrimitive + Trig> {
 /// * `o`  - Line generation options
 ///
 /// # Example
+/// Note that result of this call is highly dependent on your selections of
+/// options and random number seed you use
+///
 /// ```rust
+/// use rough::core::{Op, OpSetType, OpType, OptionsBuilder};
 /// use rough::renderer::line;
-/// use rough::core::OptionsBuilder;
-/// use rough::core::OpSetType;
 ///
 /// let mut o = OptionsBuilder::default().build().unwrap();
 /// let result = line(0.0, 0.0, 1.0, 0.0, &mut o);
 /// assert_eq!(result.op_set_type, OpSetType::Path);
 /// assert_eq!(result.size, None);
 /// assert_eq!(result.path, None);
+/// assert_eq!(result.ops.len(), 4);
+/// assert_eq!(
+///     result.ops[0],
+///     Op {
+///         op: OpType::Move,
+///         data: vec![-0.09998378610180225, -0.06502220928668975]
+///     }
+/// );
+/// assert_eq!(
+///     result.ops[1],
+///     Op {
+///         op: OpType::BCurveTo,
+///         data: vec![
+///             0.3744279434863932,
+///             -0.01609907269477844,
+///             0.6946386914619221,
+///             0.02767372608184813,
+///             1.037581992149353,
+///             0.012261581420898435
+///         ]
+///     }
+/// );
+/// assert_eq!(
+///     result.ops[2],
+///     Op {
+///         op: OpType::Move,
+///         data: vec![-0.03406156599521637, 0.0372807502746582]
+///     }
+/// );
+/// assert_eq!(
+///     result.ops[3],
+///     Op {
+///         op: OpType::BCurveTo,
+///         data: vec![
+///             0.21661711813283496,
+///             0.024078675508499146,
+///             0.4552517569317924,
+///             0.01821308374404907,
+///             1.0409734785556792,
+///             0.03352456092834473
+///         ],
+///     },
+/// );
 /// ```
 pub fn line<F: Float + Trig + FromPrimitive>(
     x1: F,
@@ -59,6 +104,17 @@ pub fn line<F: Float + Trig + FromPrimitive>(
     }
 }
 
+/// Constructs a linear path with given points by connecting consecutive points
+/// with rough line primitives. This function is also used by other high level
+/// constructs such as rectangle and polygon.
+/// # Arguments
+/// * `points` - 2D Points which forms the path. Consecutive points will be connected to each other
+/// * `close` - If algorithm should connect last point to first point with a line
+/// * `o` - Path generation options.
+///
+/// # Example
+/// Note that result of this call is highly dependent on your selections of
+/// options and random number seed you use
 pub fn linear_path<F: Float + Trig + FromPrimitive>(
     points: &[Point2D<F>],
     close: bool,
@@ -367,7 +423,7 @@ pub fn double_line_fill_ops<F: Float + Trig + FromPrimitive>(
     _double_line(x1, y1, x2, y2, o, true)
 }
 
-pub fn clone_options_alter_seed(ops: &mut Options) -> Options {
+fn clone_options_alter_seed(ops: &mut Options) -> Options {
     let mut result: Options = ops.clone();
     if let Some(seed) = ops.seed {
         result.seed = Some(seed + 1);
