@@ -158,7 +158,7 @@ pub struct Op<F: Float + Trig> {
     pub data: Vec<F>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OpSet<F: Float + Trig> {
     pub op_set_type: OpSetType,
     pub ops: Vec<Op<F>>,

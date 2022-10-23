@@ -106,7 +106,9 @@ pub fn line<F: Float + Trig + FromPrimitive>(
 
 /// Constructs a linear path with given points by connecting consecutive points
 /// with rough line primitives. This function is also used by other high level
-/// constructs such as rectangle and polygon.
+/// constructs such as rectangle and polygon. For two element point list
+/// it calls line function
+///
 /// # Arguments
 /// * `points` - 2D Points which forms the path. Consecutive points will be connected to each other
 /// * `close` - If algorithm should connect last point to first point with a line
@@ -115,6 +117,78 @@ pub fn line<F: Float + Trig + FromPrimitive>(
 /// # Example
 /// Note that result of this call is highly dependent on your selections of
 /// options and random number seed you use
+///
+///```rust
+/// use euclid::point2;
+/// use rough::core::{Op, OpSet, OpSetType, OpType, OptionsBuilder};
+/// use rough::renderer::linear_path;
+///
+/// let mut o = OptionsBuilder::default().build().unwrap();
+/// let result = linear_path(
+///     &[point2(0.0f32, 0.0), point2(0.0, 0.1), point2(1.0, 1.0)],
+///     false,
+///     &mut o,
+/// );
+/// assert_eq!(result.op_set_type, OpSetType::Path);
+/// assert_eq!(
+///     result,
+///     OpSet {
+///         op_set_type: OpSetType::Path,
+///         ops: vec![
+///             Op {
+///                 op: OpType::Move,
+///                 data: vec![-0.009998378, -0.006502221]
+///             },
+///             Op {
+///                 op: OpType::BCurveTo,
+///                 data: vec![
+///                     0.004064642,
+///                     0.033123452,
+///                     0.0023629116,
+///                     0.07122354,
+///                     0.0037581995,
+///                     0.10122616
+///                 ]
+///             },
+///             Op {
+///                 op: OpType::Move,
+///                 data: vec![-0.0034061566, 0.003728075]
+///             },
+///             Op {
+///                 op: OpType::BCurveTo,
+///                 data: vec![
+///                     -0.00069929345,
+///                     0.023493448,
+///                     0.0010793343,
+///                     0.044991724,
+///                     0.004097348,
+///                     0.10335246
+///                 ]
+///             },
+///             Op {
+///                 op: OpType::Move,
+///                 data: vec![-0.12339515, -0.013104506]
+///             },
+///             Op {
+///                 op: OpType::BCurveTo,
+///                 data: vec![0.35436878, 0.262468, 0.57661635, 0.6634873, 1.0144088, 1.102317]
+///             },
+///             Op {
+///                 op: OpType::Move,
+///                 data: vec![-0.002887085, 0.049306016]
+///             },
+///             Op {
+///                 op: OpType::BCurveTo,
+///                 data: vec![
+///                     0.25721234, 0.27631992, 0.59522116, 0.53014225, 0.94422996, 0.9684893
+///                 ]
+///             }
+///         ],
+///         size: None,
+///         path: None
+///     }
+/// );
+/// ```
 pub fn linear_path<F: Float + Trig + FromPrimitive>(
     points: &[Point2D<F>],
     close: bool,
@@ -1054,13 +1128,84 @@ mod test {
     use plotlib::view::ContinuousView;
 
     use super::{EllipseParams, _compute_ellipse_points, _curve};
-    use crate::core::{OpType, Options, OptionsBuilder};
+    use crate::core::{Op, OpSet, OpSetType, OpType, Options, OptionsBuilder};
 
     fn get_default_options() -> Options {
         OptionsBuilder::default()
             .seed(345_u64)
             .build()
             .expect("failed to build default options")
+    }
+
+    #[test]
+    fn linear_path() {
+        let result = super::linear_path(
+            &[point2(0.0f32, 0.0), point2(0.0, 0.1), point2(1.0, 1.0)],
+            false,
+            &mut get_default_options(),
+        );
+        assert_eq!(result.op_set_type, OpSetType::Path);
+        assert_eq!(
+            result,
+            OpSet {
+                op_set_type: OpSetType::Path,
+                ops: vec![
+                    Op {
+                        op: OpType::Move,
+                        data: vec![-0.009998378, -0.006502221]
+                    },
+                    Op {
+                        op: OpType::BCurveTo,
+                        data: vec![
+                            0.004064642,
+                            0.033123452,
+                            0.0023629116,
+                            0.07122354,
+                            0.0037581995,
+                            0.10122616
+                        ]
+                    },
+                    Op {
+                        op: OpType::Move,
+                        data: vec![-0.0034061566, 0.003728075]
+                    },
+                    Op {
+                        op: OpType::BCurveTo,
+                        data: vec![
+                            -0.00069929345,
+                            0.023493448,
+                            0.0010793343,
+                            0.044991724,
+                            0.004097348,
+                            0.10335246
+                        ]
+                    },
+                    Op {
+                        op: OpType::Move,
+                        data: vec![-0.12339515, -0.013104506]
+                    },
+                    Op {
+                        op: OpType::BCurveTo,
+                        data: vec![
+                            0.35436878, 0.262468, 0.57661635, 0.6634873, 1.0144088, 1.102317
+                        ]
+                    },
+                    Op {
+                        op: OpType::Move,
+                        data: vec![-0.002887085, 0.049306016]
+                    },
+                    Op {
+                        op: OpType::BCurveTo,
+                        data: vec![
+                            0.25721234, 0.27631992, 0.59522116, 0.53014225, 0.94422996, 0.9684893
+                        ]
+                    }
+                ],
+                size: None,
+                path: None
+            }
+        );
+        dbg!(result);
     }
 
     #[test]
