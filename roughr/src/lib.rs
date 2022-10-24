@@ -55,7 +55,7 @@
 //! ```
 //!
 //! ### 🖨️ Output Rectangle
-//! [rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/rectangle.png)
+//! ![rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/rectangle.png)
 //!
 //! ## 🔭 Examples
 //!
