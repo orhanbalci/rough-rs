@@ -46,9 +46,9 @@ pub struct Options {
     pub curve_tightness: Option<f32>,
     #[builder(default = "Some(9.0)")]
     pub curve_step_count: Option<f32>,
-    #[builder(default = "Some(Srgb::new(0.0, 0.0, 0.0))")]
+    #[builder(default = "None")]
     pub fill: Option<Srgb>,
-    #[builder(default = "Some(FillStyle::Hachure)")]
+    #[builder(default = "None")]
     pub fill_style: Option<FillStyle>,
     #[builder(default = "Some(-1.0)")]
     pub fill_weight: Option<f32>,
@@ -97,8 +97,8 @@ impl Default for Options {
             curve_tightness: Some(0.0),
             curve_fitting: Some(0.95),
             curve_step_count: Some(9.0),
-            fill: Some(Srgb::new(0.0, 0.0, 0.0)),
-            fill_style: Some(FillStyle::Hachure),
+            fill: None,
+            fill_style: None,
             fill_weight: Some(-1.0),
             hachure_angle: Some(-41.0),
             hachure_gap: Some(-1.0),

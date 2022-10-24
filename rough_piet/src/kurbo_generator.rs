@@ -191,8 +191,8 @@ fn opset_to_shape<F: Trig + Float + FromPrimitive>(op_set: &OpSet<F>) -> BezPath
             )]),
             OpType::LineTo => {
                 path.extend([PathEl::LineTo(Point::new(
-                    item.data[2].to_f64().unwrap(),
-                    item.data[3].to_f64().unwrap(),
+                    item.data[0].to_f64().unwrap(),
+                    item.data[1].to_f64().unwrap(),
                 ))]);
             }
         }

@@ -253,6 +253,96 @@ pub fn absolutize(
     result.into_iter()
 }
 
+pub fn print_line_segment(segment: &PathSegment) {
+    match segment {
+        PathSegment::MoveTo { abs, x, y } => {
+            if *abs {
+                println!("M {} {}", x, y);
+            } else {
+                println!("m {} {}", x, y);
+            }
+        }
+        PathSegment::LineTo { abs, x, y } => {
+            if *abs {
+                println!("L {} {}", x, y);
+            } else {
+                println!("l {} {}", x, y);
+            }
+        }
+        PathSegment::HorizontalLineTo { abs, x } => {
+            if *abs {
+                println!("H {}", x);
+            } else {
+                println!("h {}", x);
+            }
+        }
+        PathSegment::VerticalLineTo { abs, y } => {
+            if *abs {
+                println!("V {}", y);
+            } else {
+                println!("v {}", y);
+            }
+        }
+        PathSegment::CurveTo { abs, x1, y1, x2, y2, x, y } => {
+            if *abs {
+                println!("C {} {} {} {} {} {}", x1, y1, x2, y2, x, y);
+            } else {
+                println!("c {} {} {} {} {} {}", x1, y1, x2, y2, x, y);
+            }
+        }
+        PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
+            if *abs {
+                println!("S {} {} {} {}", x2, y2, x, y);
+            } else {
+                println!("s {} {} {} {}", x2, y2, x, y);
+            }
+        }
+        PathSegment::Quadratic { abs, x1, y1, x, y } => {
+            if *abs {
+                println!("Q {} {} {} {}", x1, y1, x, y);
+            } else {
+                println!("q {} {} {} {}", x1, y1, x, y);
+            }
+        }
+        PathSegment::SmoothQuadratic { abs, x, y } => {
+            if *abs {
+                println!("T {} {}", x, y);
+            } else {
+                println!("t {} {}", x, y);
+            }
+        }
+        PathSegment::EllipticalArc {
+            abs,
+            rx,
+            ry,
+            x_axis_rotation,
+            large_arc,
+            sweep,
+            x,
+            y,
+        } => {
+            if *abs {
+                println!(
+                    "A {} {} {} {} {} {} {}",
+                    rx, ry, x_axis_rotation, large_arc, sweep, x, y
+                );
+            } else {
+                println!(
+                    "a {} {} {} {} {} {} {}",
+                    rx, ry, x_axis_rotation, large_arc, sweep, x, y
+                );
+            }
+        }
+        PathSegment::ClosePath { abs } => {
+            if *abs {
+                println!("Z");
+            } else {
+                println!("z");
+            }
+        }
+    }
+}
+
 /// Normalize takes a list of absolute segments and outputs a list of segments with only four commands: M, L, C, Z. So every segment is described as move, line, or a bezier curve (cubic).
 /// This is useful when translating SVG paths to non SVG mediums - Canvas, or some other graphics platform. Most such platforms will support lines and bezier curves.
 /// It also simplifies the cases to consider when modifying these segments.

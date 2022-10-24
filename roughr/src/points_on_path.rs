@@ -5,7 +5,7 @@ use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 use points_on_curve::{points_on_bezier_curves, simplify};
-use svg_path_ops::{absolutize, normalize};
+use svg_path_ops::{absolutize, normalize, print_line_segment};
 use svgtypes::{PathParser, PathSegment};
 
 use crate::core::{_c, _cc};
@@ -21,7 +21,9 @@ where
     let path_parser = PathParser::from(path.as_ref());
     let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
     let normalized_segments = normalize(absolutize(path_segments.iter()));
-
+    // normalized_segments
+    //     .by_ref()
+    //     .for_each(|a| print_line_segment(&a));
     let mut sets: Vec<Vec<Point2D<F>>> = vec![];
     let mut current_points: Vec<Point2D<F>> = vec![];
     let mut start = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
@@ -44,7 +46,7 @@ where
             {
                 append_pending_curve(current_points, pending_curve);
             }
-            if current_points.len() > 0 {
+            if !current_points.is_empty() {
                 sets.push(current_points.clone());
                 current_points.clear();
             }
@@ -88,7 +90,9 @@ where
         let mut out = vec![];
         for set in sets.iter() {
             let simplified_set = simplify(set, dst);
-            out.push(simplified_set);
+            if !simplified_set.is_empty() {
+                out.push(simplified_set);
+            }
         }
         out
     } else {

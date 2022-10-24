@@ -1080,8 +1080,8 @@ where
             }
             PathSegment::LineTo { abs: true, x, y } => {
                 ops.extend(_double_line(
-                    _cc::<F>(x),
-                    _cc::<F>(y),
+                    current.x,
+                    current.y,
                     _cc::<F>(x),
                     _cc::<F>(y),
                     o,
@@ -1205,7 +1205,6 @@ mod test {
                 path: None
             }
         );
-        dbg!(result);
     }
 
     #[test]
