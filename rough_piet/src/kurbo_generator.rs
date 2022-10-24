@@ -8,8 +8,8 @@ use palette::rgb::Rgb;
 use palette::{Pixel, Srgb};
 use piet::kurbo::{BezPath, PathEl, Point};
 use piet::{Color, RenderContext, StrokeStyle};
-use rough::core::{Drawable, OpSet, OpSetType, OpType, Options};
-use rough::generator::Generator;
+use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
+use roughr::generator::Generator;
 
 #[derive(Default)]
 pub struct KurboGenerator {

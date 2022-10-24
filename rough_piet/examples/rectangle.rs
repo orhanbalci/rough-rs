@@ -5,11 +5,11 @@ use palette::{Pixel, Srgb};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
 use piet_common::Device;
-use rough::core::{FillStyle, OptionsBuilder};
 use rough_piet::KurboGenerator;
+use roughr::core::{FillStyle, OptionsBuilder};
 
-const WIDTH: usize = 1920;
-const HEIGHT: usize = 1080;
+const WIDTH: usize = 192;
+const HEIGHT: usize = 108;
 /// For now, assume pixel density (dots per inch)
 const DPI: f32 = 96.;
 
@@ -27,8 +27,8 @@ fn main() {
         .build()
         .unwrap();
     let generator = KurboGenerator::new(options);
-    let rect_width = 1000.0;
-    let rect_height = 500.0;
+    let rect_width = 100.0;
+    let rect_height = 50.0;
     let rect = generator.rectangle::<f32>(
         (WIDTH as f32 - rect_width) / 2.0,
         (HEIGHT as f32 - rect_height) / 2.0,

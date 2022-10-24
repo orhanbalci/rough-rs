@@ -5,8 +5,8 @@ use palette::{Pixel, Srgb};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
 use piet_common::Device;
-use rough::core::{FillStyle, OptionsBuilder};
 use rough_piet::KurboGenerator;
+use roughr::core::{FillStyle, OptionsBuilder};
 
 const WIDTH: usize = 500;
 const HEIGHT: usize = 500;

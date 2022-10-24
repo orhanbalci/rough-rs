@@ -1,2 +1,2 @@
 [workspace]
-members = ["rough", "rough_piet", "points_on_curve", "svg_path_ops"]
+members = ["roughr", "rough_piet", "points_on_curve", "svg_path_ops"]

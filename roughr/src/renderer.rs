@@ -37,8 +37,8 @@ pub struct EllipseResult<F: Float + FromPrimitive + Trig> {
 /// options and random number seed you use
 ///
 /// ```rust
-/// use rough::core::{Op, OpSetType, OpType, OptionsBuilder};
-/// use rough::renderer::line;
+/// use roughr::core::{Op, OpSetType, OpType, OptionsBuilder};
+/// use roughr::renderer::line;
 ///
 /// let mut o = OptionsBuilder::default().build().unwrap();
 /// let result = line(0.0, 0.0, 1.0, 0.0, &mut o);
@@ -120,8 +120,8 @@ pub fn line<F: Float + Trig + FromPrimitive>(
 ///
 ///```rust
 /// use euclid::point2;
-/// use rough::core::{Op, OpSet, OpSetType, OpType, OptionsBuilder};
-/// use rough::renderer::linear_path;
+/// use roughr::core::{Op, OpSet, OpSetType, OpType, OptionsBuilder};
+/// use roughr::renderer::linear_path;
 ///
 /// let mut o = OptionsBuilder::default().build().unwrap();
 /// let result = linear_path(
