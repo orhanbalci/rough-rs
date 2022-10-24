@@ -59,6 +59,35 @@ rect.draw(&mut rc);
 ### 🖨️ Output Rectangle
 ![rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/rectangle.png)
 
+### Circle
+
+```rust
+let options = OptionsBuilder::default()
+    .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
+    .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+    .fill_style(FillStyle::Hachure)
+    .fill_weight(DPI * 0.01)
+    .build()
+    .unwrap();
+let generator = KurboGenerator::new(options);
+let circle_paths = generator.circle::<f32>(
+    (WIDTH as f32) / 2.0,
+    (HEIGHT as f32) / 2.0,
+    HEIGHT as f32 - 10.0f32,
+);
+let background_color = Color::from_hex_str("96C0B7").unwrap();
+
+rc.fill(
+    Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
+    &background_color,
+);
+circle_paths.draw(&mut rc);
+```
+
+### 🖨️ Output Circle
+![circle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/circle.png)
+
+
 ## 🔭 Examples
 
 For more examples have a look at the
