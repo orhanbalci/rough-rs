@@ -1,4 +1,4 @@
-//! This example shows painting a rough circle using common-piet crate and
+//! This example shows painting a  circle using common-piet crate and
 //! kurbo rough shape generator
 
 use palette::{Pixel, Srgb};
@@ -8,8 +8,8 @@ use piet_common::Device;
 use rough_piet::KurboGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 
-const WIDTH: usize = 100;
-const HEIGHT: usize = 50;
+const WIDTH: usize = 192;
+const HEIGHT: usize = 192;
 /// For now, assume pixel density (dots per inch)
 const DPI: f32 = 96.;
 
@@ -17,7 +17,7 @@ const DPI: f32 = 96.;
 /// cargo run --example mondrian --features png
 fn main() {
     let mut device = Device::new().unwrap();
-    let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1.0).unwrap();
+    let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1e0).unwrap();
     let mut rc = bitmap.render_context();
     let options = OptionsBuilder::default()
         .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
@@ -27,8 +27,11 @@ fn main() {
         .build()
         .unwrap();
     let generator = KurboGenerator::new(options);
-    let circle_paths =
-        generator.circle::<f32>((WIDTH as f32) / 2.0, (HEIGHT as f32) / 2.0, HEIGHT as f32);
+    let circle_paths = generator.circle::<f32>(
+        (WIDTH as f32) / 2.0,
+        (HEIGHT as f32) / 2.0,
+        HEIGHT as f32 - 10.0f32,
+    );
     let background_color = Color::from_hex_str("96C0B7").unwrap();
 
     rc.fill(

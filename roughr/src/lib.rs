@@ -16,37 +16,49 @@
 //! [raqote](https://github.com/jrmuizel/raqote) [tiny-skia](https://github.com/RazrFalcon/tiny-skia) etc in combination with
 //! roughr. In this workspace an example adapter is implemented for [piet](https://github.com/linebender/piet). Below examples are
 //! output of [rough_piet](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet) adapter.
-
+//!
 //! ## 📦 Cargo.toml
-
+//!
 //! ```toml
 //! [dependencies]
 //! roughr = "0.1"
 //! ```
-
+//!
 //! ## 🔧 Example
-
+//!
+//! ### Rectangle
+//!
 //! ```rust
-//! use euclid::{default, point2};
-//! use points_on_curve::points_on_bezier_curves;
-
-//! let input = vec![
-//!        point2(70.0,  240.0),
-//!        point2(145.0,  60.0),
-//!        point2(275.0,  90.0),
-//!        point2(300.0,  230.0),
-//! ];
-//! let result_015 = points_on_bezier_curves(&input, 0.2, Some(0.15));
-
+//! let options = OptionsBuilder::default()
+//!     .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
+//!     .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+//!     .fill_style(FillStyle::Hachure)
+//!     .fill_weight(DPI * 0.01)
+//!     .build()
+//!     .unwrap();
+//! let generator = KurboGenerator::new(options);
+//! let rect_width = 100.0;
+//! let rect_height = 50.0;
+//! let rect = generator.rectangle::<f32>(
+//!     (WIDTH as f32 - rect_width) / 2.0,
+//!     (HEIGHT as f32 - rect_height) / 2.0,
+//!     rect_width,
+//!     rect_height,
+//! );
+//! let background_color = Color::from_hex_str("96C0B7").unwrap();
+//!
+//! rc.fill(
+//!     Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
+//!     &background_color,
+//! );
+//! rect.draw(&mut rc);
 //! ```
-
-//! ## 🖨️ Output
-//! This picture shows computed points with 4 different distance values 0.15, 0.75, 1.5 and 3.0 with tolerance 2.0.
-
-//! [tolerance](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/points_on_curve/assets/tolerance.png)
-
+//!
+//! ### 🖨️ Output Rectangle
+//! [rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/rectangle.png)
+//!
 //! ## 🔭 Examples
-
+//!
 //! For more examples have a look at the
 //! [examples](https://github.com/orhanbalci/rough-rs/blob/main/points_on_curve/examples) folder.
 

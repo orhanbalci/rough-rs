@@ -8,8 +8,8 @@ use piet_common::Device;
 use rough_piet::KurboGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 
-const WIDTH: usize = 100;
-const HEIGHT: usize = 50;
+const WIDTH: usize = 192;
+const HEIGHT: usize = 108;
 /// For now, assume pixel density (dots per inch)
 const DPI: f32 = 96.;
 
@@ -30,8 +30,8 @@ fn main() {
     let ellipse_paths = generator.ellipse::<f32>(
         (WIDTH as f32) / 2.0,
         (HEIGHT as f32) / 2.0,
-        WIDTH as f32,
-        HEIGHT as f32,
+        WIDTH as f32 - 10.0,
+        HEIGHT as f32 - 10.0,
     );
     let background_color = Color::from_hex_str("96C0B7").unwrap();
 
