@@ -141,6 +141,14 @@
 //! ### 🖨️ Output Svg Path
 //! ![svgheart](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/heart_svg_path.png)
 //!
+//! ## Filler Implementation Status
+//! - [x] Hachure
+//! - [ ] Zigzag
+//! - [ ] Cross-Hatch
+//! - [ ] Dots
+//! - [ ] Dashed
+//! - [ ] Zigzag-Line
+//!
 //! ## 🔭 Examples
 //!
 //! For more examples have a look at the
