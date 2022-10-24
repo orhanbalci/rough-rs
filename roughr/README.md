@@ -88,10 +88,39 @@ circle_paths.draw(&mut rc);
 ![circle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/circle.png)
 
 
+### Ellipse
+
+```rust
+let options = OptionsBuilder::default()
+    .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
+    .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+    .fill_style(FillStyle::Hachure)
+    .fill_weight(DPI * 0.01)
+    .build()
+    .unwrap();
+let generator = KurboGenerator::new(options);
+let ellipse_paths = generator.ellipse::<f32>(
+    (WIDTH as f32) / 2.0,
+    (HEIGHT as f32) / 2.0,
+    WIDTH as f32 - 10.0,
+    HEIGHT as f32 - 10.0,
+);
+let background_color = Color::from_hex_str("96C0B7").unwrap();
+
+rc.fill(
+    Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
+    &background_color,
+);
+ellipse_paths.draw(&mut rc);
+```
+
+### 🖨️ Output Ellipse
+![ellipse](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/ellipse.png)
+
 ## 🔭 Examples
 
 For more examples have a look at the
-[examples](https://github.com/orhanbalci/rough-rs/blob/main/points_on_curve/examples) folder.
+[examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet/examples) folder.
 
 <!-- cargo-sync-readme end -->
 
