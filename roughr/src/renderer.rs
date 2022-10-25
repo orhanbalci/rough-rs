@@ -3,7 +3,7 @@ use std::borrow::BorrowMut;
 use euclid::default::Point2D;
 use euclid::{point2, Trig};
 use num_traits::{Float, FloatConst, FromPrimitive};
-use svg_path_ops::{absolutize, normalize};
+use svg_path_ops::{absolutize, normalize, print_line_segment};
 use svgtypes::{PathParser, PathSegment};
 
 use super::core::{Options, _c};
@@ -1054,7 +1054,10 @@ where
     let mut current = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
     let path_parser = PathParser::from(path.as_ref());
     let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
-    let normalized_segments = normalize(absolutize(path_segments.iter()));
+    let mut normalized_segments = normalize(absolutize(path_segments.iter()));
+    normalized_segments
+        .by_ref()
+        .for_each(|s| print_line_segment(&s));
     for segment in normalized_segments {
         match segment {
             PathSegment::MoveTo { abs: true, x, y } => {
