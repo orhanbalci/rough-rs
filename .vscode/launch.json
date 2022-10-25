@@ -1,0 +1,454 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'roughr'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=roughr"
+                ],
+                "filter": {
+                    "name": "roughr",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'points_on_curve'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=points_on_curve"
+                ],
+                "filter": {
+                    "name": "points_on_curve",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'tolerance'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=tolerance",
+                    "--package=points_on_curve"
+                ],
+                "filter": {
+                    "name": "tolerance",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'tolerance'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=tolerance",
+                    "--package=points_on_curve"
+                ],
+                "filter": {
+                    "name": "tolerance",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'svg_path_ops'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=svg_path_ops"
+                ],
+                "filter": {
+                    "name": "svg_path_ops",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'rough_piet'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "rough_piet",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'linear_path'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=linear_path",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "linear_path",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'linear_path'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=linear_path",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "linear_path",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'rust_logo'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=rust_logo",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "rust_logo",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'rust_logo'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=rust_logo",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "rust_logo",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'rectangle'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=rectangle",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "rectangle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'rectangle'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=rectangle",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "rectangle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'ellipse'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=ellipse",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "ellipse",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'ellipse'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=ellipse",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "ellipse",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'polygon'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=polygon",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "polygon",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'polygon'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=polygon",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "polygon",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'circle'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=circle",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "circle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'circle'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=circle",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "circle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'arc'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=arc",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "arc",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'arc'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=arc",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "arc",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'heart_svg_path'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=heart_svg_path",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "heart_svg_path",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'heart_svg_path'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=heart_svg_path",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "heart_svg_path",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'curve'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=curve",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "curve",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'curve'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=curve",
+                    "--package=rough_piet"
+                ],
+                "filter": {
+                    "name": "curve",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

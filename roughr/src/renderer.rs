@@ -1055,9 +1055,9 @@ where
     let path_parser = PathParser::from(path.as_ref());
     let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
     let mut normalized_segments = normalize(absolutize(path_segments.iter()));
-    normalized_segments
-        .by_ref()
-        .for_each(|s| print_line_segment(&s));
+    // normalized_segments
+    //     .by_ref()
+    //     .for_each(|s| print_line_segment(&s));
     for segment in normalized_segments {
         match segment {
             PathSegment::MoveTo { abs: true, x, y } => {

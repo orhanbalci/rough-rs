@@ -106,11 +106,11 @@ pub fn absolutize(
     for segment in path_segments {
         match *segment.borrow() {
             PathSegment::MoveTo { abs: true, x, y } => {
+                result.push(*segment.borrow());
                 cx = x;
                 cy = y;
                 subx = x;
                 suby = y;
-                result.push(*segment.borrow())
             }
             PathSegment::MoveTo { abs: false, x, y } => {
                 cx += x;
@@ -544,8 +544,8 @@ fn rotate(x: f64, y: f64, angle_rad: f64) -> (f64, f64) {
 }
 
 fn arc_to_cubic_curves(
-    x1: f64,
-    y1: f64,
+    mut x1: f64,
+    mut y1: f64,
     mut x2: f64,
     mut y2: f64,
     mut r1: f64,
@@ -564,8 +564,8 @@ fn arc_to_cubic_curves(
         cx = rec[2];
         cy = rec[3];
     } else {
-        let (x1, y1) = rotate(x1, y1, -angle_rad);
-        let (x2, y2) = rotate(x2, y2, -angle_rad);
+        (x1, y1) = rotate(x1, y1, -angle_rad);
+        (x2, y2) = rotate(x2, y2, -angle_rad);
         let x = (x1 - x2) / 2.0;
         let y = (y1 - y2) / 2.0;
         let mut h = (x * x) / (r1 * r1) + (y * y) / (r2 * r2);
@@ -1220,6 +1220,24 @@ mod test {
         assert_eq!(
             normalized.next().unwrap(),
             PathSegment::ClosePath { abs: true }
+        );
+    }
+
+    #[test]
+    pub fn arc_to_cubic_curves() {
+        let result = super::arc_to_cubic_curves(
+            79.5, 257.83, 84.25, 249.60, 9.50, 9.50, 90.0, false, true, None,
+        );
+        assert_eq!(
+            result[0],
+            vec![
+                79.49901422066253,
+                254.4349913614547,
+                81.30983606638188,
+                251.29750424771456,
+                84.25,
+                249.6
+            ]
         );
     }
 }
