@@ -357,10 +357,9 @@ pub fn normalize(
     let mut suby = 0.0;
     let mut lcx = 0.0;
     let mut lcy = 0.0;
-    let mut last_type: PathSegment;
+    let mut last_type: Option<PathSegment> = None;
 
     for segment in path_segments {
-        last_type = *segment.borrow();
         match *segment.borrow() {
             PathSegment::MoveTo { abs: true, x, y } => {
                 out.push(*segment.borrow());
@@ -392,11 +391,16 @@ pub fn normalize(
             PathSegment::SmoothCurveTo { abs: true, x2, y2, x, y } => {
                 let cx1;
                 let cy1;
-                if matches!(last_type, PathSegment::CurveTo { .. })
-                    || matches!(last_type, PathSegment::SmoothCurveTo { .. })
-                {
-                    cx1 = cx + (cx - lcx);
-                    cy1 = cy + (cy - lcy);
+                if let Some(lt) = last_type {
+                    if matches!(lt, PathSegment::CurveTo { .. })
+                        || matches!(lt, PathSegment::SmoothCurveTo { .. })
+                    {
+                        cx1 = cx + (cx - lcx);
+                        cy1 = cy + (cy - lcy);
+                    } else {
+                        cx1 = cx;
+                        cy1 = cy;
+                    }
                 } else {
                     cx1 = cx;
                     cy1 = cy;
@@ -410,11 +414,16 @@ pub fn normalize(
             PathSegment::SmoothQuadratic { abs: true, x, y } => {
                 let x1;
                 let y1;
-                if matches!(last_type, PathSegment::Quadratic { .. })
-                    || matches!(last_type, PathSegment::SmoothQuadratic { .. })
-                {
-                    x1 = cx + (cx - lcx);
-                    y1 = cy + (cy - lcy);
+                if let Some(lt) = last_type {
+                    if matches!(lt, PathSegment::Quadratic { .. })
+                        || matches!(lt, PathSegment::SmoothQuadratic { .. })
+                    {
+                        x1 = cx + (cx - lcx);
+                        y1 = cy + (cy - lcy);
+                    } else {
+                        x1 = cx;
+                        y1 = cy;
+                    }
                 } else {
                     x1 = cx;
                     y1 = cy;
@@ -484,13 +493,17 @@ pub fn normalize(
                     cx = x;
                     cy = y;
                 } else if cx != x || cy != y {
+                    let x_param = x;
+                    let y_param = y;
+                    let r1_param = r1;
+                    let r2_param = r2;
                     let curves = arc_to_cubic_curves(
                         cx,
                         cy,
-                        x,
-                        y,
-                        r1,
-                        r2,
+                        x_param,
+                        y_param,
+                        r1_param,
+                        r2_param,
                         angle,
                         large_arc_flag,
                         sweep_flag,
@@ -518,6 +531,7 @@ pub fn normalize(
             }
             _ => panic!("Not expecting none absolute path!"),
         }
+        last_type = Some(*segment.borrow());
     }
 
     out.into_iter()
@@ -614,13 +628,17 @@ fn arc_to_cubic_curves(
 
         x2 = cx + r1 * f2.cos();
         y2 = cy + r2 * f2.sin();
+        let x2old_param = x2old;
+        let y2old_param = y2old;
+        let r1_param = r1;
+        let r2_param = r2;
         params = arc_to_cubic_curves(
             x2,
             y2,
-            x2old,
-            y2old,
-            r1,
-            r2,
+            x2old_param,
+            y2old_param,
+            r1_param,
+            r2_param,
             angle,
             false,
             sweep_flag,
