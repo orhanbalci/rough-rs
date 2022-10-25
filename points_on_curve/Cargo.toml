@@ -1,6 +1,6 @@
 [package]
 name = "points_on_curve"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Points on Bezier Curves"
