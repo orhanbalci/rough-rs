@@ -14,8 +14,9 @@ This package exposes functions to generate rough drawing primitives which looks 
 This is the core create of operations to create rough drawings. It exposes its own primitive drawing types for lines
 curves, arcs, polygons, circles, ellipses and even svg paths.
 Works on [Point2D](https://docs.rs/euclid/0.22.7/euclid/struct.Point2D.html) type from [euclid](https://github.com/servo/euclid) crate
-On its own this crate can not draw on any context. One needs to use existing drawing libraries such as [piet](https://github.com/linebender/piet)
-[raqote](https://github.com/jrmuizel/raqote) [tiny-skia](https://github.com/RazrFalcon/tiny-skia) etc in combination with
+
+On its own this crate can not draw on any context. One needs to use existing drawing libraries such as [piet](https://github.com/linebender/piet),
+[raqote](https://github.com/jrmuizel/raqote), [tiny-skia](https://github.com/RazrFalcon/tiny-skia) etc in combination with
 roughr. In this workspace an example adapter is implemented for [piet](https://github.com/linebender/piet). Below examples are
 output of [rough_piet](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet) adapter.
 
@@ -148,7 +149,7 @@ heart_svg_path_drawing.draw(&mut rc);
 - [ ] Zigzag
 - [ ] Cross-Hatch
 - [ ] Dots
-- [ ] Dashed
+- [x] Dashed
 - [ ] Zigzag-Line
 
 ## 🔭 Examples

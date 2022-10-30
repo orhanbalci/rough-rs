@@ -144,7 +144,7 @@ heart_svg_path_drawing.draw(&mut rc);
 - [ ] Zigzag
 - [ ] Cross-Hatch
 - [ ] Dots
-- [ ] Dashed
+- [x] Dashed
 - [ ] Zigzag-Line
 
 ## 🔭 Examples

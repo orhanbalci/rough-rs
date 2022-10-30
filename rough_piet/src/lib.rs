@@ -141,7 +141,7 @@
 //! - [ ] Zigzag
 //! - [ ] Cross-Hatch
 //! - [ ] Dots
-//! - [ ] Dashed
+//! - [x] Dashed
 //! - [ ] Zigzag-Line
 //!
 //! ## 🔭 Examples
