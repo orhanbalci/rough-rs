@@ -136,6 +136,11 @@ impl Options {
             },
         }
     }
+
+    pub fn set_hachure_angle(&mut self, angle: Option<f32>) -> &mut Self {
+        self.hachure_angle = angle;
+        self
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Eq)]

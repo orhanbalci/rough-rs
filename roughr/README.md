@@ -148,7 +148,7 @@ heart_svg_path_drawing.draw(&mut rc);
 - [x] Hachure
 - [ ] Zigzag
 - [ ] Cross-Hatch
-- [ ] Dots
+- [x] Dots
 - [x] Dashed
 - [ ] Zigzag-Line
 

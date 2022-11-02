@@ -9,7 +9,7 @@ use svgtypes::{PathParser, PathSegment};
 use super::core::{Options, _c};
 use crate::core::{FillStyle, Op, OpSet, OpSetType, OpType, _cc};
 use crate::filler::get_filler;
-use crate::filler::FillerType::{DashedFiller, ScanLineHachure};
+use crate::filler::FillerType::{DashedFiller, DotFiller, ScanLineHachure};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct EllipseParams<F: Float> {
@@ -991,6 +991,7 @@ where
     let filler = match o.fill_style.as_ref().unwrap() {
         FillStyle::Hachure => get_filler(ScanLineHachure),
         FillStyle::Dashed => get_filler(DashedFiller),
+        FillStyle::Dots => get_filler(DotFiller),
         _ => get_filler(ScanLineHachure),
     };
     filler.fill_polygons(polygon_list, o)

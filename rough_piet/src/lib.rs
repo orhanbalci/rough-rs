@@ -140,7 +140,7 @@
 //! - [x] Hachure
 //! - [ ] Zigzag
 //! - [ ] Cross-Hatch
-//! - [ ] Dots
+//! - [x] Dots
 //! - [x] Dashed
 //! - [ ] Zigzag-Line
 //!
