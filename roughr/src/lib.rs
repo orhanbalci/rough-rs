@@ -145,7 +145,7 @@
 //! ## Filler Implementation Status
 //! - [x] Hachure
 //! - [ ] Zigzag
-//! - [ ] Cross-Hatch
+//! - [x] Cross-Hatch
 //! - [x] Dots
 //! - [x] Dashed
 //! - [ ] Zigzag-Line

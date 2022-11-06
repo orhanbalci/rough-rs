@@ -147,7 +147,7 @@ heart_svg_path_drawing.draw(&mut rc);
 ## Filler Implementation Status
 - [x] Hachure
 - [ ] Zigzag
-- [ ] Cross-Hatch
+- [x] Cross-Hatch
 - [x] Dots
 - [x] Dashed
 - [ ] Zigzag-Line

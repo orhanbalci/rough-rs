@@ -4,8 +4,11 @@ layout {
     }
     pane split_direction="vertical" {
         pane edit="roughr/src/lib.rs" size="65%"
-        pane command="cargo" {
-            args "test"
+        pane split_direction="horizontal"{
+            pane command="cargo" {
+                args "test"
+            }
+            pane
         }
     }
     pane size=2 borderless=true {
