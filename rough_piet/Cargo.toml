@@ -7,7 +7,7 @@ description = "Draw Hand Sketched 2D Drawings Using Piet"
 repository = "https://github.com/orhanbalci/rough-rs.git"
 homepage = "https://github.com/orhanbalci"
 keywords = ["graphics", "bezier", "sketch", "2D", "piet"]
-categories = ["Graphics"]
+categories = ["graphics"]
 license = "MIT"
 readme = "README.md"
 

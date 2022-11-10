@@ -7,7 +7,7 @@ description = "Generate Hand Sketched 2D Drawings"
 repository = "https://github.com/orhanbalci/rough-rs.git"
 homepage = "https://github.com/orhanbalci"
 keywords = ["graphics", "bezier", "sketch", "2D"]
-categories = ["Graphics"]
+categories = ["graphics"]
 license = "MIT"
 readme = "README.md"
 

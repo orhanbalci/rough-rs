@@ -7,7 +7,7 @@ description = "Points on Bezier Curves"
 repository = "https://github.com/orhanbalci/rough-rs.git"
 homepage = "https://github.com/orhanbalci"
 keywords = ["graphics", "bezier"]
-categories = ["Graphics"]
+categories = ["graphics"]
 license = "MIT"
 readme = "README.md"
 
