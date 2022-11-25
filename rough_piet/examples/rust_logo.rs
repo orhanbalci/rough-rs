@@ -6,7 +6,7 @@ use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
 use piet_common::Device;
 use rough_piet::KurboGenerator;
-use roughr::core::OptionsBuilder;
+use roughr::core::{FillStyle, OptionsBuilder};
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 320;
@@ -21,6 +21,7 @@ fn main() {
     let options = OptionsBuilder::default()
         .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
         .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+        .fill_style(FillStyle::Hachure)
         .fill_weight(DPI * 0.01)
         .build()
         .unwrap();
