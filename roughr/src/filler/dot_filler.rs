@@ -4,11 +4,10 @@ use std::marker::PhantomData;
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
-use rand::prelude::*;
 
 use super::scan_line_hachure::polygon_hachure_lines;
 use super::traits::PatternFiller;
-use crate::core::{OpSet, Options, _c};
+use crate::core::{OpSet, Options, _c, _cc};
 use crate::geometry::Line;
 use crate::renderer::ellipse;
 
@@ -61,11 +60,10 @@ impl<F: Float + Trig + FromPrimitive> DotFiller<F> {
             let offset = length - (count * gap);
             let x = ((line.start_point.x + line.end_point.x) / _c::<F>(2.0)) - (gap / _c::<F>(4.0));
             let min_y = F::min(line.start_point.y, line.end_point.y);
-            let mut rng = rand::thread_rng();
             for i in 0..count.to_u64().unwrap() {
                 let y = min_y + offset + (F::from(i).unwrap() * gap);
-                let cx = (x - ro) + _c::<F>(rng.gen()) * _c::<F>(2.0) * ro;
-                let cy = (y - ro) + _c::<F>(rng.gen()) * _c::<F>(2.0) * ro;
+                let cx = (x - ro) + _cc::<F>(o.random()) * _c::<F>(2.0) * ro;
+                let cy = (y - ro) + _cc::<F>(o.random()) * _c::<F>(2.0) * ro;
                 let ellipse_ops = ellipse(cx, cy, fweight, fweight, o);
                 ops.extend(ellipse_ops.ops);
             }
