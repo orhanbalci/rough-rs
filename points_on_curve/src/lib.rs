@@ -247,8 +247,10 @@ where
     } else {
         let mut out = vec![];
         if points_in.len() == 3 {
-            out.extend_from_slice(points_in);
-            out.push(*points_in.last().unwrap());
+            let mut points_updated = vec![];
+            points_updated.extend_from_slice(points_in);
+            points_updated.push(*points_in.last().unwrap());
+            out = curve_to_bezier(&points_updated, curve_tightness).unwrap();
         } else {
             let mut points = vec![];
             points.push(points_in[0]);

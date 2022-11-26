@@ -996,8 +996,7 @@ where
             FillStyle::CrossHatch => get_filler(HatchFiller),
             _ => get_filler(ScanLineHachure),
         }
-    }
-    else{
+    } else {
         get_filler(ScanLineHachure)
     };
     filler.fill_polygons(polygon_list, o)
