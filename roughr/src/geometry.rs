@@ -1,11 +1,28 @@
 use euclid::default::Point2D;
 use euclid::{Angle, Translation2D, Trig, Vector2D};
-use num_traits::Float;
+use num_traits::{Float, FromPrimitive};
+
+use crate::core::_c;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Line<F: Float + Trig> {
     pub start_point: Point2D<F>,
     pub end_point: Point2D<F>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BezierQuadratic<F: Float + Trig> {
+    pub start: Point2D<F>,
+    pub cp: Point2D<F>,
+    pub end: Point2D<F>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BezierCubic<F: Float + Trig> {
+    pub start: Point2D<F>,
+    pub cp1: Point2D<F>,
+    pub cp2: Point2D<F>,
+    pub end: Point2D<F>,
 }
 
 impl<F: Float + Trig> Line<F> {
@@ -62,6 +79,27 @@ pub fn rotate_lines<F: Float + Trig>(
             l
         })
         .collect::<Vec<Line<F>>>()
+}
+
+/// Raises the order from a quadratic bezier to a cubic bezier curve.
+pub fn convert_bezier_quadratic_to_cubic<F: Float + FromPrimitive + Trig>(
+    bezier_quadratic: BezierQuadratic<F>,
+) -> BezierCubic<F> {
+    let cubic_x1 = bezier_quadratic.start.x
+        + _c::<F>(2.0 / 3.0) * (bezier_quadratic.cp.x - bezier_quadratic.start.x);
+    let cubic_y1 = bezier_quadratic.start.y
+        + _c::<F>(2.0 / 3.0) * (bezier_quadratic.cp.y - bezier_quadratic.start.y);
+    let cubic_x2 = bezier_quadratic.end.x
+        + _c::<F>(2.0 / 3.0) * (bezier_quadratic.cp.x - bezier_quadratic.end.x);
+    let cubic_y2 = bezier_quadratic.end.y
+        + _c::<F>(2.0 / 3.0) * (bezier_quadratic.cp.y - bezier_quadratic.end.y);
+
+    BezierCubic {
+        start: bezier_quadratic.start,
+        cp1: Point2D::new(cubic_x1, cubic_y1),
+        cp2: Point2D::new(cubic_x2, cubic_y2),
+        end: bezier_quadratic.end,
+    }
 }
 
 #[cfg(test)]

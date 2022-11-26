@@ -277,6 +277,27 @@ impl KurboGenerator {
         drawable.to_kurbo_drawable()
     }
 
+    pub fn bezier_quadratic<F: Trig + Float + FromPrimitive + MulAssign + Display>(
+        &self,
+        start: Point2D<F>,
+        cp: Point2D<F>,
+        end: Point2D<F>,
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.bezier_quadratic(start, cp, end, &self.options);
+        drawable.to_kurbo_drawable()
+    }
+
+    pub fn bezier_cubic<F: Trig + Float + FromPrimitive + MulAssign + Display>(
+        &self,
+        start: Point2D<F>,
+        cp1: Point2D<F>,
+        cp2: Point2D<F>,
+        end: Point2D<F>,
+    ) -> KurboDrawable<F> {
+        let drawable = self.gen.bezier_cubic(start, cp1, cp2, end, &self.options);
+        drawable.to_kurbo_drawable()
+    }
+
     pub fn curve<F: Trig + Float + FromPrimitive + MulAssign + Display>(
         &self,
         points: &[Point2D<F>],
