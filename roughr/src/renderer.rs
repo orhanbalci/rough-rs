@@ -988,12 +988,17 @@ where
     F: Float + Trig + FromPrimitive,
     P: BorrowMut<Vec<Vec<Point2D<F>>>>,
 {
-    let filler = match o.fill_style.as_ref().unwrap() {
-        FillStyle::Hachure => get_filler(ScanLineHachure),
-        FillStyle::Dashed => get_filler(DashedFiller),
-        FillStyle::Dots => get_filler(DotFiller),
-        FillStyle::CrossHatch => get_filler(HatchFiller),
-        _ => get_filler(ScanLineHachure),
+    let filler = if let Some(fill_style) = o.fill_style.as_ref() {
+        match fill_style {
+            FillStyle::Hachure => get_filler(ScanLineHachure),
+            FillStyle::Dashed => get_filler(DashedFiller),
+            FillStyle::Dots => get_filler(DotFiller),
+            FillStyle::CrossHatch => get_filler(HatchFiller),
+            _ => get_filler(ScanLineHachure),
+        }
+    }
+    else{
+        get_filler(ScanLineHachure)
     };
     filler.fill_polygons(polygon_list, o)
 }
