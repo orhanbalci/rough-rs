@@ -29,7 +29,7 @@ fn main() {
     let bezier_quadratic = generator.bezier_cubic::<f32>(
         Point2D::new(WIDTH as f32, (1.0 / 3.0) * HEIGHT as f32),
         Point2D::new((2.0 / 3.0) * WIDTH as f32, (5.0 / 3.0) * HEIGHT as f32),
-        Point2D::new((1.0 / 3.0) * WIDTH as f32, - (1.0 / 3.0) * HEIGHT as f32),
+        Point2D::new((1.0 / 3.0) * WIDTH as f32, -(1.0 / 3.0) * HEIGHT as f32),
         Point2D::new(0.0, (2.0 / 3.0) * HEIGHT as f32),
     );
     let background_color = Color::from_hex_str("96C0B7").unwrap();

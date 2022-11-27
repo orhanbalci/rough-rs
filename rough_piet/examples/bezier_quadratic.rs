@@ -28,7 +28,7 @@ fn main() {
     let generator = KurboGenerator::new(options);
     let bezier_quadratic = generator.bezier_quadratic::<f32>(
         Point2D::new(WIDTH as f32, HEIGHT as f32),
-        Point2D::new(- (1.0 / 3.0) * WIDTH as f32, HEIGHT as f32 / 2.0),
+        Point2D::new(-(1.0 / 3.0) * WIDTH as f32, HEIGHT as f32 / 2.0),
         Point2D::new((2.0 / 3.0) * WIDTH as f32, 0.0),
     );
     let background_color = Color::from_hex_str("96C0B7").unwrap();
