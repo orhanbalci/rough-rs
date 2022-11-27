@@ -8,28 +8,13 @@ use palette::Srgb;
 use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
 
 use crate::core::{
-    Drawable,
-    FillStyle,
-    OpSet,
-    OpSetType,
-    OpType,
-    Options,
-    OptionsBuilder,
-    PathInfo,
-    _c,
+    Drawable, FillStyle, OpSet, OpSetType, OpType, Options, OptionsBuilder, PathInfo, _c,
 };
+use crate::geometry::{BezierQuadratic, convert_bezier_quadratic_to_cubic};
 use crate::points_on_path::points_on_path;
 use crate::renderer::{
-    curve,
-    ellipse_with_params,
-    generate_ellipse_params,
-    line,
-    linear_path,
-    pattern_fill_arc,
-    pattern_fill_polygons,
-    rectangle,
-    solid_fill_polygon,
-    svg_path,
+    bezier_cubic, bezier_quadratic, curve, ellipse_with_params, generate_ellipse_params, line,
+    linear_path, pattern_fill_arc, pattern_fill_polygons, rectangle, solid_fill_polygon, svg_path,
 };
 
 pub struct Generator {
@@ -236,6 +221,87 @@ impl Generator {
             paths.push(outline);
         }
         self.d("arc", &paths, &Some(options))
+    }
+
+    pub fn bezier_quadratic<F>(
+        &self,
+        start: Point2D<F>,
+        cp: Point2D<F>,
+        end: Point2D<F>,
+        options: &Option<Options>,
+    ) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive + MulAssign + Display,
+    {
+        let mut paths = vec![];
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
+
+        let outline = bezier_quadratic(start, cp, end, &mut options);
+
+        if options.fill.is_some() {
+            // The fill algorithms expect at least 4 points of a cubic curve, else they panic
+            let cubic = convert_bezier_quadratic_to_cubic(BezierQuadratic { start, cp, end });
+            let crv = vec![cubic.start, cubic.cp1, cubic.cp2, cubic.end];
+
+            let poly_points = points_on_bezier_curves(
+                &crv,
+                _c(10.0),
+                Some(_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(0.0)) / _c(2.0)),
+            );
+            if options.fill_style == Some(FillStyle::Solid) {
+                paths.push(solid_fill_polygon(&vec![poly_points], &mut options));
+            } else {
+                paths.push(pattern_fill_polygons(&mut vec![poly_points], &mut options));
+            }
+        }
+
+        if options.stroke.is_some() {
+            paths.push(outline);
+        }
+
+        self.d("curve", &paths, &Some(options))
+    }
+
+    pub fn bezier_cubic<F>(
+        &self,
+        start: Point2D<F>,
+        cp1: Point2D<F>,
+        cp2: Point2D<F>,
+        end: Point2D<F>,
+        options: &Option<Options>,
+    ) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive + MulAssign + Display,
+    {
+        let mut paths = vec![];
+        let mut options = options
+            .clone()
+            .unwrap_or_else(|| self.default_options.clone());
+
+        let outline = bezier_cubic(start, cp1, cp2, end, &mut options);
+
+        if options.fill.is_some() {
+            let crv = vec![start, cp1, cp2, end];
+
+            let poly_points = points_on_bezier_curves(
+                &crv,
+                _c(10.0),
+                Some(_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(0.0)) / _c(2.0)),
+            );
+            if options.fill_style == Some(FillStyle::Solid) {
+                paths.push(solid_fill_polygon(&vec![poly_points], &mut options));
+            } else {
+                paths.push(pattern_fill_polygons(&mut vec![poly_points], &mut options));
+            }
+        }
+
+        if options.stroke.is_some() {
+            paths.push(outline);
+        }
+
+        self.d("curve", &paths, &Some(options))
     }
 
     pub fn curve<F>(&self, points: &[Point2D<F>], options: &Option<Options>) -> Drawable<F>

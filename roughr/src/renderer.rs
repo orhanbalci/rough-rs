@@ -10,6 +10,7 @@ use super::core::{Options, _c};
 use crate::core::{FillStyle, Op, OpSet, OpSetType, OpType, _cc};
 use crate::filler::get_filler;
 use crate::filler::FillerType::{DashedFiller, DotFiller, HatchFiller, ScanLineHachure};
+use crate::geometry::{convert_bezier_quadratic_to_cubic, BezierQuadratic};
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct EllipseParams<F: Float> {
@@ -257,6 +258,61 @@ pub fn rectangle<F: Float + Trig + FromPrimitive>(
         Point2D::new(x, y + height),
     ];
     polygon(&points, o)
+}
+
+pub fn bezier_quadratic<F: Float + Trig + FromPrimitive>(
+    start: Point2D<F>,
+    cp: Point2D<F>,
+    end: Point2D<F>,
+    o: &mut Options,
+) -> OpSet<F> {
+    let mut o1 = _bezier_quadratic_to(cp.x, cp.y, end.x, end.y, &start, o);
+    if !o.disable_multi_stroke.unwrap_or(false) {
+        let mut o2 = _bezier_quadratic_to(
+            cp.x,
+            cp.y,
+            end.x,
+            end.y,
+            &start,
+            &mut clone_options_alter_seed(o),
+        );
+        o1.append(&mut o2);
+    }
+    OpSet {
+        op_set_type: OpSetType::Path,
+        ops: o1,
+        path: None,
+        size: None,
+    }
+}
+
+pub fn bezier_cubic<F: Float + Trig + FromPrimitive>(
+    start: Point2D<F>,
+    cp1: Point2D<F>,
+    cp2: Point2D<F>,
+    end: Point2D<F>,
+    o: &mut Options,
+) -> OpSet<F> {
+    let mut o1 = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
+    if !o.disable_multi_stroke.unwrap_or(false) {
+        let mut o2 = _bezier_to(
+            cp1.x,
+            cp1.y,
+            cp2.x,
+            cp2.y,
+            end.x,
+            end.y,
+            &start,
+            &mut clone_options_alter_seed(o),
+        );
+        o1.append(&mut o2);
+    }
+    OpSet {
+        op_set_type: OpSetType::Path,
+        ops: o1,
+        path: None,
+        size: None,
+    }
 }
 
 pub fn curve<F: Float + Trig + FromPrimitive>(points: &[Point2D<F>], o: &mut Options) -> OpSet<F> {
@@ -912,6 +968,34 @@ fn _arc<F: Float + Trig + FromPrimitive>(
         cy + ry * Float::sin(stp),
     ));
     _curve(&points, None, o)
+}
+
+fn _bezier_quadratic_to<F: Float + Trig + FromPrimitive>(
+    x1: F,
+    y1: F,
+    x: F,
+    y: F,
+    current: &Point2D<F>,
+    o: &mut Options,
+) -> Vec<Op<F>> {
+    // We simply convert the quadratic to a cubic bezier
+
+    let cubic = convert_bezier_quadratic_to_cubic(BezierQuadratic {
+        start: *current,
+        cp: Point2D::new(x1, y1),
+        end: Point2D::new(x, y),
+    });
+
+    _bezier_to(
+        cubic.cp1.x,
+        cubic.cp1.y,
+        cubic.cp2.x,
+        cubic.cp2.y,
+        cubic.end.x,
+        cubic.end.y,
+        &cubic.start,
+        o,
+    )
 }
 
 fn _bezier_to<F: Float + Trig + FromPrimitive>(
