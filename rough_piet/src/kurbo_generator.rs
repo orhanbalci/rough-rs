@@ -109,7 +109,7 @@ impl<F: Float + Trig> KurboDrawable<F> {
                     ctx.save().expect("Failed to save render context");
                     match self.shape.as_str() {
                         "curve" | "polygon" | "path" => {
-                            let fill_color = self.options.stroke.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
+                            let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
                             let rgb: [f32; 3] = Srgb::into_raw(fill_color);
                             ctx.fill_even_odd(
                                 set.ops.clone(),
@@ -117,7 +117,7 @@ impl<F: Float + Trig> KurboDrawable<F> {
                             )
                         }
                         _ => {
-                            let fill_color = self.options.stroke.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
+                            let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
                             let rgb: [f32; 3] = Srgb::into_raw(fill_color);
                             ctx.fill(
                                 set.ops.clone(),
