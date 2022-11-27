@@ -141,6 +141,11 @@ impl Options {
         self.hachure_angle = angle;
         self
     }
+
+    pub fn set_hachure_gap(&mut self, gap: Option<f32>) -> &mut Self {
+        self.hachure_gap = gap;
+        self
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Eq)]

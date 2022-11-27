@@ -9,7 +9,7 @@ use svgtypes::{PathParser, PathSegment};
 use super::core::{Options, _c};
 use crate::core::{FillStyle, Op, OpSet, OpSetType, OpType, _cc};
 use crate::filler::get_filler;
-use crate::filler::FillerType::{DashedFiller, DotFiller, HatchFiller, ScanLineHachure};
+use crate::filler::FillerType::{DashedFiller, DotFiller, HatchFiller, ScanLineHachure, ZigZagFiller};
 use crate::geometry::{convert_bezier_quadratic_to_cubic, BezierQuadratic};
 
 #[derive(PartialEq, Eq, Debug)]
@@ -1078,6 +1078,7 @@ where
             FillStyle::Dashed => get_filler(DashedFiller),
             FillStyle::Dots => get_filler(DotFiller),
             FillStyle::CrossHatch => get_filler(HatchFiller),
+            FillStyle::ZigZag => get_filler(ZigZagFiller),
             _ => get_filler(ScanLineHachure),
         }
     } else {
