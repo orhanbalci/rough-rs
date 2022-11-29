@@ -10,6 +10,7 @@ use self::hatch_filler::HatchFiller;
 use self::scan_line_hachure::ScanlineHachureFiller;
 use self::traits::PatternFiller;
 use self::zig_zag_filler::ZigZagFiller;
+use self::zig_zag_line_filler::ZigZagLineFiller;
 
 pub mod dashed_filler;
 pub mod dot_filler;
@@ -17,6 +18,7 @@ pub mod hatch_filler;
 pub mod scan_line_hachure;
 pub mod traits;
 pub mod zig_zag_filler;
+pub mod zig_zag_line_filler;
 
 pub enum FillerType {
     ScanLineHachure,
@@ -24,6 +26,7 @@ pub enum FillerType {
     DotFiller,
     HatchFiller,
     ZigZagFiller,
+    ZigZagLineFiller,
 }
 
 pub fn get_filler<'a, F, P>(f: FillerType) -> Box<dyn PatternFiller<F, P> + 'a>
@@ -37,5 +40,6 @@ where
         FillerType::DotFiller => Box::new(DotFiller::new()),
         FillerType::HatchFiller => Box::new(HatchFiller::new()),
         FillerType::ZigZagFiller => Box::new(ZigZagFiller::new()),
+        FillerType::ZigZagLineFiller => Box::new(ZigZagLineFiller::new()),
     }
 }
