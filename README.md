@@ -14,6 +14,7 @@ packages functionality
 
 - [rough_piet](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [piet](https://github.com/linebender/piet) 
 
+- [rough_tiny_skia](https://github.com/orhanbalci/rough-rs/tree/main/rough_tiny_skia) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [tiny-skia](https://github.com/RazrFalcon/tiny-skia) 
 
 ## 📝 License
 
