@@ -10,7 +10,12 @@ use super::core::{Options, _c};
 use crate::core::{FillStyle, Op, OpSet, OpSetType, OpType, _cc};
 use crate::filler::get_filler;
 use crate::filler::FillerType::{
-    DashedFiller, DotFiller, HatchFiller, ScanLineHachure, ZigZagFiller, ZigZagLineFiller,
+    DashedFiller,
+    DotFiller,
+    HatchFiller,
+    ScanLineHachure,
+    ZigZagFiller,
+    ZigZagLineFiller,
 };
 use crate::geometry::{convert_bezier_quadratic_to_cubic, BezierQuadratic};
 
