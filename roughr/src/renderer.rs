@@ -285,11 +285,11 @@ pub fn bezier_cubic<F: Float + Trig + FromPrimitive>(
     end: Point2D<F>,
     o: &mut Options,
 ) -> OpSet<F> {
-    let ps = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
+    let ops = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
 
     OpSet {
         op_set_type: OpSetType::Path,
-        ops: ps,
+        ops,
         path: None,
         size: None,
     }
