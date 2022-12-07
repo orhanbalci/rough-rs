@@ -10,12 +10,7 @@ use super::core::{Options, _c};
 use crate::core::{FillStyle, Op, OpSet, OpSetType, OpType, _cc};
 use crate::filler::get_filler;
 use crate::filler::FillerType::{
-    DashedFiller,
-    DotFiller,
-    HatchFiller,
-    ScanLineHachure,
-    ZigZagFiller,
-    ZigZagLineFiller,
+    DashedFiller, DotFiller, HatchFiller, ScanLineHachure, ZigZagFiller, ZigZagLineFiller,
 };
 use crate::geometry::{convert_bezier_quadratic_to_cubic, BezierQuadratic};
 
@@ -273,21 +268,11 @@ pub fn bezier_quadratic<F: Float + Trig + FromPrimitive>(
     end: Point2D<F>,
     o: &mut Options,
 ) -> OpSet<F> {
-    let mut o1 = _bezier_quadratic_to(cp.x, cp.y, end.x, end.y, &start, o);
-    if !o.disable_multi_stroke.unwrap_or(false) {
-        let mut o2 = _bezier_quadratic_to(
-            cp.x,
-            cp.y,
-            end.x,
-            end.y,
-            &start,
-            &mut clone_options_alter_seed(o),
-        );
-        o1.append(&mut o2);
-    }
+    let ops = _bezier_quadratic_to(cp.x, cp.y, end.x, end.y, &start, o);
+
     OpSet {
         op_set_type: OpSetType::Path,
-        ops: o1,
+        ops,
         path: None,
         size: None,
     }
@@ -300,23 +285,11 @@ pub fn bezier_cubic<F: Float + Trig + FromPrimitive>(
     end: Point2D<F>,
     o: &mut Options,
 ) -> OpSet<F> {
-    let mut o1 = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
-    if !o.disable_multi_stroke.unwrap_or(false) {
-        let mut o2 = _bezier_to(
-            cp1.x,
-            cp1.y,
-            cp2.x,
-            cp2.y,
-            end.x,
-            end.y,
-            &start,
-            &mut clone_options_alter_seed(o),
-        );
-        o1.append(&mut o2);
-    }
+    let ps = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
+
     OpSet {
         op_set_type: OpSetType::Path,
-        ops: o1,
+        ops: ps,
         path: None,
         size: None,
     }
