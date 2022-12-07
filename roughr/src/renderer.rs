@@ -273,21 +273,11 @@ pub fn bezier_quadratic<F: Float + Trig + FromPrimitive>(
     end: Point2D<F>,
     o: &mut Options,
 ) -> OpSet<F> {
-    let mut o1 = _bezier_quadratic_to(cp.x, cp.y, end.x, end.y, &start, o);
-    if !o.disable_multi_stroke.unwrap_or(false) {
-        let mut o2 = _bezier_quadratic_to(
-            cp.x,
-            cp.y,
-            end.x,
-            end.y,
-            &start,
-            &mut clone_options_alter_seed(o),
-        );
-        o1.append(&mut o2);
-    }
+    let ops = _bezier_quadratic_to(cp.x, cp.y, end.x, end.y, &start, o);
+
     OpSet {
         op_set_type: OpSetType::Path,
-        ops: o1,
+        ops,
         path: None,
         size: None,
     }
@@ -300,23 +290,11 @@ pub fn bezier_cubic<F: Float + Trig + FromPrimitive>(
     end: Point2D<F>,
     o: &mut Options,
 ) -> OpSet<F> {
-    let mut o1 = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
-    if !o.disable_multi_stroke.unwrap_or(false) {
-        let mut o2 = _bezier_to(
-            cp1.x,
-            cp1.y,
-            cp2.x,
-            cp2.y,
-            end.x,
-            end.y,
-            &start,
-            &mut clone_options_alter_seed(o),
-        );
-        o1.append(&mut o2);
-    }
+    let ops = _bezier_to(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y, &start, o);
+
     OpSet {
         op_set_type: OpSetType::Path,
-        ops: o1,
+        ops,
         path: None,
         size: None,
     }
