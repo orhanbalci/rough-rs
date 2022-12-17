@@ -1,7 +1,7 @@
 //! This example shows painting a  circle using common-piet crate and
 //! kurbo rough shape generator
 
-use palette::{Pixel, Srgb};
+use palette::{Pixel, Srgb, Srgba};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
 use piet_common::Device;
@@ -20,8 +20,8 @@ fn main() {
     let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1e0).unwrap();
     let mut rc = bitmap.render_context();
     let options = OptionsBuilder::default()
-        .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-        .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+        .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255]).into_format())
+        .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255]).into_format())
         .fill_style(FillStyle::Hachure)
         .fill_weight(DPI * 0.01)
         .build()

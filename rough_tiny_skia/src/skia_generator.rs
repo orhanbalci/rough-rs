@@ -4,8 +4,8 @@ use std::ops::MulAssign;
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
-use palette::rgb::Rgb;
-use palette::{Pixel, Srgb};
+use palette::rgb::{Rgb, Rgba};
+use palette::{Pixel, Srgb, Srgba};
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
 use roughr::generator::Generator;
 use tiny_skia::{
@@ -103,8 +103,8 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         let stroke_color = self
                             .options
                             .stroke
-                            .unwrap_or_else(|| Srgb::new(1.0, 1.0, 1.0));
-                        let stroke_color_components: [u8; 3] =
+                            .unwrap_or_else(|| Srgba::new(1.0, 1.0, 1.0, 1.0));
+                        let stroke_color_components: [u8; 4] =
                             stroke_color.into_format().into_raw();
 
                         let mut paint = Paint::default();
@@ -112,7 +112,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                             stroke_color_components[0],
                             stroke_color_components[1],
                             stroke_color_components[2],
-                            200,
+                            stroke_color_components[3],
                         );
                         paint.anti_alias = true;
 
@@ -124,8 +124,8 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         let stroke_color = self
                             .options
                             .stroke
-                            .unwrap_or_else(|| Srgb::new(1.0, 1.0, 1.0));
-                        let stroke_color_components: [u8; 3] =
+                            .unwrap_or_else(|| Srgba::new(1.0, 1.0, 1.0, 1.0));
+                        let stroke_color_components: [u8; 4] =
                             stroke_color.into_format().into_raw();
 
                         let mut paint = Paint::default();
@@ -133,7 +133,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                             stroke_color_components[0],
                             stroke_color_components[1],
                             stroke_color_components[2],
-                            200,
+                            stroke_color_components[3],
                         );
                         paint.anti_alias = true;
 
@@ -141,15 +141,15 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                     }
                 }
                 OpSetType::FillPath => {
-                    let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
-                    let fill_color_components: [u8; 3] = fill_color.into_format().into_raw();
+                    let fill_color = self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                    let fill_color_components: [u8; 4] = fill_color.into_format().into_raw();
 
                     let mut paint = Paint::default();
                     paint.set_color_rgba8(
                         fill_color_components[0],
                         fill_color_components[1],
                         fill_color_components[2],
-                        200,
+                        fill_color_components[3],
                     );
                     paint.anti_alias = true;
                     match self.shape.as_str() {
@@ -197,15 +197,15 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                             self.options.fill_line_dash_offset.unwrap_or(1.0f64) as f32,
                         );
 
-                        let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
-                        let fill_color_components: [u8; 3] = fill_color.into_format().into_raw();
+                        let fill_color = self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                        let fill_color_components: [u8; 4] = fill_color.into_format().into_raw();
 
                         let mut paint = Paint::default();
                         paint.set_color_rgba8(
                             fill_color_components[0],
                             fill_color_components[1],
                             fill_color_components[2],
-                            200,
+                            fill_color_components[3],
                         );
                         paint.anti_alias = true;
                         ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);
@@ -214,15 +214,15 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         stroke.width = self.options.fill_weight.unwrap_or(1.0);
                         stroke.line_cap = LineCap::Round;
 
-                        let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
-                        let fill_color_components: [u8; 3] = fill_color.into_format().into_raw();
+                        let fill_color = self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                        let fill_color_components: [u8; 4] = fill_color.into_format().into_raw();
 
                         let mut paint = Paint::default();
                         paint.set_color_rgba8(
                             fill_color_components[0],
                             fill_color_components[1],
                             fill_color_components[2],
-                            200,
+                            fill_color_components[3],
                         );
                         paint.anti_alias = true;
                         ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);

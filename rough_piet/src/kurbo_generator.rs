@@ -4,8 +4,8 @@ use std::ops::MulAssign;
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
-use palette::rgb::Rgb;
-use palette::{Pixel, Srgb};
+use palette::rgb::{Rgb, Rgba};
+use palette::{Pixel, Srgb, Srgba};
 use piet::kurbo::{BezPath, PathEl, Point};
 use piet::{Color, RenderContext, StrokeStyle};
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
@@ -82,11 +82,16 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         let stroke_color = self
                             .options
                             .stroke
-                            .unwrap_or_else(|| Srgb::new(1.0, 1.0, 1.0));
-                        let rgb: [f32; 3] = Srgb::into_raw(stroke_color);
+                            .unwrap_or_else(|| Srgba::new(1.0, 1.0, 1.0, 1.0));
+                        let rgb: [f32; 4] = Srgba::into_raw(stroke_color);
                         ctx.stroke_styled(
                             set.ops.clone(),
-                            &Color::rgb(rgb[0] as f64, rgb[1] as f64, rgb[2] as f64),
+                            &Color::rgba(
+                                rgb[0] as f64,
+                                rgb[1] as f64,
+                                rgb[2] as f64,
+                                rgb[3] as f64,
+                            ),
                             self.options.stroke_width.unwrap_or(1.0) as f64,
                             &ss,
                         );
@@ -95,11 +100,16 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         let stroke_color = self
                             .options
                             .stroke
-                            .unwrap_or_else(|| Srgb::new(1.0, 1.0, 1.0));
-                        let rgb: [f32; 3] = Srgb::into_raw(stroke_color);
+                            .unwrap_or_else(|| Srgba::new(1.0, 1.0, 1.0, 1.0));
+                        let rgb: [f32; 4] = Srgba::into_raw(stroke_color);
                         ctx.stroke(
                             set.ops.clone(),
-                            &Color::rgb(rgb[0] as f64, rgb[1] as f64, rgb[2] as f64),
+                            &Color::rgba(
+                                rgb[0] as f64,
+                                rgb[1] as f64,
+                                rgb[2] as f64,
+                                rgb[3] as f64,
+                            ),
                             self.options.stroke_width.unwrap_or(1.0) as f64,
                         );
                         ctx.restore().expect("Failed to restore render context");
@@ -109,19 +119,31 @@ impl<F: Float + Trig> KurboDrawable<F> {
                     ctx.save().expect("Failed to save render context");
                     match self.shape.as_str() {
                         "curve" | "polygon" | "path" => {
-                            let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
-                            let rgb: [f32; 3] = Srgb::into_raw(fill_color);
+                            let fill_color =
+                                self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                            let rgb: [f32; 4] = Srgba::into_raw(fill_color);
                             ctx.fill_even_odd(
                                 set.ops.clone(),
-                                &Color::rgb(rgb[0] as f64, rgb[1] as f64, rgb[2] as f64),
+                                &Color::rgba(
+                                    rgb[0] as f64,
+                                    rgb[1] as f64,
+                                    rgb[2] as f64,
+                                    rgb[3] as f64,
+                                ),
                             )
                         }
                         _ => {
-                            let fill_color = self.options.fill.unwrap_or(Rgb::new(1.0, 1.0, 1.0));
-                            let rgb: [f32; 3] = Srgb::into_raw(fill_color);
+                            let fill_color =
+                                self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                            let rgb: [f32; 4] = Srgba::into_raw(fill_color);
                             ctx.fill(
                                 set.ops.clone(),
-                                &Color::rgb(rgb[0] as f64, rgb[1] as f64, rgb[2] as f64),
+                                &Color::rgba(
+                                    rgb[0] as f64,
+                                    rgb[1] as f64,
+                                    rgb[2] as f64,
+                                    rgb[3] as f64,
+                                ),
                             )
                         }
                     }
@@ -141,22 +163,36 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         ss.set_dash_pattern(fill_line_dash.as_slice());
                         ss.set_dash_offset(self.options.fill_line_dash_offset.unwrap_or(0.0f64));
 
-                        let fill_color =
-                            self.options.fill.unwrap_or_else(|| Rgb::new(1.0, 1.0, 1.0));
-                        let rgb: [f32; 3] = Srgb::into_raw(fill_color);
+                        let fill_color = self
+                            .options
+                            .fill
+                            .unwrap_or_else(|| Rgba::new(1.0, 1.0, 1.0, 1.0));
+                        let rgb: [f32; 4] = Srgba::into_raw(fill_color);
                         ctx.stroke_styled(
                             set.ops.clone(),
-                            &Color::rgb(rgb[0] as f64, rgb[1] as f64, rgb[2] as f64),
+                            &Color::rgba(
+                                rgb[0] as f64,
+                                rgb[1] as f64,
+                                rgb[2] as f64,
+                                rgb[3] as f64,
+                            ),
                             fweight as f64,
                             &ss,
                         );
                     } else {
-                        let fill_color =
-                            self.options.fill.unwrap_or_else(|| Rgb::new(1.0, 1.0, 1.0));
-                        let rgb: [f32; 3] = Srgb::into_raw(fill_color);
+                        let fill_color = self
+                            .options
+                            .fill
+                            .unwrap_or_else(|| Rgba::new(1.0, 1.0, 1.0, 1.0));
+                        let rgb: [f32; 4] = Srgba::into_raw(fill_color);
                         ctx.stroke(
                             set.ops.clone(),
-                            &Color::rgb(rgb[0] as f64, rgb[1] as f64, rgb[2] as f64),
+                            &Color::rgba(
+                                rgb[0] as f64,
+                                rgb[1] as f64,
+                                rgb[2] as f64,
+                                rgb[3] as f64,
+                            ),
                             fweight as f64,
                         );
                     }

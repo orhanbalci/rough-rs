@@ -19,8 +19,8 @@ fn main() {
     let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1.0).unwrap();
     let mut rc = bitmap.render_context();
     let options = OptionsBuilder::default()
-        .stroke(Srgba::from_raw(&[114u8, 87, 82, 255]).into_format())
-        .fill(Srgba::from_raw(&[254u8, 246, 201, 255]).into_format())
+        .stroke(Srgba::from_raw(&[114u8, 87, 82, 100]).into_format())
+        .fill(Srgba::from_raw(&[254u8, 246, 201, 100]).into_format())
         .fill_style(FillStyle::Hachure)
         .fill_weight(DPI * 0.01)
         .build()
@@ -39,5 +39,7 @@ fn main() {
     rc.finish().unwrap();
     std::mem::drop(rc);
 
-    bitmap.save_to_file("rust.png").expect("file save error");
+    bitmap
+        .save_to_file("rust_alpha.png")
+        .expect("file save error");
 }

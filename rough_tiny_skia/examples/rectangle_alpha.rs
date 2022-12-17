@@ -10,8 +10,8 @@ const DPI: f32 = 96.;
 
 fn main() {
     let options = OptionsBuilder::default()
-        .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255]).into_format())
-        .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255]).into_format())
+        .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 100]).into_format())
+        .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 100]).into_format())
         .fill_style(FillStyle::Hachure)
         .fill_weight(DPI * 0.01)
         .build()
@@ -28,7 +28,7 @@ fn main() {
 
     let mut pixmap = Pixmap::new(WIDTH as u32, HEIGHT as u32).unwrap();
     let mut background_paint = Paint::default();
-    background_paint.set_color_rgba8(150, 192, 183, 200);
+    background_paint.set_color_rgba8(150, 192, 183, 255);
 
     pixmap.fill_rect(
         Rect::from_xywh(0.0, 0.0, WIDTH, HEIGHT).unwrap(),
@@ -39,5 +39,5 @@ fn main() {
 
     rect.draw(&mut pixmap.as_mut());
 
-    pixmap.save_png("skia_rectangle.png").unwrap();
+    pixmap.save_png("skia_rectangle_alpha.png").unwrap();
 }

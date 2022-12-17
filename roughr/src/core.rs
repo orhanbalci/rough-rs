@@ -1,7 +1,7 @@
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
-use palette::Srgb;
+use palette::Srgba;
 use rand::rngs::StdRng;
 use rand::{random, Rng, SeedableRng};
 
@@ -36,8 +36,8 @@ pub struct Options {
     pub roughness: Option<f32>,
     #[builder(default = "Some(2.0)")]
     pub bowing: Option<f32>,
-    #[builder(default = "Some(Srgb::new(0.0, 0.0, 0.0))")]
-    pub stroke: Option<Srgb>,
+    #[builder(default = "Some(Srgba::new(0.0, 0.0, 0.0, 1.0))")]
+    pub stroke: Option<Srgba>,
     #[builder(default = "Some(1.0)")]
     pub stroke_width: Option<f32>,
     #[builder(default = "Some(0.95)")]
@@ -47,7 +47,7 @@ pub struct Options {
     #[builder(default = "Some(9.0)")]
     pub curve_step_count: Option<f32>,
     #[builder(default = "None")]
-    pub fill: Option<Srgb>,
+    pub fill: Option<Srgba>,
     #[builder(default = "None")]
     pub fill_style: Option<FillStyle>,
     #[builder(default = "Some(-1.0)")]
@@ -92,7 +92,7 @@ impl Default for Options {
             max_randomness_offset: Some(2.0),
             roughness: Some(1.0),
             bowing: Some(2.0),
-            stroke: Some(Srgb::new(0.0, 0.0, 0.0)),
+            stroke: Some(Srgba::new(0.0, 0.0, 0.0, 1.0)),
             stroke_width: Some(1.0),
             curve_tightness: Some(0.0),
             curve_fitting: Some(0.95),
@@ -184,9 +184,9 @@ pub struct Drawable<F: Float + Trig> {
 
 pub struct PathInfo {
     pub d: String,
-    pub stroke: Option<Srgb>,
+    pub stroke: Option<Srgba>,
     pub stroke_width: Option<f32>,
-    pub fill: Option<Srgb>,
+    pub fill: Option<Srgba>,
 }
 
 pub fn _c<U: Float + FromPrimitive>(inp: f32) -> U {
