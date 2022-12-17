@@ -28,8 +28,8 @@ rough_piet = "0.1"
 
 ```rust
 let options = OptionsBuilder::default()
-    .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-    .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+    .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+    .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
     .fill_style(FillStyle::Hachure)
     .fill_weight(DPI * 0.01)
     .build()
@@ -59,8 +59,8 @@ rect.draw(&mut rc);
 
 ```rust
 let options = OptionsBuilder::default()
-    .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-    .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+    .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+    .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
     .fill_style(FillStyle::Hachure)
     .fill_weight(DPI * 0.01)
     .build()
@@ -88,8 +88,8 @@ circle_paths.draw(&mut rc);
 
 ```rust
 let options = OptionsBuilder::default()
-    .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-    .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+    .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+    .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
     .fill_style(FillStyle::Hachure)
     .fill_weight(DPI * 0.01)
     .build()
@@ -118,8 +118,8 @@ ellipse_paths.draw(&mut rc);
 
 ```rust
 let options = OptionsBuilder::default()
-    .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-    .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+    .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+    .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
     .fill_style(FillStyle::Hachure)
     .fill_weight(DPI * 0.01)
     .build()
@@ -145,7 +145,7 @@ heart_svg_path_drawing.draw(&mut rc);
 - [x] Cross-Hatch
 - [x] Dots
 - [x] Dashed
-- [ ] Zigzag-Line
+- [x] Zigzag-Line
 
 ## 🔭 Examples
 

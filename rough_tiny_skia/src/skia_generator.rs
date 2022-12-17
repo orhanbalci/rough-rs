@@ -4,8 +4,7 @@ use std::ops::MulAssign;
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
-use palette::rgb::{Rgb, Rgba};
-use palette::{Pixel, Srgb, Srgba};
+use palette::{Pixel, Srgba};
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
 use roughr::generator::Generator;
 use tiny_skia::{
@@ -141,7 +140,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                     }
                 }
                 OpSetType::FillPath => {
-                    let fill_color = self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                    let fill_color = self.options.fill.unwrap_or(Srgba::new(1.0, 1.0, 1.0, 1.0));
                     let fill_color_components: [u8; 4] = fill_color.into_format().into_raw();
 
                     let mut paint = Paint::default();
@@ -197,7 +196,8 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                             self.options.fill_line_dash_offset.unwrap_or(1.0f64) as f32,
                         );
 
-                        let fill_color = self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                        let fill_color =
+                            self.options.fill.unwrap_or(Srgba::new(1.0, 1.0, 1.0, 1.0));
                         let fill_color_components: [u8; 4] = fill_color.into_format().into_raw();
 
                         let mut paint = Paint::default();
@@ -214,7 +214,8 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         stroke.width = self.options.fill_weight.unwrap_or(1.0);
                         stroke.line_cap = LineCap::Round;
 
-                        let fill_color = self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
+                        let fill_color =
+                            self.options.fill.unwrap_or(Srgba::new(1.0, 1.0, 1.0, 1.0));
                         let fill_color_components: [u8; 4] = fill_color.into_format().into_raw();
 
                         let mut paint = Paint::default();

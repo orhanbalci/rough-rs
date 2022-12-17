@@ -3,7 +3,7 @@ use std::borrow::BorrowMut;
 use euclid::default::Point2D;
 use euclid::{point2, Trig};
 use num_traits::{Float, FloatConst, FromPrimitive};
-use svg_path_ops::{absolutize, normalize, print_line_segment};
+use svg_path_ops::{absolutize, normalize};
 use svgtypes::{PathParser, PathSegment};
 
 use super::core::{Options, _c};

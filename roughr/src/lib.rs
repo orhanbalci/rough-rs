@@ -31,8 +31,8 @@
 //!
 //! ```ignore
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-//!     .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
 //!     .fill_style(FillStyle::Hachure)
 //!     .fill_weight(DPI * 0.01)
 //!     .build()
@@ -62,8 +62,8 @@
 //!
 //! ```ignore
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-//!     .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
 //!     .fill_style(FillStyle::Hachure)
 //!     .fill_weight(DPI * 0.01)
 //!     .build()
@@ -91,8 +91,8 @@
 //!
 //! ```ignore
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-//!     .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
 //!     .fill_style(FillStyle::Hachure)
 //!     .fill_weight(DPI * 0.01)
 //!     .build()
@@ -121,8 +121,8 @@
 //!
 //! ```ignore
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgb::from_raw(&[114u8, 87u8, 82u8]).into_format())
-//!     .fill(Srgb::from_raw(&[254u8, 246u8, 201u8]).into_format())
+//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
 //!     .fill_style(FillStyle::Hachure)
 //!     .fill_weight(DPI * 0.01)
 //!     .build()
@@ -148,7 +148,7 @@
 //! - [x] Cross-Hatch
 //! - [x] Dots
 //! - [x] Dashed
-//! - [ ] Zigzag-Line
+//! - [x] Zigzag-Line
 //!
 //! ## 🔭 Examples
 //!
@@ -165,4 +165,5 @@ pub mod geometry;
 pub mod points_on_path;
 pub mod renderer;
 
-pub use palette::{Pixel, Srgb};
+pub use euclid::Point2D;
+pub use palette::{Pixel, Srgba};
