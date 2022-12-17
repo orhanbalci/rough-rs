@@ -4,7 +4,6 @@ use std::ops::MulAssign;
 use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
-use palette::Srgb;
 use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
 
 use crate::core::{

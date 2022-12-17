@@ -1,7 +1,7 @@
 //! This example shows painting a rough svg heart path using common-piet crate and
 //! kurbo rough shape generator
 
-use palette::{Pixel, Srgb, Srgba};
+use palette::{Pixel, Srgba};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
 use piet_common::Device;
@@ -19,8 +19,8 @@ fn main() {
     let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1.0).unwrap();
     let mut rc = bitmap.render_context();
     let options = OptionsBuilder::default()
-        .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255]).into_format())
-        .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255]).into_format())
+        .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
+        .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
         .fill_style(FillStyle::Dots)
         .fill_weight(DPI * 0.01)
         .build()
