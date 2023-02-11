@@ -181,7 +181,7 @@ where
             }
         });
         if active_edges.len() > 1 {
-            active_edges[..].windows(2).for_each(|ae| {
+            active_edges[..].chunks(2).for_each(|ae| {
                 let ce = &ae[0];
                 let ne = &ae[1];
                 lines.push(Line::from(&[
