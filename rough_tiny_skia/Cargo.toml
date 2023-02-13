@@ -1,6 +1,6 @@
 [package]
 name = "rough_tiny_skia"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Draw Hand Sketched 2D Drawings Using tiny-skia"
