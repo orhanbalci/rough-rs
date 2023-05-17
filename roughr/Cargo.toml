@@ -1,6 +1,6 @@
 [package]
 name = "roughr"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Generate Hand Sketched 2D Drawings"
