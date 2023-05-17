@@ -1,4 +1,4 @@
-use palette::{Pixel, Srgba};
+use palette::Srgba;
 use rough_tiny_skia::SkiaGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 use tiny_skia::*;
@@ -10,8 +10,8 @@ const DPI: f32 = 96.;
 
 fn main() {
     let options = OptionsBuilder::default()
-        .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 100u8]).into_format())
-        .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 100u8]).into_format())
+        .stroke(Srgba::from_components((114u8, 87u8, 82u8, 100u8)).into_format())
+        .fill(Srgba::from_components((254u8, 246u8, 201u8, 100u8)).into_format())
         .fill_style(FillStyle::Hachure)
         .fill_weight(DPI * 0.01)
         .build()

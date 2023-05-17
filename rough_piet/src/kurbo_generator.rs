@@ -5,7 +5,7 @@ use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 use palette::rgb::Rgba;
-use palette::{Pixel, Srgba};
+use palette::Srgba;
 use piet::kurbo::{BezPath, PathEl, Point};
 use piet::{Color, RenderContext, StrokeStyle};
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
@@ -82,16 +82,11 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         let stroke_color = self
                             .options
                             .stroke
-                            .unwrap_or_else(|| Srgba::new(1.0, 1.0, 1.0, 1.0));
-                        let rgb: [f32; 4] = Srgba::into_raw(stroke_color);
+                            .unwrap_or_else(|| Srgba::from_components((1.0, 1.0, 1.0, 1.0)));
+                        let rgb: (f32, f32, f32, f32) = stroke_color.into_components();
                         ctx.stroke_styled(
                             set.ops.clone(),
-                            &Color::rgba(
-                                rgb[0] as f64,
-                                rgb[1] as f64,
-                                rgb[2] as f64,
-                                rgb[3] as f64,
-                            ),
+                            &Color::rgba(rgb.0 as f64, rgb.1 as f64, rgb.2 as f64, rgb.3 as f64),
                             self.options.stroke_width.unwrap_or(1.0) as f64,
                             &ss,
                         );
@@ -101,15 +96,10 @@ impl<F: Float + Trig> KurboDrawable<F> {
                             .options
                             .stroke
                             .unwrap_or_else(|| Srgba::new(1.0, 1.0, 1.0, 1.0));
-                        let rgb: [f32; 4] = Srgba::into_raw(stroke_color);
+                        let rgb: (f32, f32, f32, f32) = stroke_color.into_components();
                         ctx.stroke(
                             set.ops.clone(),
-                            &Color::rgba(
-                                rgb[0] as f64,
-                                rgb[1] as f64,
-                                rgb[2] as f64,
-                                rgb[3] as f64,
-                            ),
+                            &Color::rgba(rgb.0 as f64, rgb.1 as f64, rgb.2 as f64, rgb.3 as f64),
                             self.options.stroke_width.unwrap_or(1.0) as f64,
                         );
                         ctx.restore().expect("Failed to restore render context");
@@ -121,28 +111,28 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         "curve" | "polygon" | "path" => {
                             let fill_color =
                                 self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
-                            let rgb: [f32; 4] = Srgba::into_raw(fill_color);
+                            let rgb: (f32, f32, f32, f32) = fill_color.into_components();
                             ctx.fill_even_odd(
                                 set.ops.clone(),
                                 &Color::rgba(
-                                    rgb[0] as f64,
-                                    rgb[1] as f64,
-                                    rgb[2] as f64,
-                                    rgb[3] as f64,
+                                    rgb.0 as f64,
+                                    rgb.1 as f64,
+                                    rgb.2 as f64,
+                                    rgb.3 as f64,
                                 ),
                             )
                         }
                         _ => {
                             let fill_color =
                                 self.options.fill.unwrap_or(Rgba::new(1.0, 1.0, 1.0, 1.0));
-                            let rgb: [f32; 4] = Srgba::into_raw(fill_color);
+                            let rgb: (f32, f32, f32, f32) = fill_color.into_components();
                             ctx.fill(
                                 set.ops.clone(),
                                 &Color::rgba(
-                                    rgb[0] as f64,
-                                    rgb[1] as f64,
-                                    rgb[2] as f64,
-                                    rgb[3] as f64,
+                                    rgb.0 as f64,
+                                    rgb.1 as f64,
+                                    rgb.2 as f64,
+                                    rgb.3 as f64,
                                 ),
                             )
                         }
@@ -167,15 +157,10 @@ impl<F: Float + Trig> KurboDrawable<F> {
                             .options
                             .fill
                             .unwrap_or_else(|| Rgba::new(1.0, 1.0, 1.0, 1.0));
-                        let rgb: [f32; 4] = Srgba::into_raw(fill_color);
+                        let rgb: (f32, f32, f32, f32) = fill_color.into_components();
                         ctx.stroke_styled(
                             set.ops.clone(),
-                            &Color::rgba(
-                                rgb[0] as f64,
-                                rgb[1] as f64,
-                                rgb[2] as f64,
-                                rgb[3] as f64,
-                            ),
+                            &Color::rgba(rgb.0 as f64, rgb.1 as f64, rgb.2 as f64, rgb.3 as f64),
                             fweight as f64,
                             &ss,
                         );
@@ -184,15 +169,10 @@ impl<F: Float + Trig> KurboDrawable<F> {
                             .options
                             .fill
                             .unwrap_or_else(|| Rgba::new(1.0, 1.0, 1.0, 1.0));
-                        let rgb: [f32; 4] = Srgba::into_raw(fill_color);
+                        let rgb: (f32, f32, f32, f32) = fill_color.into_components();
                         ctx.stroke(
                             set.ops.clone(),
-                            &Color::rgba(
-                                rgb[0] as f64,
-                                rgb[1] as f64,
-                                rgb[2] as f64,
-                                rgb[3] as f64,
-                            ),
+                            &Color::rgba(rgb.0 as f64, rgb.1 as f64, rgb.2 as f64, rgb.3 as f64),
                             fweight as f64,
                         );
                     }

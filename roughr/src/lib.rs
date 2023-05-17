@@ -166,4 +166,4 @@ pub mod points_on_path;
 pub mod renderer;
 
 pub use euclid::Point2D;
-pub use palette::{Pixel, Srgba};
+pub use palette::Srgba;
