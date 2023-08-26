@@ -27,6 +27,35 @@ pub enum FillStyle {
     ZigZagLine,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LineCap {
+    Butt,
+    Round,
+    Square,
+}
+
+impl Default for LineCap {
+    fn default() -> Self {
+        LineCap::Butt
+    }
+}
+
+/// Options for angled joins in strokes.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum LineJoin {
+    Miter { limit: f64 },
+    Round,
+    Bevel,
+}
+impl LineJoin {
+    pub const DEFAULT_MITER_LIMIT: f64 = 10.0;
+}
+impl Default for LineJoin {
+    fn default() -> Self {
+        LineJoin::Miter { limit: LineJoin::DEFAULT_MITER_LIMIT }
+    }
+}
+
 #[derive(Clone, Builder)]
 #[builder(setter(strip_option))]
 pub struct Options {
@@ -71,6 +100,10 @@ pub struct Options {
     #[builder(default = "None")]
     pub stroke_line_dash_offset: Option<f64>,
     #[builder(default = "None")]
+    pub line_cap: Option<LineCap>,
+    #[builder(default = "None")]
+    pub line_join: Option<LineJoin>,
+    #[builder(default = "None")]
     pub fill_line_dash: Option<Vec<f64>>,
     #[builder(default = "None")]
     pub fill_line_dash_offset: Option<f64>,
@@ -112,6 +145,8 @@ impl Default for Options {
             simplification: Some(1.0),
             stroke_line_dash: None,
             stroke_line_dash_offset: None,
+            line_cap: None,
+            line_join: None,
             fill_line_dash: None,
             fill_line_dash_offset: None,
             fixed_decimal_place_digits: None,
