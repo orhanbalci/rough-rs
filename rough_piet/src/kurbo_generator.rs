@@ -7,7 +7,7 @@ use num_traits::{Float, FromPrimitive};
 use palette::rgb::Rgba;
 use palette::Srgba;
 use piet::kurbo::{BezPath, PathEl, Point};
-use piet::{Color, RenderContext, StrokeStyle};
+use piet::{Color, LineJoin, RenderContext, StrokeStyle};
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
 use roughr::generator::Generator;
 
@@ -78,6 +78,12 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         let mut ss = StrokeStyle::new();
                         ss.set_dash_pattern(stroke_line_dash.as_slice());
                         ss.set_dash_offset(self.options.stroke_line_dash_offset.unwrap_or(1.0f64));
+                        ss.set_line_cap(convert_line_cap_from_roughr_to_piet(
+                            self.options.line_cap,
+                        ));
+                        ss.set_line_join(convert_line_join_from_roughr_to_piet(
+                            self.options.line_join,
+                        ));
 
                         let stroke_color = self
                             .options
@@ -152,7 +158,12 @@ impl<F: Float + Trig> KurboDrawable<F> {
                         let mut ss = StrokeStyle::new();
                         ss.set_dash_pattern(fill_line_dash.as_slice());
                         ss.set_dash_offset(self.options.fill_line_dash_offset.unwrap_or(0.0f64));
-
+                        ss.set_line_cap(convert_line_cap_from_roughr_to_piet(
+                            self.options.line_cap,
+                        ));
+                        ss.set_line_join(convert_line_join_from_roughr_to_piet(
+                            self.options.line_join,
+                        ));
                         let fill_color = self
                             .options
                             .fill
@@ -328,5 +339,27 @@ impl KurboGenerator {
     ) -> KurboDrawable<F> {
         let drawable = self.gen.path(svg_path, &self.options);
         drawable.to_kurbo_drawable()
+    }
+}
+
+fn convert_line_cap_from_roughr_to_piet(
+    roughr_line_cap: Option<roughr::core::LineCap>,
+) -> piet::LineCap {
+    match roughr_line_cap {
+        Some(roughr::core::LineCap::Butt) => piet::LineCap::Butt,
+        Some(roughr::core::LineCap::Round) => piet::LineCap::Round,
+        Some(roughr::core::LineCap::Square) => piet::LineCap::Square,
+        None => piet::LineCap::Butt,
+    }
+}
+
+fn convert_line_join_from_roughr_to_piet(
+    roughr_line_join: Option<roughr::core::LineJoin>,
+) -> LineJoin {
+    match roughr_line_join {
+        Some(roughr::core::LineJoin::Miter { limit }) => LineJoin::Miter { limit },
+        Some(roughr::core::LineJoin::Round) => LineJoin::Round,
+        Some(roughr::core::LineJoin::Bevel) => LineJoin::Bevel,
+        None => LineJoin::Miter { limit: LineJoin::DEFAULT_MITER_LIMIT },
     }
 }
