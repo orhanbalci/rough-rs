@@ -16,4 +16,4 @@ roughr = {path = "../roughr", version = "0.6.0"}
 num-traits = "0.2"
 euclid = "0.22"
 palette = "0.7"
-tiny-skia = "0.8"
+tiny-skia = "0.11"

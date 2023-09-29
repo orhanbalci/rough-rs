@@ -18,5 +18,5 @@ euclid = "0.22"
 num-traits = "0.2"
 
 [dev-dependencies]
-piet-common = {version = "0.5", features = ["png"]}
-piet = "0.5"
+piet-common = {version = "0.6", features = ["png"]}
+piet = "0.6"
