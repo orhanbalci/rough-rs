@@ -14,4 +14,4 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-svgtypes = "0.8"
+svgtypes = "0.11"
