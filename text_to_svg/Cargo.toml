@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 ttf-parser = "0.22.0"
+xmlwriter = "0.1"

@@ -3,8 +3,12 @@
 use std::path::Path;
 
 use options::Options;
+use outlinebuilder::Builder;
 use ttf_parser::{self as ttf, Face};
+
 mod options;
+mod outlinebuilder;
+mod xmlwriterext;
 
 pub struct TextToSvg<'a> {
     pub font: Face<'a>,
@@ -71,5 +75,50 @@ impl<'a> TextToSvg<'a> {
     pub fn get_height(&self, font_size: u16) -> f32 {
         let font_scale = font_size as f32 / self.font.units_per_em() as f32;
         return (self.font.ascender() - self.font.descender()) as f32 * font_scale;
+    }
+
+    fn glyph_to_path(
+        x: f64,
+        y: f64,
+        face: &ttf::Face,
+        glyph_id: ttf::GlyphId,
+        cell_size: f64,
+        scale: f64,
+        svg: &mut xmlwriter::XmlWriter,
+        path_buf: &mut String,
+    ) {
+        path_buf.clear();
+        let mut builder = Builder(path_buf);
+        let bbox = match face.outline_glyph(glyph_id, &mut builder) {
+            Some(v) => v,
+            None => return,
+        };
+        builder.finish();
+
+        let bbox_w = (bbox.x_max as f64 - bbox.x_min as f64) * scale;
+        let dx = (cell_size - bbox_w) / 2.0;
+        let y = y + cell_size + face.descender() as f64 * scale;
+
+        let transform = format!("matrix({} 0 0 {} {} {})", scale, -scale, x + dx, y);
+
+        svg.start_element("path");
+        svg.write_attribute("d", path_buf);
+        svg.write_attribute("transform", &transform);
+        svg.end_element();
+
+        {
+            let bbox_h = (bbox.y_max as f64 - bbox.y_min as f64) * scale;
+            let bbox_x = x + dx + bbox.x_min as f64 * scale;
+            let bbox_y = y - bbox.y_max as f64 * scale;
+
+            svg.start_element("rect");
+            svg.write_attribute("x", &bbox_x);
+            svg.write_attribute("y", &bbox_y);
+            svg.write_attribute("width", &bbox_w);
+            svg.write_attribute("height", &bbox_h);
+            svg.write_attribute("fill", "none");
+            svg.write_attribute("stroke", "green");
+            svg.end_element();
+        }
     }
 }
