@@ -1,0 +1,16 @@
+[package]
+name = "text_to_svg"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ttf-parser = "0.22.0"
+xmlwriter = "0.1"
+
+[dev-dependencies]
+piet-common = {version = "0.6", features = ["png"]}
+palette = "0.7"
+rough_piet = "0.4"
+
