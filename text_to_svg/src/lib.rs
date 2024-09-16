@@ -78,9 +78,9 @@ impl<'a> TextToSvg<'a> {
     }
 
     fn glyph_to_path(
+        &self,
         x: f64,
         y: f64,
-        face: &ttf::Face,
         glyph_id: ttf::GlyphId,
         cell_size: f64,
         scale: f64,
@@ -89,7 +89,7 @@ impl<'a> TextToSvg<'a> {
     ) {
         path_buf.clear();
         let mut builder = Builder(path_buf);
-        let bbox = match face.outline_glyph(glyph_id, &mut builder) {
+        let bbox = match self.font.outline_glyph(glyph_id, &mut builder) {
             Some(v) => v,
             None => return,
         };
@@ -97,7 +97,7 @@ impl<'a> TextToSvg<'a> {
 
         let bbox_w = (bbox.x_max as f64 - bbox.x_min as f64) * scale;
         let dx = (cell_size - bbox_w) / 2.0;
-        let y = y + cell_size + face.descender() as f64 * scale;
+        let y = y + cell_size + self.font.descender() as f64 * scale;
 
         let transform = format!("matrix({} 0 0 {} {} {})", scale, -scale, x + dx, y);
 
