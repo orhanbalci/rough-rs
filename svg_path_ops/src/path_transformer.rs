@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cgmath::{Angle, Deg, Matrix3, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
@@ -55,7 +57,7 @@ impl PathTransformer {
 
     pub fn matrix(&mut self, matrix: [f64; 6]) -> &mut Self {
         let converted = Matrix3::new(
-            matrix[0], matrix[3], 0.0, matrix[1], matrix[4], 0.0, matrix[2], matrix[5], 1.0,
+            matrix[0], matrix[1], 0.0, matrix[2], matrix[3], 0.0, matrix[4], matrix[5], 1.0,
         );
         self.stack.push(converted);
         self
@@ -87,5 +89,129 @@ impl PathTransformer {
         };
 
         self
+    }
+
+    fn evaluate_stack(&mut self) -> &mut Self {
+        if self.stack.len() == 0 {
+            return self;
+        } else {
+            if self.stack.len() == 1 {
+                let single_transformation = self.stack.pop().expect("empty transformation stack");
+                self.apply_matrix(single_transformation);
+                return self;
+            } else {
+                let mut combined = Matrix3::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+                while !self.stack.is_empty() {
+                    combined = combined
+                        * self
+                            .stack
+                            .pop()
+                            .expect("can not find transformation matrix");
+                }
+                self.apply_matrix(combined);
+                return self;
+            }
+        }
+    }
+
+    fn apply_matrix(&mut self, final_matrix: Matrix3<f64>) -> &mut Self {
+        return self;
+    }
+
+    fn iterate<F>(&mut self, func: F) -> &mut Self
+    where
+        F: Fn(&PathSegment, usize, f64, f64) -> Vec<PathSegment>,
+    {
+        let mut last_x: f64 = 0.0;
+        let mut last_y: f64 = 0.0;
+        let mut contour_start_x: f64 = 0.0;
+        let mut contour_start_y: f64 = 0.0;
+        let mut replacements = HashMap::new();
+
+        for (pos, segment) in self.path_segments.iter().enumerate() {
+            let transformation_result = func(segment, pos, last_x, last_y);
+
+            if !transformation_result.is_empty() {
+                replacements.insert(pos, transformation_result);
+            }
+
+            match segment {
+                PathSegment::MoveTo { abs, x, y } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                    contour_start_x = last_x;
+                    contour_start_y = last_y;
+                }
+                PathSegment::LineTo { abs, x, y } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::HorizontalLineTo { abs, x } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                }
+                PathSegment::VerticalLineTo { abs, y } => {
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::CurveTo { abs, x1: _, y1: _, x2: _, y2: _, x, y } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::SmoothCurveTo { abs, x2: _, y2: _, x, y } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::Quadratic { abs, x1: _, y1: _, x, y } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::SmoothQuadratic { abs, x, y } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::EllipticalArc {
+                    abs,
+                    rx: _,
+                    ry: _,
+                    x_axis_rotation: _,
+                    large_arc: _,
+                    sweep: _,
+                    x,
+                    y,
+                } => {
+                    last_x = x + if *abs { 0.0 } else { last_x };
+                    last_y = y + if *abs { 0.0 } else { last_y };
+                }
+                PathSegment::ClosePath { abs: _ } => {
+                    last_x = contour_start_x;
+                    last_y = contour_start_y;
+                }
+            }
+        }
+
+        if replacements.len() == 0 {
+            return self;
+        } else {
+            let mut updated_segments = vec![];
+            for i in (0..self.path_segments.len()) {
+                if replacements.contains_key(&i) {
+                    let replacing_segments =
+                        replacements.get(&i).expect("can not retrieve replacement");
+                    replacing_segments
+                        .iter()
+                        .for_each(|r| updated_segments.push(*r));
+                } else {
+                    updated_segments.push(
+                        *self
+                            .path_segments
+                            .get(i)
+                            .expect("can not retrieve path segment"),
+                    );
+                }
+            }
+
+            self.path_segments = updated_segments;
+
+            return self;
+        }
     }
 }
