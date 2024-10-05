@@ -115,6 +115,106 @@ impl PathTransformer {
     }
 
     fn apply_matrix(&mut self, final_matrix: Matrix3<f64>) -> &mut Self {
+        self.iterate(|segment, pos, x, y| {
+            let result: PathSegment;
+            match *segment {
+                PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
+                    if abs {
+                        let p = final_matrix * Vector3::new(seg_x, seg_y, 1.0);
+                        result = PathSegment::MoveTo { abs: true, x: p.x, y: p.y }
+                    } else {
+                        // Edge case. The very first `m` should be processed as absolute, if happens.
+                        // Make sense for coord shift transforms.
+                        let is_relative = pos > 0;
+                        let p = final_matrix
+                            * Vector3::new(seg_x, seg_y, if is_relative { 0.0 } else { 1.0 });
+
+                        result = PathSegment::MoveTo { abs: false, x: p.x, y: p.y };
+                    }
+                }
+                PathSegment::LineTo { abs, x: seg_x, y: seg_y } => {
+                    let p = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    result = PathSegment::LineTo { abs, x: p.x, y: p.y }
+                }
+                PathSegment::HorizontalLineTo { abs, x: seg_x } => {
+                    if abs {
+                        let p = final_matrix * Vector3::new(seg_x, y, 1.0);
+                        result = if p.x == (final_matrix * Vector3::new(x, y, 0.0)).y {
+                            PathSegment::HorizontalLineTo { abs: true, x: p.x }
+                        } else {
+                            PathSegment::LineTo { abs: true, x: p.x, y: p.y }
+                        }
+                    } else {
+                        let p = final_matrix * Vector3::new(seg_x, 0.0, 0.0);
+
+                        result = if p.y == 0.0 {
+                            PathSegment::HorizontalLineTo { abs: false, x: p.x }
+                        } else {
+                            PathSegment::LineTo { abs: false, x: p.x, y: p.y }
+                        };
+                    }
+                }
+                PathSegment::VerticalLineTo { abs, y: seg_y } => {
+                    if abs {
+                        let p = final_matrix * Vector3::new(x, seg_y, 1.0);
+                        result = if p.x == (final_matrix * Vector3::new(x, y, 0.0)).x {
+                            PathSegment::VerticalLineTo { abs: true, y: p.y }
+                        } else {
+                            PathSegment::LineTo { abs: true, x: p.x, y: p.y }
+                        };
+                    } else {
+                        let p = final_matrix * Vector3::new(x, seg_y, 0.0);
+                        result = if p.x == 0.0 {
+                            PathSegment::VerticalLineTo { abs: false, y: p.y }
+                        } else {
+                            PathSegment::LineTo { abs: false, x: p.x, y: p.y }
+                        };
+                    }
+                }
+                PathSegment::CurveTo { abs, x1, y1, x2, y2, x: seg_x, y: seg_y } => {
+                    let p1 = final_matrix * Vector3::new(x1, y1, if abs { 1.0 } else { 0.0 });
+                    let p2 = final_matrix * Vector3::new(x2, y2, if abs { 1.0 } else { 0.0 });
+                    let p3 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    result = PathSegment::CurveTo {
+                        abs,
+                        x1: p1.x,
+                        y1: p1.y,
+                        x2: p2.x,
+                        y2: p2.y,
+                        x: p3.x,
+                        y: p3.y,
+                    };
+                }
+                PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_x, y: seg_y } => {
+                    let p2 = final_matrix * Vector3::new(x2, y2, if abs { 1.0 } else { 0.0 });
+                    let p3 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    result =
+                        PathSegment::SmoothCurveTo { abs, x2: p2.x, y2: p2.y, x: p3.x, y: p3.y };
+                }
+                PathSegment::Quadratic { abs, x1, y1, x: seg_x, y: seg_y } => {
+                    let p1 = final_matrix * Vector3::new(x1, y1, if abs { 1.0 } else { 0.0 });
+                    let p2 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    result = PathSegment::Quadratic { abs, x1: p1.x, y1: p1.y, x: p2.x, y: p2.y };
+                }
+                PathSegment::SmoothQuadratic { abs, x: seg_x, y: seg_y } => {
+                    let p2 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    result = PathSegment::SmoothQuadratic { abs, x: p2.x, y: p2.y }
+                }
+
+                PathSegment::EllipticalArc {
+                    abs,
+                    rx,
+                    ry,
+                    x_axis_rotation,
+                    large_arc,
+                    sweep,
+                    x,
+                    y,
+                } => todo!(),
+                PathSegment::ClosePath { abs } => result = PathSegment::ClosePath { abs },
+            };
+            vec![result]
+        });
         return self;
     }
 
