@@ -687,6 +687,7 @@ fn arc_to_cubic_curves(
 
 #[cfg(test)]
 mod test {
+
     use svgtypes::{PathParser, PathSegment};
 
     use super::absolutize;

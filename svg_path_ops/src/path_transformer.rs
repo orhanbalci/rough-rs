@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use cgmath::{Angle, Deg, Matrix3, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
+use super::print_line_segment;
+
 pub struct PathTransformer {
     path_segments: Vec<PathSegment>,
     stack: Vec<Matrix3<f64>>,
@@ -10,10 +12,10 @@ pub struct PathTransformer {
 
 impl PathTransformer {
     pub fn new(path: String) -> Self {
-        let mut path_parser = PathParser::from(path.as_ref());
-        if path_parser.any(|a| a.is_err()) {
-            panic!("unexpected path string. can not parse it.")
-        }
+        let path_parser = PathParser::from(path.as_ref());
+        // if path_parser.any(|a| a.is_err()) {
+        //     panic!("unexpected path string. can not parse it.")
+        // }
 
         PathTransformer {
             path_segments: path_parser
@@ -48,7 +50,6 @@ impl PathTransformer {
         self.stack.push(skew_xmatrix);
         self
     }
-
     pub fn skew_y(&mut self, degrees: f64) -> &mut Self {
         let skew_ymatrix = Matrix3::new(1.0, Deg(degrees).tan(), 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
         self.stack.push(skew_ymatrix);
@@ -129,7 +130,7 @@ impl PathTransformer {
                         let p = final_matrix
                             * Vector3::new(seg_x, seg_y, if is_relative { 0.0 } else { 1.0 });
 
-                        result = PathSegment::MoveTo { abs: false, x: p.x, y: p.y };
+                        result = PathSegment::MoveTo { abs: !is_relative, x: p.x, y: p.y };
                     }
                 }
                 PathSegment::LineTo { abs, x: seg_x, y: seg_y } => {
@@ -139,7 +140,7 @@ impl PathTransformer {
                 PathSegment::HorizontalLineTo { abs, x: seg_x } => {
                     if abs {
                         let p = final_matrix * Vector3::new(seg_x, y, 1.0);
-                        result = if p.x == (final_matrix * Vector3::new(x, y, 0.0)).y {
+                        result = if p.y == (final_matrix * Vector3::new(x, y, 1.0)).y {
                             PathSegment::HorizontalLineTo { abs: true, x: p.x }
                         } else {
                             PathSegment::LineTo { abs: true, x: p.x, y: p.y }
@@ -157,13 +158,13 @@ impl PathTransformer {
                 PathSegment::VerticalLineTo { abs, y: seg_y } => {
                     if abs {
                         let p = final_matrix * Vector3::new(x, seg_y, 1.0);
-                        result = if p.x == (final_matrix * Vector3::new(x, y, 0.0)).x {
+                        result = if p.x == (final_matrix * Vector3::new(x, y, 1.0)).x {
                             PathSegment::VerticalLineTo { abs: true, y: p.y }
                         } else {
                             PathSegment::LineTo { abs: true, x: p.x, y: p.y }
                         };
                     } else {
-                        let p = final_matrix * Vector3::new(x, seg_y, 0.0);
+                        let p = final_matrix * Vector3::new(0.0, seg_y, 0.0);
                         result = if p.x == 0.0 {
                             PathSegment::VerticalLineTo { abs: false, y: p.y }
                         } else {
@@ -292,7 +293,7 @@ impl PathTransformer {
             return self;
         } else {
             let mut updated_segments = vec![];
-            for i in (0..self.path_segments.len()) {
+            for i in 0..self.path_segments.len() {
                 if replacements.contains_key(&i) {
                     let replacing_segments =
                         replacements.get(&i).expect("can not retrieve replacement");
@@ -313,5 +314,183 @@ impl PathTransformer {
 
             return self;
         }
+    }
+
+    pub fn to_string(&mut self) -> String {
+        self.evaluate_stack();
+
+        self.path_segments
+            .iter()
+            .map(|a| PathTransformer::to_string_segment(a))
+            .reduce(|segment1, segment2| format!("{} {}", segment1, segment2))
+            .expect("can not convert to string")
+    }
+
+    fn to_string_segment(segment: &PathSegment) -> String {
+        match segment {
+            PathSegment::MoveTo { abs, x, y } => {
+                if *abs {
+                    format!("M {} {}", x, y)
+                } else {
+                    format!("m {} {}", x, y)
+                }
+            }
+            PathSegment::LineTo { abs, x, y } => {
+                if *abs {
+                    format!("L {} {}", x, y)
+                } else {
+                    format!("l {} {}", x, y)
+                }
+            }
+            PathSegment::HorizontalLineTo { abs, x } => {
+                if *abs {
+                    format!("H {}", x)
+                } else {
+                    format!("h {}", x)
+                }
+            }
+            PathSegment::VerticalLineTo { abs, y } => {
+                if *abs {
+                    format!("V {}", y)
+                } else {
+                    format!("v {}", y)
+                }
+            }
+            PathSegment::CurveTo { abs, x1, y1, x2, y2, x, y } => {
+                if *abs {
+                    format!("C {} {} {} {} {} {}", x1, y1, x2, y2, x, y)
+                } else {
+                    format!("c {} {} {} {} {} {}", x1, y1, x2, y2, x, y)
+                }
+            }
+            PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
+                if *abs {
+                    format!("S {} {} {} {}", x2, y2, x, y)
+                } else {
+                    format!("s {} {} {} {}", x2, y2, x, y)
+                }
+            }
+            PathSegment::Quadratic { abs, x1, y1, x, y } => {
+                if *abs {
+                    format!("Q {} {} {} {}", x1, y1, x, y)
+                } else {
+                    format!("q {} {} {} {}", x1, y1, x, y)
+                }
+            }
+            PathSegment::SmoothQuadratic { abs, x, y } => {
+                if *abs {
+                    format!("T {} {}", x, y)
+                } else {
+                    format!("t {} {}", x, y)
+                }
+            }
+            PathSegment::EllipticalArc {
+                abs,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                x,
+                y,
+            } => {
+                if *abs {
+                    format!(
+                        "A {} {} {} {} {} {} {}",
+                        rx, ry, x_axis_rotation, large_arc, sweep, x, y
+                    )
+                } else {
+                    format!(
+                        "a {} {} {} {} {} {} {}",
+                        rx, ry, x_axis_rotation, large_arc, sweep, x, y
+                    )
+                }
+            }
+            PathSegment::ClosePath { abs } => {
+                if *abs {
+                    format!("Z")
+                } else {
+                    format!("z")
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::PathTransformer;
+
+    #[test]
+    fn basic_translate() {
+        let actual = PathTransformer::new("M0 0 L 10 10".into())
+            .scale(2.0, 2.0)
+            .to_string();
+
+        assert_eq!(actual, "M 0 0 L 20 20")
+    }
+
+    #[test]
+    fn should_not_collapse_multiple_abs_m() {
+        let actual =
+            PathTransformer::new("M 10 10 M 10 100 M 100 100 M 100 10 Z".into()).to_string();
+        assert_eq!(actual, "M 10 10 M 10 100 M 100 100 M 100 10 Z");
+    }
+
+    #[test]
+    fn should_not_collapse_multiple_rel_m() {
+        let actual =
+            PathTransformer::new("m 10 10 m 10 100 m 100 100 m 100 10 z".into()).to_string();
+        assert_eq!(actual, "M 10 10 m 10 100 m 100 100 m 100 10 z");
+    }
+
+    #[test]
+    fn should_scale_abs_curve() {
+        let actual = PathTransformer::new("M10 10 C 20 40 40 40 50 10".into())
+            .scale(2.0, 1.5)
+            .to_string();
+        assert_eq!(actual, "M 20 15 C 40 60 80 60 100 15");
+    }
+
+    #[test]
+    fn should_scale_rel_curve() {
+        let actual = PathTransformer::new("M10 10 c 10 30 30 30 40 0".into())
+            .scale(2.0, 1.5)
+            .to_string();
+        assert_eq!(actual, "M 20 15 c 20 45 60 45 80 0");
+    }
+
+    #[test]
+    fn should_scale_horizontal_lines() {
+        let actual = PathTransformer::new("M10 10H40h50".into())
+            .scale(2.0, 1.5)
+            .to_string();
+        assert_eq!(actual, "M 20 15 H 80 h 100");
+    }
+
+    #[test]
+    fn should_scale_vertical_lines() {
+        let actual = PathTransformer::new("M10 10V40v50".into())
+            .scale(2.0, 1.5)
+            .to_string();
+        assert_eq!(actual, "M 20 15 V 60 v 75");
+    }
+
+    #[test]
+    #[ignore = "not implemented yet"]
+    fn should_scale_arc_rel() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .scale(2.0, 1.5)
+            .to_string();
+        assert_eq!(actual, "M 80 45 a 72 34 32.04 0 1 40 75");
+    }
+
+    #[test]
+    #[ignore = "not implemented yet"]
+    fn should_scale_arc_abs() {
+        let actual = PathTransformer::new("M40 30A20 40 -45 0 1 20 50".into())
+            .scale(2.0, 1.5)
+            .to_string();
+        assert_eq!(actual, "M80 45A72 34 32.04 0 1 40 75");
     }
 }
