@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{vec_deque, HashMap, VecDeque};
 
-use cgmath::{Angle, Deg, Matrix3, Vector2, Vector3};
+use cgmath::{Angle, Deg, InnerSpace, Matrix3, Rad, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
 use super::print_line_segment;
 
 pub struct PathTransformer {
-    path_segments: Vec<PathSegment>,
-    stack: Vec<Matrix3<f64>>,
+    path_segments: VecDeque<PathSegment>,
+    stack: VecDeque<Matrix3<f64>>,
 }
 
 impl PathTransformer {
@@ -22,37 +22,47 @@ impl PathTransformer {
                 .filter(|ps| ps.is_ok())
                 .map(|ps| ps.unwrap())
                 .collect(),
-            stack: Vec::new(),
+            stack: VecDeque::new(),
         }
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
         self.stack
-            .push(Matrix3::from_translation(Vector2::new(tx, ty)));
+            .push_back(Matrix3::from_translation(Vector2::new(tx, ty)));
         self
     }
 
     pub fn scale(&mut self, sx: f64, sy: f64) -> &mut Self {
-        self.stack.push(Matrix3::from_nonuniform_scale(sx, sy));
+        self.stack.push_back(Matrix3::from_nonuniform_scale(sx, sy));
         self
     }
 
+    // pub fn rotate(&mut self, angle: f64, rx: f64, ry: f64) -> &mut Self {
+    //     self.stack.push_back(Matrix3::from_axis_angle(
+    //         Vector3::new(rx, ry, 0.0).normalize(),
+    //         Deg(angle),
+    //     ));
+    //     self
+    // }
+
     pub fn rotate(&mut self, angle: f64, rx: f64, ry: f64) -> &mut Self {
-        self.stack.push(Matrix3::from_axis_angle(
-            Vector3::new(rx, ry, 0.0),
-            Deg(angle),
-        ));
+        if angle != 0.0 {
+            self.translate(rx, ry);
+            let rad = Rad::from(Deg(angle));
+            self.matrix([rad.cos(), rad.sin(), -rad.sin(), rad.cos(), 0.0, 0.0]);
+            self.translate(-rx, -ry);
+        }
         self
     }
 
     pub fn skew_x(&mut self, degrees: f64) -> &mut Self {
-        let skew_xmatrix = Matrix3::new(1.0, 0.0, 0.0, Deg(degrees).tan(), 1.0, 0.0, 0.0, 0.0, 1.0);
-        self.stack.push(skew_xmatrix);
+        let rad = Rad::from(Deg(degrees));
+        self.matrix([1.0, 0.0, rad.tan(), 1.0, 0.0, 0.0]);
         self
     }
     pub fn skew_y(&mut self, degrees: f64) -> &mut Self {
-        let skew_ymatrix = Matrix3::new(1.0, Deg(degrees).tan(), 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
-        self.stack.push(skew_ymatrix);
+        let rad = Rad::from(Deg(degrees));
+        self.matrix([1.0, rad.tan(), 0.0, 1.0, 0.0, 0.0]);
         self
     }
 
@@ -60,7 +70,7 @@ impl PathTransformer {
         let converted = Matrix3::new(
             matrix[0], matrix[1], 0.0, matrix[2], matrix[3], 0.0, matrix[4], matrix[5], 1.0,
         );
-        self.stack.push(converted);
+        self.stack.push_back(converted);
         self
     }
 
@@ -97,7 +107,8 @@ impl PathTransformer {
             return self;
         } else {
             if self.stack.len() == 1 {
-                let single_transformation = self.stack.pop().expect("empty transformation stack");
+                let single_transformation =
+                    self.stack.pop_front().expect("empty transformation stack");
                 self.apply_matrix(single_transformation);
                 return self;
             } else {
@@ -106,7 +117,7 @@ impl PathTransformer {
                     combined = combined
                         * self
                             .stack
-                            .pop()
+                            .pop_front()
                             .expect("can not find transformation matrix");
                 }
                 self.apply_matrix(combined);
@@ -292,16 +303,16 @@ impl PathTransformer {
         if replacements.len() == 0 {
             return self;
         } else {
-            let mut updated_segments = vec![];
+            let mut updated_segments = VecDeque::new();
             for i in 0..self.path_segments.len() {
                 if replacements.contains_key(&i) {
                     let replacing_segments =
                         replacements.get(&i).expect("can not retrieve replacement");
                     replacing_segments
                         .iter()
-                        .for_each(|r| updated_segments.push(*r));
+                        .for_each(|r| updated_segments.push_back(*r));
                 } else {
-                    updated_segments.push(
+                    updated_segments.push_back(
                         *self
                             .path_segments
                             .get(i)
@@ -492,5 +503,13 @@ mod test {
             .scale(2.0, 1.5)
             .to_string();
         assert_eq!(actual, "M80 45A72 34 32.04 0 1 40 75");
+    }
+
+    #[test]
+    fn should_rotate_by_90_degrees_about_point_10_10() {
+        let actual = PathTransformer::new("M10 10L15 10".into())
+            .rotate(90.0, 10.0, 10.0)
+            .to_string();
+        assert_eq!(actual, "M 10 10 L 10 15");
     }
 }
