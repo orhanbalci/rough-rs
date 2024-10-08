@@ -1,5 +1,6 @@
 use std::collections::{vec_deque, HashMap, VecDeque};
 
+use cgmath::num_traits::Pow;
 use cgmath::{Angle, Deg, InnerSpace, Matrix3, Rad, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
@@ -230,9 +231,204 @@ impl PathTransformer {
         return self;
     }
 
-    fn iterate<F>(&mut self, func: F) -> &mut Self
+    fn to_fixed(input: f64, d: u8) -> f64 {
+        (input * 10.0f64.pow(d)).round() / 10.0f64.pow(d)
+    }
+
+    pub fn round(&mut self, d: u8) -> &mut Self {
+        let mut contour_start_delta_x = 0.0;
+        let mut contour_start_delta_y = 0.0;
+        let mut delta_x = 0.0;
+        let mut delta_y = 0.0;
+
+        self.evaluate_stack();
+
+        self.iterate(|segment, pos, x, y| match segment {
+            PathSegment::HorizontalLineTo { abs, x: seg_x } => {
+                let mut seg_x = *seg_x;
+                if !abs {
+                    seg_x += delta_x;
+                }
+                let rounded = Self::to_fixed(seg_x, d);
+                delta_x = seg_x - rounded;
+                seg_x = rounded;
+                vec![PathSegment::HorizontalLineTo { abs: *abs, x: seg_x }]
+            }
+            PathSegment::VerticalLineTo { abs, y: seg_y } => {
+                let mut seg_y = *seg_y;
+                if !abs {
+                    seg_y += delta_y;
+                }
+                let rounded = Self::to_fixed(seg_y, d);
+                delta_y = seg_y - rounded;
+                seg_y = rounded;
+                vec![PathSegment::VerticalLineTo { abs: *abs, y: seg_y }]
+            }
+            PathSegment::ClosePath { abs: _ } => {
+                delta_x = contour_start_delta_x;
+                delta_y = contour_start_delta_y;
+                vec![]
+            }
+
+            PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+
+                if !abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                contour_start_delta_x = delta_x;
+                contour_start_delta_y = delta_y;
+
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+
+                vec![PathSegment::MoveTo { abs: *abs, x: seg_x, y: seg_y }]
+            }
+            PathSegment::EllipticalArc {
+                abs,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                x: seg_x,
+                y: seg_y,
+            } => {
+                // [cmd, rx, ry, x-axis-rotation, large-arc-flag, sweep-flag, x, y]
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+                let mut rx = *rx;
+                let mut ry = *ry;
+                let mut x_axis_rotation = *x_axis_rotation;
+
+                if !*abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                rx = Self::to_fixed(rx, d);
+                ry = Self::to_fixed(ry, d);
+                x_axis_rotation = Self::to_fixed(x_axis_rotation, d + 2);
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+                vec![PathSegment::EllipticalArc {
+                    abs: *abs,
+                    rx: rx,
+                    ry: ry,
+                    x_axis_rotation: x_axis_rotation,
+                    large_arc: *large_arc,
+                    sweep: *sweep,
+                    x: seg_x,
+                    y: seg_y,
+                }]
+            }
+            PathSegment::LineTo { abs, x: seg_x, y: seg_y } => {
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+
+                if !abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+                vec![PathSegment::LineTo { abs: *abs, x: seg_x, y: seg_y }]
+            }
+            PathSegment::CurveTo { abs, x1, y1, x2, y2, x: seg_x, y: seg_y } => {
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+                let mut x1 = *x1;
+                let mut y1 = *y1;
+                let mut x2 = *x2;
+                let mut y2 = *y2;
+
+                if !abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+                x1 = Self::to_fixed(x1, d);
+                y1 = Self::to_fixed(y1, d);
+                x2 = Self::to_fixed(x2, d);
+                y2 = Self::to_fixed(y2, d);
+                Vec::from([PathSegment::CurveTo { abs: *abs, x1, y1, x2, y2, x: seg_x, y: seg_y }])
+            }
+            PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_x, y: seg_y } => {
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+                let mut x2 = *x2;
+                let mut y2 = *y2;
+
+                if !abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+                x2 = Self::to_fixed(x2, d);
+                y2 = Self::to_fixed(y2, d);
+                Vec::from([PathSegment::SmoothCurveTo { abs: *abs, x2, y2, x: seg_x, y: seg_y }])
+            }
+            PathSegment::Quadratic { abs, x1, y1, x: seg_x, y: seg_y } => {
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+                let mut x1 = *x1;
+                let mut y1 = *y1;
+
+                if !abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+                x1 = Self::to_fixed(x1, d);
+                y1 = Self::to_fixed(y1, d);
+                Vec::from([PathSegment::Quadratic { abs: *abs, x1, y1, x: seg_x, y: seg_y }])
+            }
+            PathSegment::SmoothQuadratic { abs, x: seg_x, y: seg_y } => {
+                let mut seg_x = *seg_x;
+                let mut seg_y = *seg_y;
+
+                if !abs {
+                    seg_x += delta_x;
+                    seg_y += delta_y;
+                }
+                delta_x = seg_x - Self::to_fixed(seg_x, d);
+                delta_y = seg_y - Self::to_fixed(seg_y, d);
+
+                seg_x = Self::to_fixed(seg_x, d);
+                seg_y = Self::to_fixed(seg_y, d);
+                Vec::from([PathSegment::SmoothQuadratic { abs: *abs, x: seg_x, y: seg_y }])
+            }
+        });
+        self
+    }
+
+    fn iterate<F>(&mut self, mut func: F) -> &mut Self
     where
-        F: Fn(&PathSegment, usize, f64, f64) -> Vec<PathSegment>,
+        F: FnMut(&PathSegment, usize, f64, f64) -> Vec<PathSegment>,
     {
         let mut last_x: f64 = 0.0;
         let mut last_y: f64 = 0.0;
@@ -509,7 +705,35 @@ mod test {
     fn should_rotate_by_90_degrees_about_point_10_10() {
         let actual = PathTransformer::new("M10 10L15 10".into())
             .rotate(90.0, 10.0, 10.0)
+            .round(0)
             .to_string();
         assert_eq!(actual, "M 10 10 L 10 15");
+    }
+
+    #[test]
+    fn should_rotate_by_negative_90_degrees_about_point_10_10() {
+        let actual = PathTransformer::new("M0 10L0 20".into())
+            .rotate(-90.0, 0.0, 0.0)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 10 0 L 20 0");
+    }
+
+    #[test]
+    fn skew_x() {
+        let actual = PathTransformer::new("M5 5L15 20".into())
+            .skew_x(75.96)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 25 5 L 95 20");
+    }
+
+    #[test]
+    fn skew_y() {
+        let actual = PathTransformer::new("M5 5L15 20".into())
+            .skew_y(75.96)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 5 25 L 15 80");
     }
 }
