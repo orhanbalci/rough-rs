@@ -91,7 +91,8 @@
 //! );
 //! ```
 
-pub mod path_transformer;
+pub(crate) mod ellipse;
+pub mod pt;
 
 use std::borrow::Borrow;
 use std::f64::consts::PI;

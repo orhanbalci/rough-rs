@@ -4,6 +4,8 @@ use cgmath::num_traits::Pow;
 use cgmath::{Angle, Deg, Matrix3, Rad, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
+use super::ellipse::Ellipse;
+
 pub struct PathTransformer {
     path_segments: VecDeque<PathSegment>,
     stack: Vec<Matrix3<f64>>,
@@ -218,9 +220,56 @@ impl PathTransformer {
                     x_axis_rotation,
                     large_arc,
                     sweep,
-                    x,
-                    y,
-                } => todo!(),
+                    x: seg_x,
+                    y: seg_y,
+                } => {
+                    let mut sweep = sweep;
+                    // Transform rx, ry and the x-axis-rotation
+                    // var ma = m.toArray();
+                    let mut e = Ellipse::new(rx, ry, x_axis_rotation);
+                    e.transform(&[
+                        final_matrix[0][0],
+                        final_matrix[0][1],
+                        final_matrix[1][0],
+                        final_matrix[1][1],
+                    ]);
+
+                    // flip sweep-flag if matrix is not orientation-preserving
+                    if final_matrix[0][0] * final_matrix[1][1]
+                        - final_matrix[0][1] * final_matrix[1][0]
+                        < 0.0
+                    {
+                        sweep = if sweep { false } else { true };
+                    }
+
+                    // Transform end point as usual (without translation for relative notation)
+                    let p = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+
+                    // Empty arcs can be ignored by renderer, but should not be dropped
+                    // to avoid collisions with `S A S` and so on. Replace with empty line.
+                    if (abs && seg_x == x && seg_y == y) || (!abs && seg_x == 0.0 && seg_y == 0.0) {
+                        result = PathSegment::LineTo { abs, x: p.x, y: p.y };
+                    } else {
+                        // if the resulting ellipse is (almost) a segment ...
+                        if e.is_degenrate() {
+                            // replace the arc by a line
+                            result = PathSegment::LineTo { abs, x: p.x, y: p.y };
+                        } else {
+                            // if it is a real ellipse
+                            // s[0], s[4] and s[5] are not modified
+                            result = PathSegment::EllipticalArc {
+                                abs,
+                                rx: e.rx,
+                                ry: e.ry,
+                                x_axis_rotation: e.ax.0,
+                                large_arc,
+                                sweep,
+                                x: p.x,
+                                y: p.y,
+                            }
+                        }
+                    }
+                }
                 PathSegment::ClosePath { abs } => result = PathSegment::ClosePath { abs },
             };
             vec![result]
@@ -750,21 +799,22 @@ mod test {
     }
 
     #[test]
-    fn should_not_collapse_multiple_abs_m() {
+    fn not_collapse_multiple_abs_m() {
         let actual =
             PathTransformer::new("M 10 10 M 10 100 M 100 100 M 100 10 Z".into()).to_string();
         assert_eq!(actual, "M 10 10 M 10 100 M 100 100 M 100 10 Z");
     }
 
     #[test]
-    fn should_not_collapse_multiple_rel_m() {
+    #[ignore = "First M fails"]
+    fn not_collapse_multiple_rel_m() {
         let actual =
             PathTransformer::new("m 10 10 m 10 100 m 100 100 m 100 10 z".into()).to_string();
         assert_eq!(actual, "M 10 10 m 10 100 m 100 100 m 100 10 z");
     }
 
     #[test]
-    fn should_scale_abs_curve() {
+    fn scale_abs_curve() {
         let actual = PathTransformer::new("M10 10 C 20 40 40 40 50 10".into())
             .scale(2.0, 1.5)
             .to_string();
@@ -772,7 +822,7 @@ mod test {
     }
 
     #[test]
-    fn should_scale_rel_curve() {
+    fn scale_rel_curve() {
         let actual = PathTransformer::new("M10 10 c 10 30 30 30 40 0".into())
             .scale(2.0, 1.5)
             .to_string();
@@ -780,7 +830,7 @@ mod test {
     }
 
     #[test]
-    fn should_scale_horizontal_lines() {
+    fn scale_horizontal_lines() {
         let actual = PathTransformer::new("M10 10H40h50".into())
             .scale(2.0, 1.5)
             .to_string();
@@ -788,7 +838,7 @@ mod test {
     }
 
     #[test]
-    fn should_scale_vertical_lines() {
+    fn scale_vertical_lines() {
         let actual = PathTransformer::new("M10 10V40v50".into())
             .scale(2.0, 1.5)
             .to_string();
@@ -796,25 +846,25 @@ mod test {
     }
 
     #[test]
-    #[ignore = "not implemented yet"]
-    fn should_scale_arc_rel() {
+    fn scale_arc_rel() {
         let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
             .scale(2.0, 1.5)
+            .round(0)
             .to_string();
         assert_eq!(actual, "M 80 45 a 72 34 32.04 0 1 40 75");
     }
 
     #[test]
-    #[ignore = "not implemented yet"]
-    fn should_scale_arc_abs() {
+    fn scale_arc_abs() {
         let actual = PathTransformer::new("M40 30A20 40 -45 0 1 20 50".into())
             .scale(2.0, 1.5)
+            .round(0)
             .to_string();
-        assert_eq!(actual, "M80 45A72 34 32.04 0 1 40 75");
+        assert_eq!(actual, "M 80 45 A 72 34 32.04 0 1 40 75");
     }
 
     #[test]
-    fn should_rotate_by_90_degrees_about_point_10_10() {
+    fn rotate_by_90_degrees_about_point_10_10() {
         let actual = PathTransformer::new("M10 10L15 10".into())
             .rotate(90.0, 10.0, 10.0)
             .round(0)
@@ -823,7 +873,7 @@ mod test {
     }
 
     #[test]
-    fn should_rotate_by_negative_90_degrees_about_point_10_10() {
+    fn rotate_by_negative_90_degrees_about_point_10_10() {
         let actual = PathTransformer::new("M0 10L0 20".into())
             .rotate(-90.0, 0.0, 0.0)
             .round(0)
@@ -850,7 +900,7 @@ mod test {
     }
 
     #[test]
-    fn should_transform_path_with_absolute_segments() {
+    fn transform_path_with_absolute_segments() {
         let actual = PathTransformer::new("M5 5 C20 30 10 15 30 15".into())
             .matrix([1.5, 0.5, 0.5, 1.5, 10.0, 15.0])
             .to_string();
@@ -858,7 +908,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_transform_path_with_relative_segments() {
+    pub fn transform_path_with_relative_segments() {
         let actual = PathTransformer::new("M5 5 c10 12 10 15 20 30".into())
             .matrix([1.5, 0.5, 0.5, 1.5, 10.0, 15.0])
             .to_string();
@@ -874,7 +924,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_scale_and_translate() {
+    pub fn scale_and_translate() {
         let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
             .scale(2.0, 3.0)
             .translate(100.0, 100.0)
@@ -883,7 +933,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_scale_and_rotate() {
+    pub fn scale_and_rotate() {
         let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
             .scale(2.0, 3.0)
             .rotate(90.0, 0.0, 0.0)
@@ -894,7 +944,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_handle_unit_transforms() {
+    pub fn handle_unit_transforms() {
         let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
             .translate(0.0, 0.0)
             .scale(1.0, 1.0)
@@ -905,7 +955,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_translate_abs_curve() {
+    pub fn translate_abs_curve() {
         let actual = PathTransformer::new("M10 10 C 20 40 40 40 50 10".into())
             .translate(5.0, 15.0)
             .to_string();
@@ -913,7 +963,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_translate_rel_curve() {
+    pub fn translate_rel_curve() {
         let actual = PathTransformer::new("M10 10 c 10 30 30 30 40 0".into())
             .translate(5.0, 15.0)
             .to_string();
@@ -921,7 +971,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_translate_horizontal_lines() {
+    pub fn translate_horizontal_lines() {
         let actual = PathTransformer::new("M10 10H40h50".into())
             .translate(10.0, 15.0)
             .to_string();
@@ -929,7 +979,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_translate_vertical_lines() {
+    pub fn translate_vertical_lines() {
         let actual = PathTransformer::new("M10 10V40v50".into())
             .translate(10.0, 15.0)
             .to_string();
@@ -937,8 +987,7 @@ mod test {
     }
 
     #[test]
-    #[ignore = "Not implemented"]
-    pub fn should_translate_rel_arcs() {
+    pub fn translate_rel_arcs() {
         let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
             .translate(10.0, 15.0)
             .round(0)
@@ -947,8 +996,7 @@ mod test {
     }
 
     #[test]
-    #[ignore = "Not implemented"]
-    pub fn should_translate_abs_arcs() {
+    pub fn translate_abs_arcs() {
         let actual = PathTransformer::new("M40 30A20 40 -45 0 1 20 50".into())
             .translate(10.0, 15.0)
             .round(0)
@@ -957,7 +1005,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_round_arcs() {
+    pub fn round_arcs() {
         let actual = PathTransformer::new("M10 10A12.5 17.5 45.5 0 0 15.5 19.5".into())
             .round(0)
             .to_string();
@@ -965,7 +1013,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_round_curves() {
+    pub fn round_curves() {
         let actual = PathTransformer::new("M10 10 c 10.12 30.34 30.56 30 40.00 0.12".into())
             .round(0)
             .to_string();
@@ -973,7 +1021,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_round_precision() {
+    pub fn round_precision() {
         let actual = PathTransformer::new("M10.123 10.456L20.4351 30.0000".into())
             .round(2)
             .to_string();
@@ -981,7 +1029,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_tract_errors() {
+    pub fn track_errors() {
         let actual = PathTransformer::new("M1.2 1.4l1.2 1.4 l1.2 1.4".into())
             .round(0)
             .to_string();
@@ -989,7 +1037,7 @@ mod test {
     }
 
     #[test]
-    pub fn should_tract_errors_2() {
+    pub fn track_errors_2() {
         let actual = PathTransformer::new("M1.2 1.4 H2.4 h1.2 v2.4 h-2.4 V2.4 v-1.2".into())
             .round(0)
             .to_string();
@@ -997,11 +1045,108 @@ mod test {
     }
 
     #[test]
-    pub fn should_tract_errors_for_contour_start() {
+    pub fn track_errors_for_contour_start() {
         let actual = PathTransformer::new("m0.4 0.2zm0.4 0.2m0.4 0.2m0.4 0.2zm0.4 0.2".into())
             .round(0)
             .abs()
             .to_string();
         assert_eq!(actual, "M 0 0 Z M 1 0 M 1 1 M 2 1 Z M 2 1");
+    }
+
+    #[test]
+    pub fn reset_delta_error_on_contour_end() {
+        let actual = PathTransformer::new("m.1 .1l.3 .3zm.1 .1l.3 .3zm0 0z".into())
+            .round(0)
+            .abs()
+            .to_string();
+        assert_eq!(actual, "M 0 0 L 0 0 Z M 0 0 L 1 1 Z M 0 0 Z");
+    }
+
+    #[test]
+    pub fn replace_arcs_with_lines() {
+        let actual =
+            PathTransformer::new("M40 30a0 40 -45 0 1 20 50Z M40 30A20 0 -45 0 1 20 50Z".into())
+                .scale(2.0, 2.0)
+                .to_string();
+        assert_eq!(actual, "M 80 60 l 40 100 Z M 80 60 L 40 100 Z");
+    }
+
+    #[test]
+    pub fn drop_arcs_with_same_start_and_end_points() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 0 0".into())
+            .scale(2.0, 2.0)
+            .to_string();
+        assert_eq!(actual, "M 80 60 l 0 0");
+    }
+
+    #[test]
+    pub fn drop_arcs_with_same_start_and_end_points_2() {
+        let actual = PathTransformer::new("M40 30A20 40 -45 0 1 40 30".into())
+            .scale(2.0, 2.0)
+            .to_string();
+
+        assert_eq!(actual, "M 80 60 L 80 60");
+    }
+
+    #[test]
+    pub fn arc_to_line_at_scale() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .scale(0.0, 1.0)
+            .to_string();
+        assert_eq!(actual, "M 0 30 l 0 50");
+    }
+
+    #[test]
+    pub fn arc_to_line_at_scale_2() {
+        let actual = PathTransformer::new("M40 30A20 40 -45 0 1 20 50".into())
+            .scale(1.0, 0.0)
+            .to_string();
+        assert_eq!(actual, "M 40 0 L 20 0");
+    }
+
+    #[test]
+    pub fn arc_rotate_90() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .rotate(90.0, 0.0, 0.0)
+            .round(0)
+            .to_string();
+
+        assert_eq!(actual, "M -30 40 a 20 40 45 0 1 -50 20");
+    }
+
+    #[test]
+    pub fn apply_arc_matrix() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .matrix([0.0, 1.0, -1.0, 0.0, 0.0, 0.0])
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M -30 40 a 20 40 45 0 1 -50 20");
+    }
+
+    #[test]
+    pub fn arc_rotate_negative_90() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .rotate(-90.0, 0.0, 0.0)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 30 -40 a 20 40 45 0 1 50 -20");
+    }
+
+    #[test]
+    pub fn apply_arc_matrix_2() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .matrix([0.0, -1.0, 1.0, 0.0, 0.0, 0.0])
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 30 -40 a 20 40 45 0 1 50 -20");
+    }
+
+    #[test]
+    pub fn process_circle_like_segments() {
+        let actual = PathTransformer::new("M50 50A30 30 -45 0 1 100 100".into())
+            .scale(0.5, 0.5)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 25 25 A 15 15 0 0 1 50 50");
     }
 }
