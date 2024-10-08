@@ -1,14 +1,12 @@
-use std::collections::{vec_deque, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 
 use cgmath::num_traits::Pow;
-use cgmath::{Angle, Deg, InnerSpace, Matrix3, Rad, Vector2, Vector3};
+use cgmath::{Angle, Deg, Matrix3, Rad, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
-
-use super::print_line_segment;
 
 pub struct PathTransformer {
     path_segments: VecDeque<PathSegment>,
-    stack: VecDeque<Matrix3<f64>>,
+    stack: Vec<Matrix3<f64>>,
 }
 
 impl PathTransformer {
@@ -23,18 +21,18 @@ impl PathTransformer {
                 .filter(|ps| ps.is_ok())
                 .map(|ps| ps.unwrap())
                 .collect(),
-            stack: VecDeque::new(),
+            stack: Vec::new(),
         }
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
         self.stack
-            .push_back(Matrix3::from_translation(Vector2::new(tx, ty)));
+            .push(Matrix3::from_translation(Vector2::new(tx, ty)));
         self
     }
 
     pub fn scale(&mut self, sx: f64, sy: f64) -> &mut Self {
-        self.stack.push_back(Matrix3::from_nonuniform_scale(sx, sy));
+        self.stack.push(Matrix3::from_nonuniform_scale(sx, sy));
         self
     }
 
@@ -48,10 +46,10 @@ impl PathTransformer {
 
     pub fn rotate(&mut self, angle: f64, rx: f64, ry: f64) -> &mut Self {
         if angle != 0.0 {
-            self.translate(rx, ry);
+            self.translate(-rx, -ry);
             let rad = Rad::from(Deg(angle));
             self.matrix([rad.cos(), rad.sin(), -rad.sin(), rad.cos(), 0.0, 0.0]);
-            self.translate(-rx, -ry);
+            self.translate(rx, ry);
         }
         self
     }
@@ -71,7 +69,7 @@ impl PathTransformer {
         let converted = Matrix3::new(
             matrix[0], matrix[1], 0.0, matrix[2], matrix[3], 0.0, matrix[4], matrix[5], 1.0,
         );
-        self.stack.push_back(converted);
+        self.stack.push(converted);
         self
     }
 
@@ -108,8 +106,7 @@ impl PathTransformer {
             return self;
         } else {
             if self.stack.len() == 1 {
-                let single_transformation =
-                    self.stack.pop_front().expect("empty transformation stack");
+                let single_transformation = self.stack.pop().expect("empty transformation stack");
                 self.apply_matrix(single_transformation);
                 return self;
             } else {
@@ -118,7 +115,7 @@ impl PathTransformer {
                     combined = combined
                         * self
                             .stack
-                            .pop_front()
+                            .pop()
                             .expect("can not find transformation matrix");
                 }
                 self.apply_matrix(combined);
@@ -243,7 +240,7 @@ impl PathTransformer {
 
         self.evaluate_stack();
 
-        self.iterate(|segment, pos, x, y| match segment {
+        self.iterate(|segment, _pos, _x, _y| match segment {
             PathSegment::HorizontalLineTo { abs, x: seg_x } => {
                 let mut seg_x = *seg_x;
                 if !abs {
@@ -604,12 +601,12 @@ impl PathTransformer {
                 if *abs {
                     format!(
                         "A {} {} {} {} {} {} {}",
-                        rx, ry, x_axis_rotation, large_arc, sweep, x, y
+                        rx, ry, x_axis_rotation, *large_arc as i32, *sweep as i32, x, y
                     )
                 } else {
                     format!(
                         "a {} {} {} {} {} {} {}",
-                        rx, ry, x_axis_rotation, large_arc, sweep, x, y
+                        rx, ry, x_axis_rotation, *large_arc as i32, *sweep as i32, x, y
                     )
                 }
             }
@@ -621,6 +618,121 @@ impl PathTransformer {
                 }
             }
         }
+    }
+
+    pub fn abs(&mut self) -> &mut Self {
+        self.iterate(|s, _, x, y| match s {
+            PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::MoveTo { abs: true, x: seg_x + x, y: seg_y + y }]
+                }
+            }
+            PathSegment::LineTo { abs, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::LineTo { abs: true, x: seg_x + x, y: seg_y + y }]
+                }
+            }
+            PathSegment::HorizontalLineTo { abs, x: seg_x } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::HorizontalLineTo { abs: true, x: seg_x + x }]
+                }
+            }
+            PathSegment::VerticalLineTo { abs, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::VerticalLineTo { abs: true, y: seg_y + y }]
+                }
+            }
+            PathSegment::CurveTo { abs, x1, y1, x2, y2, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::CurveTo {
+                        abs: true,
+                        x1: x1 + x,
+                        y1: y1 + y,
+                        x2: x2 + x,
+                        y2: y2 + y,
+                        x: seg_x + x,
+                        y: seg_y + y,
+                    }]
+                }
+            }
+            PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::SmoothCurveTo {
+                        abs: true,
+                        x2: x2 + x,
+                        y2: y2 + y,
+                        x: seg_x + x,
+                        y: seg_y + y,
+                    }]
+                }
+            }
+            PathSegment::Quadratic { abs, x1, y1, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::Quadratic {
+                        abs: true,
+                        x1: x1 + x,
+                        y1: y1 + y,
+                        x: seg_x + x,
+                        y: seg_y + y,
+                    }]
+                }
+            }
+            PathSegment::SmoothQuadratic { abs, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::SmoothQuadratic { abs: true, x: seg_x + x, y: seg_y + y }]
+                }
+            }
+            PathSegment::EllipticalArc {
+                abs,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                x: seg_x,
+                y: seg_y,
+            } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::EllipticalArc {
+                        abs: true,
+                        rx: *rx,
+                        ry: *ry,
+                        x_axis_rotation: *x_axis_rotation,
+                        large_arc: *large_arc,
+                        sweep: *sweep,
+                        x: seg_x + x,
+                        y: seg_y + y,
+                    }]
+                }
+            }
+            PathSegment::ClosePath { abs } => {
+                if *abs {
+                    vec![]
+                } else {
+                    vec![PathSegment::ClosePath { abs: true }]
+                }
+            }
+        });
+
+        self
     }
 }
 
@@ -735,5 +847,161 @@ mod test {
             .round(0)
             .to_string();
         assert_eq!(actual, "M 5 25 L 15 80");
+    }
+
+    #[test]
+    fn should_transform_path_with_absolute_segments() {
+        let actual = PathTransformer::new("M5 5 C20 30 10 15 30 15".into())
+            .matrix([1.5, 0.5, 0.5, 1.5, 10.0, 15.0])
+            .to_string();
+        assert_eq!(actual, "M 20 25 C 55 70 32.5 42.5 62.5 52.5");
+    }
+
+    #[test]
+    pub fn should_transform_path_with_relative_segments() {
+        let actual = PathTransformer::new("M5 5 c10 12 10 15 20 30".into())
+            .matrix([1.5, 0.5, 0.5, 1.5, 10.0, 15.0])
+            .to_string();
+        assert_eq!(actual, "M 20 25 c 21 23 22.5 27.5 45 55");
+    }
+
+    #[test]
+    pub fn unit_transform() {
+        let actual = PathTransformer::new("M5 5 C20 30 10 15 30 15".into())
+            .matrix([1.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+            .to_string();
+        assert_eq!(actual, "M 5 5 C 20 30 10 15 30 15");
+    }
+
+    #[test]
+    pub fn should_scale_and_translate() {
+        let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+            .scale(2.0, 3.0)
+            .translate(100.0, 100.0)
+            .to_string();
+        assert_eq!(actual, "M 100 100 L 120 130 L 140 130");
+    }
+
+    #[test]
+    pub fn should_scale_and_rotate() {
+        let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+            .scale(2.0, 3.0)
+            .rotate(90.0, 0.0, 0.0)
+            .round(0)
+            .to_string();
+
+        assert_eq!(actual, "M 0 0 L -30 20 L -30 40");
+    }
+
+    #[test]
+    pub fn should_handle_unit_transforms() {
+        let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+            .translate(0.0, 0.0)
+            .scale(1.0, 1.0)
+            .rotate(0.0, 10.0, 10.0)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 0 0 L 10 10 L 20 10")
+    }
+
+    #[test]
+    pub fn should_translate_abs_curve() {
+        let actual = PathTransformer::new("M10 10 C 20 40 40 40 50 10".into())
+            .translate(5.0, 15.0)
+            .to_string();
+        assert_eq!(actual, "M 15 25 C 25 55 45 55 55 25")
+    }
+
+    #[test]
+    pub fn should_translate_rel_curve() {
+        let actual = PathTransformer::new("M10 10 c 10 30 30 30 40 0".into())
+            .translate(5.0, 15.0)
+            .to_string();
+        assert_eq!(actual, "M 15 25 c 10 30 30 30 40 0")
+    }
+
+    #[test]
+    pub fn should_translate_horizontal_lines() {
+        let actual = PathTransformer::new("M10 10H40h50".into())
+            .translate(10.0, 15.0)
+            .to_string();
+        assert_eq!(actual, "M 20 25 H 50 h 50");
+    }
+
+    #[test]
+    pub fn should_translate_vertical_lines() {
+        let actual = PathTransformer::new("M10 10V40v50".into())
+            .translate(10.0, 15.0)
+            .to_string();
+        assert_eq!(actual, "M 20 25 V 55 v 50");
+    }
+
+    #[test]
+    #[ignore = "Not implemented"]
+    pub fn should_translate_rel_arcs() {
+        let actual = PathTransformer::new("M40 30a20 40 -45 0 1 20 50".into())
+            .translate(10.0, 15.0)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 50 45 a 40 20 45 0 1 20 50");
+    }
+
+    #[test]
+    #[ignore = "Not implemented"]
+    pub fn should_translate_abs_arcs() {
+        let actual = PathTransformer::new("M40 30A20 40 -45 0 1 20 50".into())
+            .translate(10.0, 15.0)
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 50 45 A 40 20 45 0 1 30 65");
+    }
+
+    #[test]
+    pub fn should_round_arcs() {
+        let actual = PathTransformer::new("M10 10A12.5 17.5 45.5 0 0 15.5 19.5".into())
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 10 10 A 13 18 45.5 0 0 16 20");
+    }
+
+    #[test]
+    pub fn should_round_curves() {
+        let actual = PathTransformer::new("M10 10 c 10.12 30.34 30.56 30 40.00 0.12".into())
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 10 10 c 10 30 31 30 40 0");
+    }
+
+    #[test]
+    pub fn should_round_precision() {
+        let actual = PathTransformer::new("M10.123 10.456L20.4351 30.0000".into())
+            .round(2)
+            .to_string();
+        assert_eq!(actual, "M 10.12 10.46 L 20.44 30");
+    }
+
+    #[test]
+    pub fn should_tract_errors() {
+        let actual = PathTransformer::new("M1.2 1.4l1.2 1.4 l1.2 1.4".into())
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 1 1 l 1 2 l 2 1");
+    }
+
+    #[test]
+    pub fn should_tract_errors_2() {
+        let actual = PathTransformer::new("M1.2 1.4 H2.4 h1.2 v2.4 h-2.4 V2.4 v-1.2".into())
+            .round(0)
+            .to_string();
+        assert_eq!(actual, "M 1 1 H 2 h 2 v 3 h -3 V 2 v -1");
+    }
+
+    #[test]
+    pub fn should_tract_errors_for_contour_start() {
+        let actual = PathTransformer::new("m0.4 0.2zm0.4 0.2m0.4 0.2m0.4 0.2zm0.4 0.2".into())
+            .round(0)
+            .abs()
+            .to_string();
+        assert_eq!(actual, "M 0 0 Z M 1 0 M 1 1 M 2 1 Z M 2 1");
     }
 }
