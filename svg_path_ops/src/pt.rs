@@ -1484,5 +1484,56 @@ mod test {
                 assert_eq!(actual, "M 5 25 L 15 80");
             }
         }
+
+        pub mod matrix {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn path_with_absolute_segments() {
+                let actual = PathTransformer::new("M5 5 C20 30 10 15 30 15".into())
+                    .transform("matrix(1.5, 0.5, 0.5, 1.5 10, 15)".into())
+                    .to_string();
+                assert_eq!(actual, "M 20 25 C 55 70 32.5 42.5 62.5 52.5");
+            }
+
+            #[test]
+            pub fn path_with_relative_segments() {
+                let actual = PathTransformer::new("M5 5 c10 12 10 15 20 30".into())
+                    .transform("matrix(1.5, 0.5, 0.5, 1.5 10, 15)".into())
+                    .to_string();
+
+                assert_eq!(actual, "M 20 25 c 21 23 22.5 27.5 45 55");
+            }
+        }
+
+        pub mod combinations {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn scale_and_translate() {
+                let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+                    .transform("translate(100,100) scale(2,3)".into())
+                    .to_string();
+                assert_eq!(actual, "M 100 100 L 120 130 L 140 130");
+            }
+
+            #[test]
+            pub fn scale_and_rotate() {
+                let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+                    .transform("rotate(90) scale(2,3)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 0 0 L -30 20 L -30 40");
+            }
+
+            #[test]
+            pub fn skew_and_scale() {
+                let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+                    .transform("skewX(75.96) scale(2,3)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 0 0 L 140 30 L 160 30")
+            }
+        }
     }
 }
