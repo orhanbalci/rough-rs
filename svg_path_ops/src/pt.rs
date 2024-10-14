@@ -77,10 +77,11 @@ impl PathTransformer {
 
     pub fn transform(&mut self, transform: String) -> &mut Self {
         let parser = TransformListParser::from(transform.as_str());
-        for path_transform in parser {
+        let transforms = parser.into_iter().collect::<Vec<_>>();
+        for path_transform in transforms.iter().rev() {
             match path_transform {
                 Ok(pt) => {
-                    self.apply_token(pt);
+                    self.apply_token(*pt);
                 }
                 Err(_) => {
                     println!("Can not parse transform string.");
@@ -1353,5 +1354,135 @@ mod test {
             .to_string();
 
         assert_eq!(actual, "M 10 10 l 10 0 l 0 10 z l 0 10 l 10 0 z l -1 -1");
+    }
+
+    pub mod transform_string {
+
+        pub mod translate {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn x_only() {
+                let actual = PathTransformer::new("M10 10 L15 15".into())
+                    .transform("translate(20)".into())
+                    .to_string();
+                assert_eq!(actual, "M 30 10 L 35 15");
+            }
+
+            #[test]
+            pub fn x_and_y() {
+                let actual = PathTransformer::new("M10 10 L15 15".into())
+                    .transform("translate(20, 10)".into())
+                    .to_string();
+                assert_eq!(actual, "M 30 20 L 35 25");
+            }
+
+            #[test]
+            pub fn x_and_y_with_relative_curves() {
+                let actual = PathTransformer::new("M10 10 c15 15, 20 10, 15 15".into())
+                    .transform("translate(20, 10)".into())
+                    .to_string();
+                assert_eq!(actual, "M 30 20 c 15 15 20 10 15 15");
+            }
+
+            #[test]
+            pub fn x_and_y_with_absolute_curves() {
+                let actual = PathTransformer::new("M10 10 C15 15, 20 10, 15 15".into())
+                    .transform("translate(20, 10)".into())
+                    .to_string();
+
+                assert_eq!(actual, "M 30 20 C 35 25 40 20 35 25");
+            }
+
+            #[test]
+            pub fn rel_after_translate_should_not_break() {
+                let actual = PathTransformer::new("m70 70 l20 20 l-20 0 l0 -20".into())
+                    .transform("translate(100, 100)".into())
+                    .to_string();
+                assert_eq!(actual, "M 170 170 l 20 20 l -20 0 l 0 -20");
+            }
+
+            #[test]
+            pub fn rel_after_translate_should_not_break_2() {
+                let actual = PathTransformer::new("m70 70 l20 20 l-20 0 l0 -20".into())
+                    .transform("translate(100, 100)".into())
+                    .rel()
+                    .to_string();
+                assert_eq!(actual, "M 170 170 l 20 20 l -20 0 l 0 -20");
+            }
+        }
+
+        pub mod rotate {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            fn rotate_by_90_degrees() {
+                let actual = PathTransformer::new("M10 10L15 10".into())
+                    .transform("rotate(90, 10, 10)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 10 10 L 10 15")
+            }
+
+            #[test]
+            pub fn rotate_by_negative_90_degrees() {
+                let actual = PathTransformer::new("M0 10L0 20".into())
+                    .transform("rotate(-90)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 10 0 L 20 0")
+            }
+        }
+
+        pub mod scale {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn scale_by_2() {
+                let actual = PathTransformer::new("M5 5L15 20".into())
+                    .transform("scale(2)".into())
+                    .to_string();
+
+                assert_eq!(actual, "M 10 10 L 30 40");
+            }
+
+            #[test]
+            pub fn scale_by_x_and_y() {
+                let actual = PathTransformer::new("M5 5L30 20".into())
+                    .transform("scale(0.5, 1.5)".into())
+                    .to_string();
+                assert_eq!(actual, "M 2.5 7.5 L 15 30")
+            }
+
+            #[test]
+            pub fn scale_by_x_and_y_with_relative_curves() {
+                let actual = PathTransformer::new("M5 5c15 15, 20 10, 15 15".into())
+                    .transform("scale(.5, 1.5)".to_string())
+                    .to_string();
+                assert_eq!(actual, "M 2.5 7.5 c 7.5 22.5 10 15 7.5 22.5");
+            }
+        }
+
+        pub mod skew {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn skew_x() {
+                let actual = PathTransformer::new("M5 5L15 20".into())
+                    .transform("skewX(75.96)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 25 5 L 95 20");
+            }
+
+            #[test]
+            pub fn skew_y() {
+                let actual = PathTransformer::new("M5 5L15 20".into())
+                    .transform("skewY(75.96)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 5 25 L 15 80");
+            }
+        }
     }
 }
