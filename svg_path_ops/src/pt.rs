@@ -783,6 +783,123 @@ impl PathTransformer {
 
         self
     }
+
+    pub fn rel(&mut self) -> &mut Self {
+        self.iterate(|s, pos, x, y| match s {
+            PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
+                if *abs {
+                    if pos == 0 {
+                        vec![]
+                    } else {
+                        vec![PathSegment::MoveTo { abs: false, x: seg_x - x, y: seg_y - y }]
+                    }
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::LineTo { abs, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![PathSegment::LineTo { abs: false, x: seg_x - x, y: seg_y - y }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::HorizontalLineTo { abs, x: seg_x } => {
+                if *abs {
+                    vec![PathSegment::HorizontalLineTo { abs: false, x: seg_x - x }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::VerticalLineTo { abs, y: seg_y } => {
+                if *abs {
+                    vec![PathSegment::VerticalLineTo { abs: false, y: seg_y - y }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::CurveTo { abs, x1, y1, x2, y2, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![PathSegment::CurveTo {
+                        abs: false,
+                        x1: x1 - x,
+                        y1: y1 - y,
+                        x2: x2 - x,
+                        y2: y2 - y,
+                        x: seg_x - x,
+                        y: seg_y - y,
+                    }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![PathSegment::SmoothCurveTo {
+                        abs: false,
+                        x2: x2 - x,
+                        y2: y2 - y,
+                        x: seg_x - x,
+                        y: seg_y - y,
+                    }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::Quadratic { abs, x1, y1, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![PathSegment::Quadratic {
+                        abs: false,
+                        x1: x1 - x,
+                        y1: y1 - y,
+                        x: seg_x - x,
+                        y: seg_y - y,
+                    }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::SmoothQuadratic { abs, x: seg_x, y: seg_y } => {
+                if *abs {
+                    vec![PathSegment::SmoothQuadratic { abs: false, x: seg_x - x, y: seg_y - y }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::EllipticalArc {
+                abs,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                x: seg_x,
+                y: seg_y,
+            } => {
+                if *abs {
+                    vec![PathSegment::EllipticalArc {
+                        abs: false,
+                        rx: *rx,
+                        ry: *ry,
+                        x_axis_rotation: *x_axis_rotation,
+                        large_arc: *large_arc,
+                        sweep: *sweep,
+                        x: seg_x - x,
+                        y: seg_y - y,
+                    }]
+                } else {
+                    vec![]
+                }
+            }
+            PathSegment::ClosePath { abs } => {
+                if *abs {
+                    vec![PathSegment::ClosePath { abs: false }]
+                } else {
+                    vec![]
+                }
+            }
+        })
+    }
 }
 
 #[cfg(test)]
@@ -1148,5 +1265,93 @@ mod test {
             .round(0)
             .to_string();
         assert_eq!(actual, "M 25 25 A 15 15 0 0 1 50 50");
+    }
+
+    #[test]
+    pub fn almost_zero_eigen_values() {
+        let actual = PathTransformer::new("M148.7 277.9A228.7 113.2 90 1 0 159.3 734.8".into())
+            .translate(10.0, 10.0)
+            .round(1)
+            .to_string();
+        assert_eq!(actual, "M 158.7 287.9 A 228.7 113.2 90 1 0 169.3 744.8");
+    }
+
+    #[test]
+    pub fn should_flip_sweep_flag_if_image_is_flipped() {
+        let actual = PathTransformer::new("M10 10A20 15 90 0 1 30 10".into())
+            .scale(1.0, -1.0)
+            .translate(0.0, 40.0)
+            .to_string();
+        assert_eq!(actual, "M 10 30 A 20 15 90 0 0 30 30");
+    }
+
+    #[test]
+    pub fn should_flip_sweep_flag_if_image_is_flipped_2() {
+        let actual = PathTransformer::new("M10 10A20 15 90 0 1 30 10".into())
+            .scale(-1.0, -1.0)
+            .translate(40.0, 40.0)
+            .to_string();
+        assert_eq!(actual, "M 30 30 A 20 15 90 0 1 10 30");
+    }
+
+    #[test]
+    pub fn rel_convert_line() {
+        let actual = PathTransformer::new("M10 10 L30 30".into())
+            .rel()
+            .to_string();
+        assert_eq!(actual, "M 10 10 l 20 20");
+    }
+
+    #[test]
+    pub fn dont_touch_rel_line() {
+        let actual = PathTransformer::new("m10 10 l30 30".into())
+            .rel()
+            .to_string();
+
+        assert_eq!(actual, "m 10 10 l 30 30");
+    }
+
+    #[test]
+    pub fn rel_convert_multi_segment_curve() {
+        let actual = PathTransformer::new("M10 10 C 20 40 40 40 50 10 60 -20 70 -20 90 10".into())
+            .rel()
+            .to_string();
+        assert_eq!(actual, "M 10 10 c 10 30 30 30 40 0 c 10 -30 20 -30 40 0");
+    }
+
+    #[test]
+    pub fn rel_horizontal_line() {
+        let actual = PathTransformer::new("M10 10H40h50".into())
+            .rel()
+            .to_string();
+
+        assert_eq!(actual, "M 10 10 h 30 h 50");
+    }
+
+    #[test]
+    pub fn rel_vertical_line() {
+        let actual = PathTransformer::new("M10 10V40v50".into())
+            .rel()
+            .to_string();
+
+        assert_eq!(actual, "M 10 10 v 30 v 50");
+    }
+
+    #[test]
+    pub fn rel_arcs() {
+        let actual = PathTransformer::new("M40 30A20 40 -45 0 1 60 80".into())
+            .rel()
+            .to_string();
+
+        assert_eq!(actual, "M 40 30 a 20 40 -45 0 1 20 50");
+    }
+
+    #[test]
+    pub fn rel_track_position_after_z() {
+        let actual = PathTransformer::new("M10 10 L20 10 L20 20 Z L10 20 L20 20 z L9 9".into())
+            .rel()
+            .to_string();
+
+        assert_eq!(actual, "M 10 10 l 10 0 l 0 10 z l 0 10 l 10 0 z l -1 -1");
     }
 }
