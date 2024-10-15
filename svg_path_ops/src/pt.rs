@@ -84,7 +84,7 @@ impl PathTransformer {
                     self.apply_token(*pt);
                 }
                 Err(_) => {
-                    println!("Can not parse transform string.");
+                    panic!("Can not parse transform string.");
                 }
             }
         }
@@ -1533,6 +1533,53 @@ mod test {
                     .round(0)
                     .to_string();
                 assert_eq!(actual, "M 0 0 L 140 30 L 160 30")
+            }
+        }
+
+        pub mod misc {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn empty_transforms() {
+                let actual = PathTransformer::new("M0 0 L 10 10 20 10".into())
+                    .transform("rotate(0) scale(1,1) translate(0,0) skewX(0) skewY(0)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 0 0 L 10 10 L 20 10");
+            }
+
+            #[test]
+            #[should_panic]
+            pub fn wrong_param_count() {
+                PathTransformer::new("M0 0 L 10 10 20 10".into())
+                    .transform("rotate(10,0) scale(10,10,1)".into())
+                    .round(0)
+                    .to_string();
+            }
+
+            #[test]
+            pub fn segment_replacement() {
+                let actual = PathTransformer::new("M0 0 H 10 V 10 Z M 100 100 h 15 v -10".into())
+                    .transform("rotate(45)".into())
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 0 0 L 7 7 L 0 14 Z M 0 141 l 11 11 l 7 -7");
+            }
+
+            #[test]
+            pub fn nothing_to_transform() {
+                let actual = PathTransformer::new("M10 10 L15 15".into())
+                    .transform("   ".into())
+                    .to_string();
+                assert_eq!(actual, "M 10 10 L 15 15");
+            }
+
+            #[test]
+            pub fn first_m_should_be_absolute() {
+                let actual = PathTransformer::new("m70 70 70 70".into())
+                    .transform("translate(100,100)".into())
+                    .to_string();
+                assert_eq!(actual, "M 170 170 l 70 70");
             }
         }
     }
