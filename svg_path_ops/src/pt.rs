@@ -5,6 +5,7 @@ use cgmath::{Angle, Deg, Matrix3, Rad, Vector2, Vector3};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
 use super::ellipse::Ellipse;
+use crate::a2c::a2c;
 
 pub struct PathTransformer {
     path_segments: VecDeque<PathSegment>,
@@ -901,6 +902,66 @@ impl PathTransformer {
             }
         })
     }
+
+    pub fn unarc(&mut self) -> &mut Self {
+        self.iterate(|segment, _, x, y| {
+            let next_x: f64;
+            let next_y: f64;
+
+            match *segment {
+                PathSegment::EllipticalArc {
+                    abs,
+                    rx,
+                    ry,
+                    x_axis_rotation,
+                    large_arc,
+                    sweep,
+                    x: seg_x,
+                    y: seg_y,
+                } => {
+                    if !abs {
+                        next_x = seg_x + x;
+                        next_y = seg_y + y;
+                    } else {
+                        next_x = seg_x;
+                        next_y = seg_y;
+                    }
+                    let new_segments = a2c(
+                        x,
+                        y,
+                        next_x,
+                        next_y,
+                        large_arc,
+                        sweep,
+                        rx,
+                        ry,
+                        x_axis_rotation,
+                    );
+
+                    if new_segments.len() == 0 {
+                        vec![PathSegment::LineTo { abs: abs, x: seg_x, y: seg_y }]
+                    } else {
+                        new_segments
+                            .iter()
+                            .map(|s| PathSegment::CurveTo {
+                                abs: true,
+                                x1: s[2],
+                                y1: s[3],
+                                x2: s[4],
+                                y2: s[5],
+                                x: s[6],
+                                y: s[7],
+                            })
+                            .collect()
+                    }
+                }
+                _ => {
+                    vec![]
+                }
+            }
+        });
+        self
+    }
 }
 
 #[cfg(test)]
@@ -1580,6 +1641,95 @@ mod test {
                     .transform("translate(100,100)".into())
                     .to_string();
                 assert_eq!(actual, "M 170 170 l 70 70");
+            }
+        }
+
+        pub mod unarc {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn complete_arc() {
+                let actual = PathTransformer::new("M100 100 A30 50 0 1 1 110 110".into())
+                    .unarc()
+                    .round(0)
+                    .to_string();
+
+                assert_eq!(actual, "M 100 100 C 89 83 87 54 96 33 C 105 12 122 7 136 20 C 149 33 154 61 147 84 C 141 108 125 119 110 110");
+            }
+
+            #[test]
+            pub fn small_arc() {
+                let actual = PathTransformer::new("M100 100 a30 50 0 0 1 30 30".into())
+                    .unarc()
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 100 100 C 113 98 125 110 130 130")
+            }
+
+            #[test]
+            pub fn circle() {
+                let actual = PathTransformer::new(
+                    "M100 100 m -75 0 a 75 75 0 1 0 150 0 a 75 75 0 1 0 -150 0".into(),
+                )
+                .unarc()
+                .round(0)
+                .to_string();
+                assert_eq!(actual, "M 100 100 m -75 0 C 25 141 59 175 100 175 C 141 175 175 141 175 100 C 175 59 141 25 100 25 C 59 25 25 59 25 100");
+            }
+
+            #[test]
+            pub fn rounding_errors() {
+                let actual = PathTransformer::new(
+                    "M-0.5 0 A 0.09188163040671497 0.011583783896639943 0 0 1 0 0.5".into(),
+                )
+                .unarc()
+                .round(5)
+                .to_string();
+                assert_eq!(actual, "M -0.5 0 C 0.59517 -0.01741 1.59491 0.08041 1.73298 0.21848 C 1.87105 0.35655 1.09517 0.48259 0 0.5");
+            }
+
+            #[test]
+            pub fn rounding_errors_2() {
+                let actual = PathTransformer::new(
+                    "M-0.07467194809578359 -0.3862391309812665 A1.2618792965076864 0.2013618852943182 90 0 1 -0.7558937461581081 -0.8010219619609416".into(),
+                ).unarc().round(5).to_string();
+                assert_eq!(actual, "M -0.07467 -0.38624 C -0.09295 0.79262 -0.26026 1.65542 -0.44838 1.54088 C -0.63649 1.42634 -0.77417 0.37784 -0.75589 -0.80102");
+            }
+
+            #[test]
+            pub fn curve_between_same_point() {
+                let actual = PathTransformer::new("M100 100A123 456 90 0 1 100 100".into())
+                    .unarc()
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 100 100 L 100 100");
+            }
+
+            #[test]
+            pub fn curve_between_same_point_2() {
+                let actual = PathTransformer::new("M100 100a123 456 90 0 1 0 0".into())
+                    .unarc()
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 100 100 l 0 0");
+            }
+
+            #[test]
+            pub fn rx_ry_zero() {
+                let actual = PathTransformer::new("M100 100A0 0 0 0 1 110 110".into())
+                    .unarc()
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 100 100 L 110 110");
+            }
+
+            #[test]
+            pub fn rx_zero() {
+                let actual = PathTransformer::new("M100 100A0 100 0 0 1 110 110".into())
+                    .unarc()
+                    .round(0)
+                    .to_string();
+                assert_eq!(actual, "M 100 100 L 110 110");
             }
         }
     }

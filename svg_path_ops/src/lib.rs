@@ -91,6 +91,7 @@
 //! );
 //! ```
 
+pub(crate) mod a2c;
 pub(crate) mod ellipse;
 pub mod pt;
 
