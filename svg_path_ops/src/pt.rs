@@ -962,6 +962,110 @@ impl PathTransformer {
         });
         self
     }
+
+    pub fn unshort(&mut self) -> &mut Self {
+        // var segments = this.segments;
+        let mut prev_control_x = 0.0;
+        let mut prev_control_y = 0.0;
+        let mut prev_segment: PathSegment = PathSegment::MoveTo { abs: false, x: 0.0, y: 0.0 };
+        let mut cur_control_x = 0.0;
+        let mut cur_control_y = 0.0;
+        let segments_cache = self.path_segments.clone();
+
+        // TODO: add lazy evaluation flag when relative commands supported
+
+        self.iterate(|s, idx, x, y| {
+            // var name = s[0], nameUC = name.toUpperCase(), isRelative;
+
+            // First command MUST be M|m, it's safe to skip.
+            // Protect from access to [-1] for sure.
+            if idx == 0 {
+                return vec![];
+            }
+
+            match *s {
+                PathSegment::SmoothQuadratic { abs, x: seg_outer_x, y: seg_outer_y } => {
+                    prev_segment = segments_cache[idx - 1];
+                    match prev_segment {
+                        PathSegment::Quadratic { abs, x1, y1, x: seg_x, y: seg_y } => {
+                            if abs {
+                                prev_control_x = x1 - x;
+                                prev_control_y = y1 - y;
+                            } else {
+                                prev_control_x = x1 - seg_x;
+                                prev_control_y = y1 - seg_y;
+                            }
+                        }
+                        _ => {
+                            prev_control_x = 0.0;
+                            prev_control_y = 0.0;
+                        }
+                    };
+                    cur_control_x = -prev_control_x;
+                    cur_control_y = -prev_control_y;
+                    if !abs {
+                        cur_control_x += x;
+                        cur_control_y += y;
+                    }
+                    vec![PathSegment::Quadratic {
+                        abs: abs,
+                        x1: cur_control_x,
+                        y1: cur_control_y,
+                        x: seg_outer_x,
+                        y: seg_outer_y,
+                    }]
+                }
+                PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_outer_x, y: seg_outer_y } => {
+                    prev_segment = segments_cache[idx - 1];
+                    match prev_segment {
+                        PathSegment::CurveTo {
+                            abs,
+                            x1,
+                            y1,
+                            x2: seg_x2,
+                            y2: seg_y2,
+                            x: seg_x,
+                            y: seg_y,
+                        } => {
+                            if abs {
+                                prev_control_x = seg_x2 - x;
+                                prev_control_y = seg_y2 - y;
+                            } else {
+                                prev_control_x = seg_x2 - seg_x;
+                                prev_control_y = seg_y2 - seg_y;
+                            }
+                        }
+                        _ => {
+                            prev_control_x = 0.0;
+                            prev_control_y = 0.0;
+                        }
+                    };
+
+                    cur_control_x = -prev_control_x;
+                    cur_control_y = -prev_control_y;
+
+                    if abs {
+                        cur_control_x += x;
+                        cur_control_y += y;
+                    }
+
+                    vec![PathSegment::CurveTo {
+                        abs: abs,
+                        x1: cur_control_x,
+                        y1: cur_control_y,
+                        x2: x2,
+                        y2: y2,
+                        x: seg_outer_x,
+                        y: seg_outer_y,
+                    }]
+                }
+                _ => {
+                    vec![]
+                }
+            }
+        });
+        self
+    }
 }
 
 #[cfg(test)]
@@ -1730,6 +1834,18 @@ mod test {
                     .round(0)
                     .to_string();
                 assert_eq!(actual, "M 100 100 L 110 110");
+            }
+        }
+
+        pub mod unshort {
+            use crate::pt::PathTransformer;
+
+            #[test]
+            pub fn shouldnt_change_full_arc() {
+                let actual = PathTransformer::new("M10 10 C 20 20, 40 20, 50 10".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 10 10 C 20 20 40 20 50 10");
             }
         }
     }
