@@ -1020,8 +1020,8 @@ impl PathTransformer {
                     match prev_segment {
                         PathSegment::CurveTo {
                             abs,
-                            x1,
-                            y1,
+                            x1: _,
+                            y1: _,
                             x2: seg_x2,
                             y2: seg_y2,
                             x: seg_x,
