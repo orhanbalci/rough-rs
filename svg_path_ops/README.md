@@ -18,7 +18,7 @@ This package exposes functions to manipulate svg paths with simplification purpo
 
 ```toml
 [dependencies]
-svg_path_ops = "0.6"
+svg_path_ops = "0.7"
 ```
 
 ## 🔧 Example
