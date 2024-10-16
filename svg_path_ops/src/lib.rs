@@ -26,8 +26,52 @@
 //!     .to_string();
 //! ```
 //!
+//! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/translate.rs)
+//!
 //! ### 🖨️ Output Translate
 //! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/translated_cat.png)
+//!
+//! ### Rotate
+//!
+//! ``` rust
+//! let translated_path = PathTransformer::new(cat_svg_path)
+//!     .rotate(90.0, 126.0, 140.0)
+//!     .translate(220.0, 0.0)
+//!     .to_string();
+//! ```
+//!
+//! //! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/rotate.rs)
+//!
+//! ### 🖨️ Output Rotate
+//! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/rotated_cat.png)
+//!
+//! ### Skew
+//!
+//! ``` rust
+//! let translated_path = PathTransformer::new(cat_svg_path)
+//!     .skew_x(20.0)
+//!     .translate(180.0, 0.0)
+//!     .to_string();
+//! ```
+//!
+//! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/skew.rs)
+//!
+//! ### 🖨️ Output Skew
+//! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/skewed_cat.png)
+//!
+//! ### Scale
+//!
+//! ``` rust
+//! let translated_path = PathTransformer::new(cat_svg_path)
+//!     .scale(0.5, 0.5)
+//!     .translate(220.0, 60.0)
+//!     .to_string();
+//! ```
+//!
+//! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/scale.rs)
+//!
+//! ### 🖨️ Output Skew
+//! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/scaled_cat.png)
 
 pub(crate) mod a2c;
 pub(crate) mod ellipse;
