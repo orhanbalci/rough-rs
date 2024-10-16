@@ -1003,7 +1003,7 @@ impl PathTransformer {
                     };
                     cur_control_x = -prev_control_x;
                     cur_control_y = -prev_control_y;
-                    if !abs {
+                    if abs {
                         cur_control_x += x;
                         cur_control_y += y;
                     }
@@ -1846,6 +1846,65 @@ mod test {
                     .unshort()
                     .to_string();
                 assert_eq!(actual, "M 10 10 C 20 20 40 20 50 10");
+            }
+
+            #[test]
+            pub fn should_reflect_control_point() {
+                let actual =
+                    PathTransformer::new("M10 10 C 20 20, 40 20, 50 10 S 80 0, 90 10".into())
+                        .unshort()
+                        .to_string();
+                assert_eq!(actual, "M 10 10 C 20 20 40 20 50 10 C 60 0 80 0 90 10");
+            }
+
+            #[test]
+            pub fn should_copy_starting_point() {
+                let actual = PathTransformer::new("M10 10 S 50 50, 90 10".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 10 10 C 10 10 50 50 90 10");
+            }
+
+            #[test]
+            pub fn relative_paths() {
+                let actual =
+                    PathTransformer::new("M30 50 c 10 30, 30 30, 40 0 s 30 -30, 40 0".into())
+                        .unshort()
+                        .to_string();
+
+                assert_eq!(actual, "M 30 50 c 10 30 30 30 40 0 c 10 -30 30 -30 40 0");
+            }
+
+            #[test]
+            pub fn quadratic_shouldnt_change_full_arc() {
+                let actual = PathTransformer::new("M10 10 Q 50 50, 90 10".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 10 10 Q 50 50 90 10");
+            }
+
+            #[test]
+            pub fn quadratic_should_reflect_control_point() {
+                let actual = PathTransformer::new("M30 50 Q 50 90, 90 50 T 150 50".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 30 50 Q 50 90 90 50 Q 130 10 150 50");
+            }
+
+            #[test]
+            pub fn quadratic_copy_starting_point() {
+                let actual = PathTransformer::new("M10 30 T150 50".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 10 30 Q 10 30 150 50");
+            }
+
+            #[test]
+            pub fn quadratic_handle_relative_paths() {
+                let actual = PathTransformer::new("M30 50 q 20 20, 40 0 t 40 0".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 30 50 q 20 20 40 0 q 20 -20 40 0");
             }
         }
     }
