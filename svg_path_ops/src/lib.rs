@@ -68,7 +68,7 @@
 //!
 //! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/scale.rs)
 //!
-//! ### 🖨️ Output Skew
+//! ### 🖨️ Output Scale
 //! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/scaled_cat.png)
 
 pub(crate) mod a2c;
