@@ -18,7 +18,7 @@ This package exposes functions to manipulate svg paths with simplification purpo
 
 ```toml
 [dependencies]
-svg_path_ops = "0.7"
+svg_path_ops = "0.6"
 ```
 
 ## 🔧 Example
@@ -73,7 +73,7 @@ let translated_path = PathTransformer::new(cat_svg_path)
 
 [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/scale.rs)
 
-### 🖨️ Output Skew
+### 🖨️ Output Scale
 ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/scaled_cat.png)
 
 <!-- cargo-sync-readme end -->
