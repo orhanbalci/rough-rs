@@ -20,8 +20,7 @@
 //!
 //! ### Translate
 //!
-//! ``` ignore
-//! 
+//! ``` rust
 //! let translated_path = PathTransformer::new(cat_svg_path)
 //!     .translate(230.0, 0.0)
 //!     .to_string();
