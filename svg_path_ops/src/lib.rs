@@ -20,7 +20,7 @@
 //!
 //! ### Translate
 //!
-//! ``` rust
+//! ``` rust,ignore
 //! let translated_path = PathTransformer::new(cat_svg_path)
 //!     .translate(230.0, 0.0)
 //!     .to_string();
@@ -33,21 +33,20 @@
 //!
 //! ### Rotate
 //!
-//! ``` rust
+//! ``` rust,ignore
 //! let translated_path = PathTransformer::new(cat_svg_path)
 //!     .rotate(90.0, 126.0, 140.0)
 //!     .translate(220.0, 0.0)
 //!     .to_string();
 //! ```
 //!
-//! //! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/rotate.rs)
+//! [full example](https://github.com/orhanbalci/rough-rs/blob/main/rough_piet/examples/rotate.rs)
 //!
 //! ### 🖨️ Output Rotate
 //! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/rotated_cat.png)
 //!
 //! ### Skew
-//!
-//! ``` rust
+//! ``` rust,ignore
 //! let translated_path = PathTransformer::new(cat_svg_path)
 //!     .skew_x(20.0)
 //!     .translate(180.0, 0.0)
@@ -60,8 +59,7 @@
 //! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/skewed_cat.png)
 //!
 //! ### Scale
-//!
-//! ``` rust
+//! ``` rust,ignore
 //! let translated_path = PathTransformer::new(cat_svg_path)
 //!     .scale(0.5, 0.5)
 //!     .translate(220.0, 60.0)
