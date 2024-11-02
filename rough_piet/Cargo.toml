@@ -17,11 +17,11 @@ readme = "README.md"
 roughr = { path = "../roughr", version = "0.7.0" }
 num-traits = "0.2"
 euclid = "0.22"
-piet = "0.6"
+piet = "0.7"
 palette = "0.7"
 
 [dev-dependencies]
-piet-common = { version = "0.6", features = ["png"] }
+piet-common = { version = "0.7", features = ["png"] }
 rand = "0.8"
 rand_distr = "0.4"
 svg_path_ops = { path = "../svg_path_ops", version = "0.7.0" }
