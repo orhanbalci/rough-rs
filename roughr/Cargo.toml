@@ -1,6 +1,6 @@
 [package]
 name = "roughr"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Generate Hand Sketched 2D Drawings"
@@ -15,7 +15,7 @@ readme = "README.md"
 
 [dependencies]
 points_on_curve = { path = "../points_on_curve", version = "0.7.0" }
-svg_path_ops = { path = "../svg_path_ops", version = "0.7.0" }
+svg_path_ops = { path = "../svg_path_ops", version = "0.8.0" }
 euclid = "0.22"
 rand = "0.8"
 num-traits = "0.2"
