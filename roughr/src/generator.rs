@@ -5,6 +5,7 @@ use euclid::default::Point2D;
 use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 use points_on_curve::{curve_to_bezier, points_on_bezier_curves};
+use svgtypes::PathSegment;
 
 use crate::core::{
     Drawable,
@@ -18,7 +19,7 @@ use crate::core::{
     _c,
 };
 use crate::geometry::{convert_bezier_quadratic_to_cubic, BezierQuadratic};
-use crate::points_on_path::points_on_path;
+use crate::points_on_path::{points_on_path, points_on_segments};
 use crate::renderer::{
     bezier_cubic,
     bezier_quadratic,
@@ -32,6 +33,7 @@ use crate::renderer::{
     rectangle,
     solid_fill_polygon,
     svg_path,
+    svg_segments,
 };
 
 pub struct Generator {
@@ -409,6 +411,48 @@ impl Generator {
                         .for_each(|s| paths.push(linear_path(s, false, &mut options)));
                 } else {
                     paths.push(svg_path(d, &mut options));
+                }
+            }
+
+            self.d("path", &paths, &Some(options))
+        }
+    }
+
+    pub fn path_from_segments<F>(
+        &self,
+        segments: Vec<PathSegment>,
+        options: &Option<Options>,
+    ) -> Drawable<F>
+    where
+        F: Float + Trig + FromPrimitive + MulAssign + Display,
+    {
+        let mut options = options.clone().unwrap_or(self.default_options.clone());
+        let mut paths = vec![];
+        if segments.is_empty() {
+            self.d("path", &paths, &Some(options))
+        } else {
+            let simplified = options.simplification.map(|a| a < 1.0).unwrap_or(false);
+            let distance = if simplified {
+                _c::<F>(4.0) - _c::<F>(4.0) * _c::<F>(options.simplification.unwrap())
+            } else {
+                (_c::<F>(1.0) + _c::<F>(options.roughness.unwrap_or(1.0))) / _c::<F>(2.0)
+            };
+
+            let sets = points_on_segments(segments.clone(), Some(_c(1.0)), Some(distance));
+            if options.fill.is_some() {
+                if options.fill_style == Some(FillStyle::Solid) {
+                    paths.push(solid_fill_polygon(&sets, &mut options));
+                } else {
+                    paths.push(pattern_fill_polygons(sets.clone(), &mut options));
+                }
+            }
+
+            if options.stroke.is_some() {
+                if simplified {
+                    sets.iter()
+                        .for_each(|s| paths.push(linear_path(s, false, &mut options)));
+                } else {
+                    paths.push(svg_segments(segments, &mut options));
                 }
             }
 

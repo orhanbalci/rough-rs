@@ -1134,10 +1134,33 @@ where
     let mut current = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
     let path_parser = PathParser::from(path.as_ref());
     let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
-    let mut normalized_segments = normalize(absolutize(path_segments.iter()));
-    // normalized_segments
-    //     .by_ref()
-    //     .for_each(|s| print_line_segment(&s));
+    let normalized_segments = normalize(absolutize(path_segments.iter()));
+
+    opset_from_path(o, ops, first, current, normalized_segments)
+}
+
+pub fn svg_segments<F>(path_segments: Vec<PathSegment>, o: &mut Options) -> OpSet<F>
+where
+    F: Float + FromPrimitive + Trig,
+{
+    let mut ops = vec![];
+    let mut first = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
+    let mut current = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
+    let normalized_segments = normalize(absolutize(path_segments.iter()));
+
+    opset_from_path(o, ops, first, current, normalized_segments)
+}
+
+fn opset_from_path<F>(
+    o: &mut Options,
+    mut ops: Vec<Op<F>>,
+    mut first: euclid::Point2D<F, euclid::UnknownUnit>,
+    mut current: euclid::Point2D<F, euclid::UnknownUnit>,
+    normalized_segments: impl Iterator<Item = PathSegment>,
+) -> OpSet<F>
+where
+    F: Float + FromPrimitive + Trig,
+{
     for segment in normalized_segments {
         match segment {
             PathSegment::MoveTo { abs: true, x, y } => {

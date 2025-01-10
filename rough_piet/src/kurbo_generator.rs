@@ -6,10 +6,11 @@ use euclid::Trig;
 use num_traits::{Float, FromPrimitive};
 use palette::rgb::Rgba;
 use palette::Srgba;
-use piet::kurbo::{BezPath, PathEl, Point};
+use piet::kurbo::{self, BezPath, PathEl, Point};
 use piet::{Color, LineJoin, RenderContext, StrokeStyle};
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
 use roughr::generator::Generator;
+use roughr::PathSegment;
 
 #[derive(Default)]
 pub struct KurboGenerator {
@@ -340,6 +341,16 @@ impl KurboGenerator {
         let drawable = self.gen.path(svg_path, &self.options);
         drawable.to_kurbo_drawable()
     }
+
+    pub fn bez_path<F: Trig + Float + FromPrimitive + MulAssign + Display>(
+        &self,
+        bezier_path: BezPath,
+    ) -> KurboDrawable<F> {
+        let segments = bezpath_to_svg_segments(&bezier_path);
+        self.gen
+            .path_from_segments(segments, &self.options)
+            .to_kurbo_drawable()
+    }
 }
 
 fn convert_line_cap_from_roughr_to_piet(
@@ -362,4 +373,44 @@ fn convert_line_join_from_roughr_to_piet(
         Some(roughr::core::LineJoin::Bevel) => LineJoin::Bevel,
         None => LineJoin::Miter { limit: LineJoin::DEFAULT_MITER_LIMIT },
     }
+}
+
+pub fn bezpath_to_svg_segments(path: &BezPath) -> Vec<PathSegment> {
+    let mut segments = Vec::new();
+
+    for elem in path.elements() {
+        match elem {
+            kurbo::PathEl::MoveTo(p) => {
+                segments.push(PathSegment::MoveTo { abs: true, x: p.x, y: p.y });
+            }
+            kurbo::PathEl::LineTo(p) => {
+                segments.push(PathSegment::LineTo { abs: true, x: p.x, y: p.y });
+            }
+            kurbo::PathEl::QuadTo(p1, p2) => {
+                segments.push(PathSegment::Quadratic {
+                    abs: true,
+                    x1: p1.x,
+                    y1: p1.y,
+                    x: p2.x,
+                    y: p2.y,
+                });
+            }
+            kurbo::PathEl::CurveTo(p1, p2, p3) => {
+                segments.push(PathSegment::CurveTo {
+                    abs: true,
+                    x1: p1.x,
+                    y1: p1.y,
+                    x2: p2.x,
+                    y2: p2.y,
+                    x: p3.x,
+                    y: p3.y,
+                });
+            }
+            kurbo::PathEl::ClosePath => {
+                segments.push(PathSegment::ClosePath { abs: true });
+            }
+        }
+    }
+
+    segments
 }

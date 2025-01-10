@@ -167,3 +167,4 @@ pub mod renderer;
 
 pub use euclid::Point2D;
 pub use palette::Srgba;
+pub use svgtypes::*;

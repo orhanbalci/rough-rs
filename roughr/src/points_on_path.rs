@@ -21,9 +21,30 @@ where
     let path_parser = PathParser::from(path.as_ref());
     let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
     let normalized_segments = normalize(absolutize(path_segments.iter()));
-    // normalized_segments
-    //     .by_ref()
-    //     .for_each(|a| print_line_segment(&a));
+
+    generate_points(tolerance, distance, normalized_segments)
+}
+
+pub fn points_on_segments<F>(
+    path_segments: Vec<PathSegment>,
+    tolerance: Option<F>,
+    distance: Option<F>,
+) -> Vec<Vec<Point2D<F>>>
+where
+    F: FromPrimitive + Trig + Float + MulAssign + Display,
+{
+    let normalized_segments = normalize(absolutize(path_segments.iter()));
+    generate_points(tolerance, distance, normalized_segments)
+}
+
+fn generate_points<F>(
+    tolerance: Option<F>,
+    distance: Option<F>,
+    normalized_segments: impl Iterator<Item = PathSegment>,
+) -> Vec<Vec<euclid::Point2D<F, euclid::UnknownUnit>>>
+where
+    F: FromPrimitive + Trig + Float + MulAssign + Display,
+{
     let mut sets: Vec<Vec<Point2D<F>>> = vec![];
     let mut current_points: Vec<Point2D<F>> = vec![];
     let mut start = Point2D::new(_c::<F>(0.0), _c::<F>(0.0));
