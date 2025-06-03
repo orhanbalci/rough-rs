@@ -1,9 +1,9 @@
 #[derive(Debug, Clone, Default)]
 pub struct BBox {
-    min_x: Option<f64>,
-    min_y: Option<f64>,
-    max_x: Option<f64>,
-    max_y: Option<f64>,
+    pub min_x: Option<f64>,
+    pub min_y: Option<f64>,
+    pub max_x: Option<f64>,
+    pub max_y: Option<f64>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -79,7 +79,7 @@ impl BBox {
         box_
     }
 
-    fn copy(&self) -> Self {
+    pub fn copy(&self) -> Self {
         BBox {
             min_x: self.min_x,
             min_y: self.min_y,
@@ -88,14 +88,14 @@ impl BBox {
         }
     }
 
-    fn width(&self) -> f64 {
+    pub fn width(&self) -> f64 {
         match (self.min_x, self.max_x) {
             (Some(min_x), Some(max_x)) => max_x - min_x,
             _ => 0.0,
         }
     }
 
-    fn height(&self) -> f64 {
+    pub fn height(&self) -> f64 {
         match (self.min_y, self.max_y) {
             (Some(min_y), Some(max_y)) => max_y - min_y,
             _ => 0.0,
@@ -107,7 +107,7 @@ impl BBox {
         self.min_x.is_none() || self.min_y.is_none()
     }
 
-    fn add_x(&mut self, x: f64) -> &mut Self {
+    pub fn add_x(&mut self, x: f64) -> &mut Self {
         match self.min_x {
             None => {
                 // If undefined, set both min and max to x
@@ -123,7 +123,7 @@ impl BBox {
         self
     }
 
-    fn add_y(&mut self, y: f64) -> &mut Self {
+    pub fn add_y(&mut self, y: f64) -> &mut Self {
         match self.min_y {
             None => {
                 self.min_y = Some(y);
@@ -142,13 +142,13 @@ impl BBox {
     }
 
     /// Add new quadratic curve to X coordinate
-    fn add_x_q(&mut self, a: &[f64]) -> &mut Self {
+    pub fn add_x_q(&mut self, a: &[f64]) -> &mut Self {
         let minmax = minmax_q(a);
         self.add_x(minmax[0]).add_x(minmax[1])
     }
 
     /// Add new quadratic curve to Y coordinate
-    fn add_y_q(&mut self, a: &[f64]) -> &mut Self {
+    pub fn add_y_q(&mut self, a: &[f64]) -> &mut Self {
         let minmax = minmax_q(a);
         self.add_y(minmax[0]).add_y(minmax[1])
     }
@@ -160,12 +160,12 @@ impl BBox {
     ///
     /// # Returns
     /// * `Result<&mut Self, &'static str>` - Returns self for method chaining or an error
-    fn add_x_c(&mut self, a: &[f64]) -> &mut Self {
+    pub fn add_x_c(&mut self, a: &[f64]) -> &mut Self {
         let minmax = minmax_c(a);
         self.add_x(minmax[0]).add_x(minmax[1])
     }
 
-    fn add_y_c(&mut self, a: &[f64]) -> &mut Self {
+    pub fn add_y_c(&mut self, a: &[f64]) -> &mut Self {
         let minmax = minmax_c(a);
         self.add_y(minmax[0]).add_y(minmax[1])
     }
@@ -174,7 +174,7 @@ impl BBox {
     ///
     /// # Returns
     /// * `Result<[f64; 4], &'static str>` - Array of coordinates or error if undefined
-    fn to_array(&self) -> Result<[f64; 4], &'static str> {
+    pub fn to_array(&self) -> Result<[f64; 4], &'static str> {
         if self.is_undefined() {
             Ok([0.0, 0.0, 0.0, 0.0])
             // Or alternatively, if you want to handle undefined as an error:

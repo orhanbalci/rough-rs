@@ -33,10 +33,10 @@ fn main() {
     let background_color = Color::from_hex_str("96C0B7").unwrap();
 
     // rotate and translate given path
-    let translated_path = PathTransformer::new(cat_svg_path)
-        .scale(0.5, 0.5)
-        .translate(220.0, 60.0)
-        .to_string();
+    let mut translated_path = PathTransformer::new(cat_svg_path);
+    translated_path.scale(0.5, 0.5).translate(220.0, 60.0);
+    let translated_path_string = translated_path.to_string();
+    let translated_path_bbox = translated_path.to_box(None);
 
     // change colors etc of translated path to distinguish it from original
     let translated_options = OptionsBuilder::default()
@@ -47,7 +47,20 @@ fn main() {
         .build()
         .unwrap();
     let translated_generator = KurboGenerator::new(translated_options);
-    let translated_cat_path_drawing = translated_generator.path::<f32>(translated_path);
+    let translated_cat_path_drawing = translated_generator.path::<f32>(translated_path_string);
+
+    let bbox_options = OptionsBuilder::default()
+        .stroke(Srgba::from_components((114u8, 87, 82, 255u8)).into_format())
+        .fill_weight(DPI * 0.01)
+        .build()
+        .unwrap();
+    let bbox_generator = KurboGenerator::new(bbox_options);
+    let bbox = bbox_generator.rectangle(
+        translated_path_bbox.min_x.unwrap_or(0.0),
+        translated_path_bbox.min_y.unwrap_or(0.0),
+        translated_path_bbox.width(),
+        translated_path_bbox.height(),
+    );
 
     rc.fill(
         Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
@@ -55,6 +68,7 @@ fn main() {
     );
     cat_svg_path_drawing.draw(&mut rc);
     translated_cat_path_drawing.draw(&mut rc);
+    bbox.draw(&mut rc);
     rc.finish().unwrap();
     std::mem::drop(rc);
 

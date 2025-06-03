@@ -6,7 +6,9 @@ use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken}
 
 use super::ellipse::Ellipse;
 use crate::a2c::a2c;
+use crate::bbox::{BBox, InboxParameters};
 
+#[derive(Clone)]
 pub struct PathTransformer {
     path_segments: VecDeque<PathSegment>,
     stack: Vec<Matrix3<f64>>,
@@ -38,14 +40,6 @@ impl PathTransformer {
         self.stack.push(Matrix3::from_nonuniform_scale(sx, sy));
         self
     }
-
-    // pub fn rotate(&mut self, angle: f64, rx: f64, ry: f64) -> &mut Self {
-    //     self.stack.push_back(Matrix3::from_axis_angle(
-    //         Vector3::new(rx, ry, 0.0).normalize(),
-    //         Deg(angle),
-    //     ));
-    //     self
-    // }
 
     pub fn rotate(&mut self, angle: f64, rx: f64, ry: f64) -> &mut Self {
         if angle != 0.0 {
@@ -1066,6 +1060,85 @@ impl PathTransformer {
         });
         self
     }
+
+    // Return the bounding box (Box object) of the path path.
+    // The path is converted before with .abs().unarc().unshort()
+    //
+    pub fn to_box(&self, precision: Option<u8>) -> BBox {
+        let mut bb = BBox::new();
+
+        if self.path_segments.is_empty() {
+            return bb;
+        }
+
+        // Create a copy of the path and transform it
+        let mut p = self.clone();
+        p.abs().unarc().unshort().evaluate_stack();
+
+        // Iterate through segments and update bounding box
+        p.iterate(|segment, _pos, x, y| {
+            match segment {
+                PathSegment::HorizontalLineTo { abs: _, x: seg_x } => {
+                    bb.add_x(*seg_x);
+                }
+                PathSegment::VerticalLineTo { abs: _, y: seg_y } => {
+                    bb.add_y(*seg_y);
+                }
+                PathSegment::MoveTo { abs: _, x: seg_x, y: seg_y }
+                | PathSegment::LineTo { abs: _, x: seg_x, y: seg_y } => {
+                    bb.add_x(*seg_x);
+                    bb.add_y(*seg_y);
+                }
+                PathSegment::Quadratic { abs: _, x1, y1, x: seg_x, y: seg_y } => {
+                    bb.add_x_q(&[x, *x1, *seg_x]);
+                    bb.add_y_q(&[y, *y1, *seg_y]);
+                }
+                PathSegment::CurveTo { abs: _, x1, y1, x2, y2, x: seg_x, y: seg_y } => {
+                    bb.add_x_c(&[x, *x1, *x2, *seg_x]);
+                    bb.add_y_c(&[y, *y1, *y2, *seg_y]);
+                }
+                _ => {}
+            };
+            vec![*segment]
+        });
+
+        // Round with the current precision
+        if let Some(p) = precision {
+            bb.min_x = bb.min_x.map(|x| roundp(x, p));
+            bb.min_y = bb.min_y.map(|y| roundp(y, p));
+            bb.max_x = bb.max_x.map(|x| roundp(x, p));
+            bb.max_y = bb.max_y.map(|y| roundp(y, p));
+        }
+
+        bb
+    }
+
+    /// translate and scale the path to fit in a box
+    /// controlled by the following parameters :
+    /// - type:
+    ///  - fit(=none) : scale the path (aspect ratio is not preserved) to fit the box
+    ///  - meet (the default) : scale the path (aspect ratio is preserved) as much as possible
+    ///                         to fit the entire path in the box
+    ///  - slice : scale the path (aspect ratio is preserved) as less as possible to cover the box
+    ///  - move : translate only (no scale) the path according to x???y??? parameter
+    /// - position x(Min|Mid|Max)Y(Min|Mid|Max).
+    ///  example : .inbox('-10 10 300 400 meet xMidYMin')
+    ///            .inbox(-10, 10, 300, 400, 'meet xMidYMin')
+    ///
+    pub fn inbox(&mut self, params: InboxParameters) -> &mut Self {
+        // Get the transformation matrix from the current bounding box
+        let matrix = self.to_box(Some(2)).inbox_matrix(&params);
+
+        // Apply the transformation matrix to the path
+        self.matrix(matrix);
+
+        self
+    }
+}
+
+fn roundp(value: f64, precision: u8) -> f64 {
+    let factor = 10.0f64.powi(precision as i32);
+    (value * factor).round() / factor
 }
 
 #[cfg(test)]
@@ -1905,6 +1978,92 @@ mod test {
                     .unshort()
                     .to_string();
                 assert_eq!(actual, "M 30 50 q 20 20 40 0 q 20 -20 40 0");
+            }
+        }
+
+        pub mod bbox {
+            use crate::{
+                bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType},
+                pt::PathTransformer,
+            };
+
+            #[test]
+            fn get_bounding_box() {
+                // Test complex path with curves and arc
+                let mut path = PathTransformer::new(
+                       "M10,10 c 10,0 10,10 0,10 s -10,0 0,10 q 10,10 15 20 t 10,0 a25,25 -30 0,1 50,-25z"
+                           .to_string(),
+                   );
+
+                let bbox = path.round(3).to_box(None);
+                let bbox_array = bbox.to_array().unwrap();
+
+                assert_eq!(
+                    format!(
+                        "{} {} {} {}",
+                        bbox_array[0], bbox_array[1], bbox_array[2], bbox_array[3]
+                    ),
+                    "2.5 9.543027464337513 84.99999999999997 55"
+                );
+
+                // // Test with different rounding precision
+                let mut path = PathTransformer::new(
+                    "M10,10 c 10,0 10,10 0,10 s -10,0 0,10 q 10,10 15 20 t 10,0 a25,25 -30 0,1 50,-25z"
+                        .to_string(),
+                );
+                let bbox = path.round(2).to_box(None);
+                assert_eq!(bbox.to_string(Some(2)), "2.50 9.54 82.50 45.46");
+
+                // // Test with string format precision
+                let path = PathTransformer::new(
+                    "M10,10 c 10,0 10,10 0,10 s -10,0 0,10 q 10,10 15 20 t 10,0 a25,25 -30 0,1 50,-25z"
+                        .to_string(),
+                );
+                let bbox = path.to_box(Some(2));
+                assert_eq!(bbox.to_string(Some(2)), "2.50 9.54 82.50 45.46");
+            }
+
+            #[test]
+            fn test_matrix_to_fit_in_box() {
+                // Test case 1: default meet xMidYMid
+                let mut path = PathTransformer::new("M10,10 h10 v20".to_string());
+                let params = InboxParameters {
+                    destination: BBox::from("0 0 100 100"),
+                    scale_type: ScaleType::Meet,
+                    alignment: BoxAlignment { x: Alignment::Mid, y: Alignment::Mid },
+                };
+                path.inbox(params);
+                assert_eq!(path.to_box(None).to_string(None), "25 0 50 100");
+
+                // Test case 2: slice xMinYMax
+                let mut path = PathTransformer::new("M10,10 h10 v20".to_string());
+                let params = InboxParameters {
+                    destination: BBox::from("0 0 100 100"),
+                    scale_type: ScaleType::Slice,
+                    alignment: BoxAlignment { x: Alignment::Min, y: Alignment::Max },
+                };
+                path.inbox(params);
+                assert_eq!(path.to_box(None).to_string(None), "0 -100 100 200");
+
+                // Test case 3: fit
+                let mut path = PathTransformer::new("M10,10 h10 v20".to_string());
+                let params = InboxParameters {
+                    destination: BBox::from("0 0 100 100"),
+                    scale_type: ScaleType::Fit,
+                    alignment: BoxAlignment { x: Alignment::Mid, y: Alignment::Mid },
+                };
+                path.inbox(params);
+                assert_eq!(path.to_box(None).to_string(None), "0 0 100 100");
+
+                // Test case 4: move xMaxYMid
+                let mut path = PathTransformer::new("M10,10 h10 v20".to_string());
+                let params = InboxParameters {
+                    destination: BBox::from("0 0 100 100"),
+                    scale_type: ScaleType::Move,
+                    alignment: BoxAlignment { x: Alignment::Max, y: Alignment::Mid },
+                };
+                path.inbox(params);
+                assert_eq!(path.to_box(None).to_string(None), "90 40 10 20");
             }
         }
     }
