@@ -72,6 +72,7 @@
 //! ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/scaled_cat.png)
 
 pub(crate) mod a2c;
+pub(crate) mod bbox;
 pub(crate) mod ellipse;
 pub mod pt;
 
