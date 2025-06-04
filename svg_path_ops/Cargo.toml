@@ -1,6 +1,6 @@
 [package]
 name = "svg_path_ops"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "SVG Path Manipulation Utilities"
