@@ -14,8 +14,12 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+iced_core = { version = "0.13" }
+iced_widget = { version = "0.13", features = ["canvas"] }
 euclid = "0.22"
-iced = { version = "0.10", features = ["canvas"] }
 palette = "0.7"
 roughr = { path = "../roughr", version = "0.11.0" }
 num-traits = "0.2"
+
+[dev-dependencies]
+iced = { version = "0.13", features = ["canvas"] }

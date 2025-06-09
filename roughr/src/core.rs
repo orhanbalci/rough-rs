@@ -16,7 +16,7 @@ pub struct DrawingSurface {
     height: f32,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Copy, Eq)]
 pub enum FillStyle {
     Solid,
     Hachure,
@@ -25,6 +25,20 @@ pub enum FillStyle {
     Dots,
     Dashed,
     ZigZagLine,
+}
+
+impl ToString for FillStyle {
+    fn to_string(&self) -> String {
+        match self {
+            FillStyle::Solid => "Soid".into(),
+            FillStyle::Hachure => "Hachure".into(),
+            FillStyle::ZigZag => "ZigZag".into(),
+            FillStyle::CrossHatch => "CrossHatch".into(),
+            FillStyle::Dots => "Dots".into(),
+            FillStyle::Dashed => "Dashed".into(),
+            FillStyle::ZigZagLine => "ZigZagLine".into(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

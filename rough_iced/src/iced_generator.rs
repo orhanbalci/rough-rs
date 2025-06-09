@@ -4,10 +4,10 @@ use std::ops::MulAssign;
 use euclid::default::Point2D;
 use euclid::Trig;
 
-use iced::widget::canvas::fill::Rule;
-use iced::widget::canvas::path::lyon_path::PathEvent;
-use iced::widget::canvas::{Fill, Frame, LineDash, Path, Stroke, Style};
-use iced::{Color, Point};
+use iced_core::{Color, Point};
+use iced_widget::canvas::fill::Rule;
+use iced_widget::canvas::path::lyon_path::PathEvent;
+use iced_widget::canvas::{Fill, Frame, LineDash, Path, Stroke, Style};
 use num_traits::{Float, FromPrimitive};
 use palette::rgb::Rgba;
 use palette::Srgba;
@@ -391,23 +391,23 @@ impl IcedGenerator {
 
 fn convert_line_cap_from_roughr_to_iced(
     roughr_line_cap: Option<roughr::core::LineCap>,
-) -> iced::widget::canvas::LineCap {
+) -> iced_widget::canvas::LineCap {
     match roughr_line_cap {
-        Some(roughr::core::LineCap::Butt) => iced::widget::canvas::LineCap::Butt,
-        Some(roughr::core::LineCap::Round) => iced::widget::canvas::LineCap::Round,
-        Some(roughr::core::LineCap::Square) => iced::widget::canvas::LineCap::Square,
-        None => iced::widget::canvas::LineCap::Butt,
+        Some(roughr::core::LineCap::Butt) => iced_widget::canvas::LineCap::Butt,
+        Some(roughr::core::LineCap::Round) => iced_widget::canvas::LineCap::Round,
+        Some(roughr::core::LineCap::Square) => iced_widget::canvas::LineCap::Square,
+        None => iced_widget::canvas::LineCap::Butt,
     }
 }
 
 fn convert_line_join_from_roughr_to_iced(
     roughr_line_join: Option<roughr::core::LineJoin>,
-) -> iced::widget::canvas::LineJoin {
+) -> iced_widget::canvas::LineJoin {
     match roughr_line_join {
-        Some(roughr::core::LineJoin::Miter { limit: _ }) => iced::widget::canvas::LineJoin::Miter,
-        Some(roughr::core::LineJoin::Round) => iced::widget::canvas::LineJoin::Round,
-        Some(roughr::core::LineJoin::Bevel) => iced::widget::canvas::LineJoin::Bevel,
-        None => iced::widget::canvas::LineJoin::Miter,
+        Some(roughr::core::LineJoin::Miter { limit: _ }) => iced_widget::canvas::LineJoin::Miter,
+        Some(roughr::core::LineJoin::Round) => iced_widget::canvas::LineJoin::Round,
+        Some(roughr::core::LineJoin::Bevel) => iced_widget::canvas::LineJoin::Bevel,
+        None => iced_widget::canvas::LineJoin::Miter,
     }
 }
 
