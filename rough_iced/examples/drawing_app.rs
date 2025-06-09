@@ -56,6 +56,9 @@ enum Message {
     HachureAngleChanged(f32),
     HachureGapChanged(f32),
     SimplificationChanged(f32),
+    DashOffsetChanged(f32),
+    DashGapChanged(f32),
+    ZigzagOffsetChanged(f32),
 }
 
 struct DrawingApp {
@@ -72,6 +75,9 @@ struct DrawingApp {
     hachure_angle: f32,
     hachure_gap: f32,
     simplification: f32,
+    dash_offset: f32,
+    dash_gap: f32,
+    zigzag_offset: f32,
 }
 
 impl Default for DrawingApp {
@@ -90,13 +96,16 @@ impl Default for DrawingApp {
             hachure_angle: -41.0,
             hachure_gap: -1.0,
             simplification: 1.0,
+            dash_offset: -1.0,
+            dash_gap: -1.0,
+            zigzag_offset: -1.0,
         }
     }
 }
 
 impl DrawingApp {
     fn title(&self) -> String {
-        String::from("Drawing App")
+        String::from("Rough Configuration App")
     }
 
     fn update(&mut self, message: Message) {
@@ -147,6 +156,18 @@ impl DrawingApp {
             }
             Message::SimplificationChanged(simplification) => {
                 self.simplification = simplification;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::DashOffsetChanged(dash_offset) => {
+                self.dash_offset = dash_offset;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::DashGapChanged(dash_gap) => {
+                self.dash_gap = dash_gap;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::ZigzagOffsetChanged(zigzag_offset) => {
+                self.zigzag_offset = zigzag_offset;
                 self.cache.clear(); // Clear the canvas cache to redraw
             }
         }
@@ -263,6 +284,27 @@ impl DrawingApp {
         ]
         .spacing(10);
 
+        // Dash offset slider
+        let dash_offset_controls = column![
+            text(format!("Dash Offset: {:.1}", self.dash_offset)).size(16),
+            slider(-10.0..=10.0, self.dash_offset, Message::DashOffsetChanged).step(0.1),
+        ]
+        .spacing(10);
+
+        // Dash gap slider
+        let dash_gap_controls = column![
+            text(format!("Dash Gap: {:.1}", self.dash_gap)).size(16),
+            slider(0.0..=20.0, self.dash_gap, Message::DashGapChanged).step(0.1),
+        ]
+        .spacing(10);
+
+        // Zigzag offset slider
+        let zigzag_offset_controls = column![
+            text(format!("Zigzag Offset: {:.1}", self.zigzag_offset)).size(16),
+            slider(1.0..=10.0, self.zigzag_offset, Message::ZigzagOffsetChanged).step(1.01),
+        ]
+        .spacing(10);
+
         // Combine shape controls and fill style controls
         let controls = column![
             shape_controls,
@@ -276,7 +318,10 @@ impl DrawingApp {
             fill_weight_controls,
             hachure_angle_controls,
             hachure_gap_controls,
-            simplification_controls
+            simplification_controls,
+            dash_offset_controls,
+            dash_gap_controls,
+            zigzag_offset_controls
         ]
         .spacing(20);
 
@@ -320,6 +365,9 @@ impl<Message> canvas::Program<Message> for DrawingApp {
             .hachure_angle(self.hachure_angle)
             .hachure_gap(self.hachure_gap)
             .simplification(self.simplification)
+            .dash_offset(self.dash_offset)
+            .dash_gap(self.dash_gap)
+            .zigzag_offset(self.zigzag_offset)
             .build()
             .unwrap();
 
