@@ -23,3 +23,4 @@ num-traits = "0.2"
 
 [dev-dependencies]
 iced = { version = "0.13", features = ["canvas"] }
+svg_path_ops = { path = "../svg_path_ops", version = "0.11.0" }

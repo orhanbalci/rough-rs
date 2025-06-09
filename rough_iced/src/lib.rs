@@ -5,7 +5,7 @@
 #![deny(unreachable_pub)]
 
 //!
-//! This crate is an adapter crate between [roughr](https://github.com/orhanbalci/rough-rs/main/roughr) and
+//! This crate is an adapter crate between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and
 //! [iced](https://github.com/iced-rs/iced) crates. Converts from roughr drawing
 //! primitives to iced path types. Also has convenience traits for drawing onto iced frames. For more detailed
 //! information you can check roughr crate.

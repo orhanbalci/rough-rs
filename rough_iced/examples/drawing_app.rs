@@ -8,6 +8,7 @@ use num_traits::FloatConst;
 use palette::Srgba;
 use rough_iced::IcedGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
+use svg_path_ops::pt::PathTransformer;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Shape {
@@ -16,6 +17,7 @@ enum Shape {
     Circle,
     Ellipse,
     BezierCubic, // New Bezier Cubic shape
+    Heart,
 }
 
 impl ToString for Shape {
@@ -25,17 +27,19 @@ impl ToString for Shape {
             Shape::Rectangle => "Rectangle".to_string(),
             Shape::Circle => "Circle".to_string(),
             Shape::Ellipse => "Ellipse".to_string(),
-            Shape::BezierCubic => "Bezier Cubic".to_string(), // Display name for Bezier Cubic
+            Shape::BezierCubic => "Bezier Cubic".to_string(),
+            Shape::Heart => "Heart".to_string(), // Display name for Bezier Cubic
         }
     }
 }
 
-const SHAPES: [Shape; 5] = [
+const SHAPES: [Shape; 6] = [
     Shape::Arc,
     Shape::Rectangle,
     Shape::Circle,
     Shape::Ellipse,
     Shape::BezierCubic,
+    Shape::Heart,
 ];
 
 #[derive(Debug, Clone)]
@@ -48,6 +52,10 @@ enum Message {
     CurveFittingChanged(f32),
     CurveTightnessChanged(f32),
     CurveStepCountChanged(f32),
+    FillWeightChanged(f32),
+    HachureAngleChanged(f32),
+    HachureGapChanged(f32),
+    SimplificationChanged(f32),
 }
 
 struct DrawingApp {
@@ -60,6 +68,10 @@ struct DrawingApp {
     curve_fitting: f32,
     curve_tightness: f32,
     curve_step_count: f32,
+    fill_weight: f32,
+    hachure_angle: f32,
+    hachure_gap: f32,
+    simplification: f32,
 }
 
 impl Default for DrawingApp {
@@ -74,6 +86,10 @@ impl Default for DrawingApp {
             curve_fitting: 0.95, // Default curve fitting value
             curve_tightness: 0.0,
             curve_step_count: 9.0, // Default curve step count value
+            fill_weight: 1.0,
+            hachure_angle: -41.0,
+            hachure_gap: -1.0,
+            simplification: 1.0,
         }
     }
 }
@@ -115,6 +131,22 @@ impl DrawingApp {
             }
             Message::CurveStepCountChanged(curve_step_count) => {
                 self.curve_step_count = curve_step_count;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::FillWeightChanged(fill_weight) => {
+                self.fill_weight = fill_weight;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::HachureAngleChanged(hachure_angle) => {
+                self.hachure_angle = hachure_angle;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::HachureGapChanged(hachure_gap) => {
+                self.hachure_gap = hachure_gap;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::SimplificationChanged(simplification) => {
+                self.simplification = simplification;
                 self.cache.clear(); // Clear the canvas cache to redraw
             }
         }
@@ -193,6 +225,44 @@ impl DrawingApp {
         ]
         .spacing(10);
 
+        // Fill weight slider
+        let fill_weight_controls = column![
+            text(format!("Fill Weight: {:.1}", self.fill_weight)).size(16),
+            slider(0.1..=10.0, self.fill_weight, Message::FillWeightChanged).step(0.1),
+        ]
+        .spacing(10);
+
+        // Hachure angle slider
+        let hachure_angle_controls = column![
+            text(format!("Hachure Angle: {:.1}", self.hachure_angle)).size(16),
+            slider(
+                -90.0..=90.0,
+                self.hachure_angle,
+                Message::HachureAngleChanged
+            )
+            .step(1.0),
+        ]
+        .spacing(10);
+
+        // Hachure gap slider
+        let hachure_gap_controls = column![
+            text(format!("Hachure Gap: {:.1}", self.hachure_gap)).size(16),
+            slider(0.0..=20.0, self.hachure_gap, Message::HachureGapChanged).step(0.1),
+        ]
+        .spacing(10);
+
+        // Simplification slider
+        let simplification_controls = column![
+            text(format!("Simplification: {:.2}", self.simplification)).size(16),
+            slider(
+                0.0..=1.0,
+                self.simplification,
+                Message::SimplificationChanged
+            )
+            .step(0.1),
+        ]
+        .spacing(10);
+
         // Combine shape controls and fill style controls
         let controls = column![
             shape_controls,
@@ -202,7 +272,11 @@ impl DrawingApp {
             stroke_width_controls,
             curve_fitting_controls,
             curve_tightness_controls,
-            curve_step_count_controls
+            curve_step_count_controls,
+            fill_weight_controls,
+            hachure_angle_controls,
+            hachure_gap_controls,
+            simplification_controls
         ]
         .spacing(20);
 
@@ -236,13 +310,16 @@ impl<Message> canvas::Program<Message> for DrawingApp {
             .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
             .fill(Srgba::from_components((254u8, 246u8, 201u8, 255u8)).into_format())
             .fill_style(self.selected_fill_style)
-            .fill_weight(1.0) // Adjust fill weight as needed
             .bowing(self.bowing)
             .roughness(self.roughness)
             .stroke_width(self.stroke_width)
             .curve_fitting(self.curve_fitting)
             .curve_tightness(self.curve_tightness)
             .curve_step_count(self.curve_step_count)
+            .fill_weight(self.fill_weight)
+            .hachure_angle(self.hachure_angle)
+            .hachure_gap(self.hachure_gap)
+            .simplification(self.simplification)
             .build()
             .unwrap();
 
@@ -300,6 +377,19 @@ impl<Message> canvas::Program<Message> for DrawingApp {
                     Point2D::new(3.0 * bounds.width / 4.0, bounds.height / 2.0),
                 );
                 bezier_path.draw(&mut frame);
+            }
+            Shape::Heart => {
+                let heart_svg_path = "M140 20C73 20 20 74 20 140c0 135 136 170 228 303 88-132 229-173 229-303 0-66-54-120-120-120-48 0-90 28-109 69-19-41-60-69-108-69z".into();
+                let mut translated_path = PathTransformer::new(heart_svg_path);
+                let bbox = translated_path.to_box(Some(1));
+                translated_path.translate(
+                    bounds.width as f64 / 2.0 - bbox.width() / 2.0,
+                    bounds.height as f64 / 2.0 - bbox.height() / 2.0,
+                );
+
+                let translated_path_string = translated_path.to_string();
+                let heart_path = generator.path::<f32>(translated_path_string);
+                heart_path.draw(&mut frame);
             }
         }
 
