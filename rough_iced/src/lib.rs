@@ -147,7 +147,7 @@
 //! ## 🔭 Examples
 //!
 //! For more examples have a look at the
-//! [examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet/examples) folder.
+//! [examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced/examples) folder.
 
 pub mod iced_generator;
 pub use iced_generator::*;

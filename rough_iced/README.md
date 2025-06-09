@@ -1,5 +1,5 @@
 
-# rough_piet
+# rough_iced
 
 [![Crates.io](https://img.shields.io/crates/v/rough_piet.svg)](https://crates.io/crates/rough_piet)
 [![Documentation](https://docs.rs/rough_piet/badge.svg)](https://docs.rs/rough_piet)
@@ -9,17 +9,17 @@
 
 
 This crate is an adapter crate between [roughr](https://github.com/orhanbalci/rough-rs/main/roughr) and
-[piet](https://github.com/linebender/piet) crates. Converts from roughr drawing
-primitives to piets path types. Also has convenience traits for drawing onto piet contexts. For more detailed
+[iced](https://github.com/iced-rs/iced) crates. Converts from roughr drawing
+primitives to iced path types. Also has convenience traits for drawing onto iced frames. For more detailed
 information you can check roughr crate.
 
-Below examples are output of [rough_piet](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet) adapter.
+Below examples are output of [rough_iced](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced) adapter.
 
 ## 📦 Cargo.toml
 
 ```toml
 [dependencies]
-rough_piet = "0.1"
+rough_iced = "0.1"
 ```
 
 ## 🔧 Example
@@ -150,7 +150,7 @@ heart_svg_path_drawing.draw(&mut rc);
 ## 🔭 Examples
 
 For more examples have a look at the
-[examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet/examples) folder.
+[examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced/examples) folder.
 
 <!-- cargo-sync-readme end -->
 
