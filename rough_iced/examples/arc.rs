@@ -1,3 +1,4 @@
+use euclid::Point2D;
 use iced::widget::canvas::{self, Frame, Geometry};
 use iced::widget::{button, column, row, Canvas};
 use iced::{Element, Length, Theme};
@@ -8,12 +9,34 @@ use palette::Srgba;
 use rough_iced::IcedGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Shape {
     Arc,
     Rectangle,
     Circle,
+    Ellipse,
+    BezierCubic, // New Bezier Cubic shape
 }
+
+impl ToString for Shape {
+    fn to_string(&self) -> String {
+        match self {
+            Shape::Arc => "Arc".to_string(),
+            Shape::Rectangle => "Rectangle".to_string(),
+            Shape::Circle => "Circle".to_string(),
+            Shape::Ellipse => "Ellipse".to_string(),
+            Shape::BezierCubic => "Bezier Cubic".to_string(), // Display name for Bezier Cubic
+        }
+    }
+}
+
+const SHAPES: [Shape; 5] = [
+    Shape::Arc,
+    Shape::Rectangle,
+    Shape::Circle,
+    Shape::Ellipse,
+    Shape::BezierCubic,
+];
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -22,6 +45,9 @@ enum Message {
     BowingChanged(f32),
     RoughnessChanged(f32),
     StrokeWidthChanged(f32),
+    CurveFittingChanged(f32),
+    CurveTightnessChanged(f32),
+    CurveStepCountChanged(f32),
 }
 
 struct DrawingApp {
@@ -31,17 +57,23 @@ struct DrawingApp {
     bowing: f32,
     roughness: f32,
     stroke_width: f32,
+    curve_fitting: f32,
+    curve_tightness: f32,
+    curve_step_count: f32,
 }
 
 impl Default for DrawingApp {
     fn default() -> Self {
         DrawingApp {
-            selected_shape: Shape::Arc,
+            selected_shape: Shape::Rectangle,
             cache: canvas::Cache::default(),
             selected_fill_style: FillStyle::Hachure,
             bowing: 2.0, // Default bowing value
             roughness: 1.0,
-            stroke_width: 1.0, // Default stroke width
+            stroke_width: 1.0,   // Default stroke width
+            curve_fitting: 0.95, // Default curve fitting value
+            curve_tightness: 0.0,
+            curve_step_count: 9.0, // Default curve step count value
         }
     }
 }
@@ -73,24 +105,26 @@ impl DrawingApp {
                 self.stroke_width = stroke_width;
                 self.cache.clear(); // Clear the canvas cache to redraw
             }
+            Message::CurveFittingChanged(curve_fitting) => {
+                self.curve_fitting = curve_fitting;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::CurveTightnessChanged(curve_tightness) => {
+                self.curve_tightness = curve_tightness;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::CurveStepCountChanged(curve_step_count) => {
+                self.curve_step_count = curve_step_count;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
         }
     }
 
     fn view(&self) -> Element<Message> {
         // Left panel with buttons for shape selection
-        let shape_controls = column![
-            button("Arc")
-                .on_press(Message::ShapeSelected(Shape::Arc))
-                .padding(10),
-            button("Rectangle")
-                .on_press(Message::ShapeSelected(Shape::Rectangle))
-                .padding(10),
-            button("Circle")
-                .on_press(Message::ShapeSelected(Shape::Circle))
-                .padding(10),
-        ]
-        .spacing(10)
-        .padding(10);
+        // Shape selection dropdown
+        let shape_controls =
+            pick_list(SHAPES, Some(self.selected_shape), Message::ShapeSelected).padding(10);
 
         // Fill style selection dropdown
         let fill_styles = [
@@ -128,13 +162,47 @@ impl DrawingApp {
         ]
         .spacing(10);
 
+        // Curve fitting slider
+        let curve_fitting_controls = column![
+            text(format!("Curve Fitting: {:.2}", self.curve_fitting)).size(16),
+            slider(0.0..=1.0, self.curve_fitting, Message::CurveFittingChanged).step(0.01),
+        ]
+        .spacing(10);
+
+        // Curve tightness slider
+        let curve_tightness_controls = column![
+            text(format!("Curve Tightness: {:.2}", self.curve_tightness)).size(16),
+            slider(
+                -10.0..=10.0,
+                self.curve_tightness,
+                Message::CurveTightnessChanged
+            )
+            .step(0.1),
+        ]
+        .spacing(10);
+
+        // Curve step count slider
+        let curve_step_count_controls = column![
+            text(format!("Curve Step Count: {:.1}", self.curve_step_count)).size(16),
+            slider(
+                1.0..=20.0,
+                self.curve_step_count,
+                Message::CurveStepCountChanged
+            )
+            .step(1.0),
+        ]
+        .spacing(10);
+
         // Combine shape controls and fill style controls
         let controls = column![
             shape_controls,
             fill_style_controls,
             bowing_controls,
             roughness_controls,
-            stroke_width_controls
+            stroke_width_controls,
+            curve_fitting_controls,
+            curve_tightness_controls,
+            curve_step_count_controls
         ]
         .spacing(20);
 
@@ -172,6 +240,9 @@ impl<Message> canvas::Program<Message> for DrawingApp {
             .bowing(self.bowing)
             .roughness(self.roughness)
             .stroke_width(self.stroke_width)
+            .curve_fitting(self.curve_fitting)
+            .curve_tightness(self.curve_tightness)
+            .curve_step_count(self.curve_step_count)
             .build()
             .unwrap();
 
@@ -211,6 +282,24 @@ impl<Message> canvas::Program<Message> for DrawingApp {
                 let circle_path =
                     generator.circle(bounds.width / 2.0, bounds.height / 2.0, bounds.width / 3.0);
                 circle_path.draw(&mut frame);
+            }
+            Shape::Ellipse => {
+                let ellipse_path = generator.ellipse(
+                    (bounds.width as f32) / 2.0,
+                    (bounds.height as f32) / 2.0,
+                    bounds.width / 2.0,
+                    bounds.height / 3.0,
+                );
+                ellipse_path.draw(&mut frame);
+            }
+            Shape::BezierCubic => {
+                let bezier_path = generator.bezier_cubic(
+                    Point2D::new(bounds.width / 4.0, bounds.height / 2.0),
+                    Point2D::new(bounds.width / 3.0, bounds.height / 4.0),
+                    Point2D::new(2.0 * bounds.width / 3.0, 3.0 * bounds.height / 4.0),
+                    Point2D::new(3.0 * bounds.width / 4.0, bounds.height / 2.0),
+                );
+                bezier_path.draw(&mut frame);
             }
         }
 
