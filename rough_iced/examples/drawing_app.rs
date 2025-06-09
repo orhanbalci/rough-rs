@@ -1,14 +1,37 @@
 use euclid::Point2D;
 use iced::widget::canvas::{self, Frame, Geometry};
-use iced::widget::{button, column, row, Canvas};
+use iced::widget::{column, row, Canvas};
 use iced::{Element, Length, Theme};
 use iced::{Point, Rectangle};
-use iced_widget::{pick_list, slider, text};
+use iced_widget::{checkbox, pick_list, slider, text};
 use num_traits::FloatConst;
 use palette::Srgba;
 use rough_iced::IcedGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 use svg_path_ops::pt::PathTransformer;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StrokeDashPreset {
+    Solid,
+    Dashed,
+    Dotted,
+}
+
+impl ToString for StrokeDashPreset {
+    fn to_string(&self) -> String {
+        match self {
+            StrokeDashPreset::Solid => "Solid".to_string(),
+            StrokeDashPreset::Dashed => "Dashed".to_string(),
+            StrokeDashPreset::Dotted => "Dotted".to_string(),
+        }
+    }
+}
+
+const STROKE_DASH_PRESETS: [StrokeDashPreset; 3] = [
+    StrokeDashPreset::Solid,
+    StrokeDashPreset::Dashed,
+    StrokeDashPreset::Dotted,
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Shape {
@@ -59,6 +82,9 @@ enum Message {
     DashOffsetChanged(f32),
     DashGapChanged(f32),
     ZigzagOffsetChanged(f32),
+    StrokeDashPresetChanged(StrokeDashPreset),
+    StrokeLineDashOffsetChanged(f32),
+    DisableMultiStrokeChanged(bool),
 }
 
 struct DrawingApp {
@@ -78,6 +104,9 @@ struct DrawingApp {
     dash_offset: f32,
     dash_gap: f32,
     zigzag_offset: f32,
+    selected_stroke_dash: StrokeDashPreset,
+    stroke_line_dash_offset: f32,
+    disable_multi_stroke: bool,
 }
 
 impl Default for DrawingApp {
@@ -88,17 +117,20 @@ impl Default for DrawingApp {
             selected_fill_style: FillStyle::Hachure,
             bowing: 2.0, // Default bowing value
             roughness: 1.0,
-            stroke_width: 1.0,   // Default stroke width
+            stroke_width: 3.0,   // Default stroke width
             curve_fitting: 0.95, // Default curve fitting value
             curve_tightness: 0.0,
             curve_step_count: 9.0, // Default curve step count value
-            fill_weight: 1.0,
+            fill_weight: 3.0,
             hachure_angle: -41.0,
-            hachure_gap: -1.0,
+            hachure_gap: 20.0,
             simplification: 1.0,
             dash_offset: -1.0,
             dash_gap: -1.0,
             zigzag_offset: -1.0,
+            selected_stroke_dash: StrokeDashPreset::Solid,
+            stroke_line_dash_offset: 0.0,
+            disable_multi_stroke: false,
         }
     }
 }
@@ -168,6 +200,18 @@ impl DrawingApp {
             }
             Message::ZigzagOffsetChanged(zigzag_offset) => {
                 self.zigzag_offset = zigzag_offset;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::StrokeDashPresetChanged(preset) => {
+                self.selected_stroke_dash = preset;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::StrokeLineDashOffsetChanged(offset) => {
+                self.stroke_line_dash_offset = offset;
+                self.cache.clear(); // Clear the canvas cache to redraw
+            }
+            Message::DisableMultiStrokeChanged(disable) => {
+                self.disable_multi_stroke = disable;
                 self.cache.clear(); // Clear the canvas cache to redraw
             }
         }
@@ -305,6 +349,43 @@ impl DrawingApp {
         ]
         .spacing(10);
 
+        // Stroke dash preset pick list
+        let stroke_dash_controls = column![
+            text("Stroke Dash Preset").size(16),
+            pick_list(
+                STROKE_DASH_PRESETS,
+                Some(self.selected_stroke_dash),
+                Message::StrokeDashPresetChanged
+            )
+            .padding(10),
+        ]
+        .spacing(10);
+
+        // Stroke line dash offset slider
+        let stroke_line_dash_offset_controls = column![
+            text(format!(
+                "Stroke Line Dash Offset: {:.1}",
+                self.stroke_line_dash_offset
+            ))
+            .size(16),
+            slider(
+                0.0..=10.0,
+                self.stroke_line_dash_offset,
+                Message::StrokeLineDashOffsetChanged
+            )
+            .step(1.0),
+        ]
+        .spacing(10);
+
+        // Disable multi-stroke toggle
+        let disable_multi_stroke_controls = column![
+            text("Disable Multi-Stroke").size(16),
+            checkbox("Disable Multi-Stroke", self.disable_multi_stroke)
+                .on_toggle(Message::DisableMultiStrokeChanged)
+                .spacing(10),
+        ]
+        .spacing(10);
+
         // Combine shape controls and fill style controls
         let controls = column![
             shape_controls,
@@ -321,7 +402,10 @@ impl DrawingApp {
             simplification_controls,
             dash_offset_controls,
             dash_gap_controls,
-            zigzag_offset_controls
+            zigzag_offset_controls,
+            stroke_dash_controls,
+            stroke_line_dash_offset_controls,
+            disable_multi_stroke_controls
         ]
         .spacing(20);
 
@@ -350,6 +434,12 @@ impl<Message> canvas::Program<Message> for DrawingApp {
     ) -> Vec<Geometry> {
         let mut frame = Frame::new(renderer, bounds.size());
 
+        let stroke_dash = match self.selected_stroke_dash {
+            StrokeDashPreset::Solid => None, // No dashing for solid
+            StrokeDashPreset::Dashed => Some(vec![10.0, 10.0]), // Dashed pattern
+            StrokeDashPreset::Dotted => Some(vec![8.0, 4.0, 2.0, 4.0, 2.0, 4.0]), // Dotted pattern
+        };
+
         // Define rough.js-style options
         let options = OptionsBuilder::default()
             .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
@@ -368,6 +458,9 @@ impl<Message> canvas::Program<Message> for DrawingApp {
             .dash_offset(self.dash_offset)
             .dash_gap(self.dash_gap)
             .zigzag_offset(self.zigzag_offset)
+            .stroke_line_dash(stroke_dash.unwrap_or(vec![]))
+            .stroke_line_dash_offset(self.stroke_line_dash_offset as f64)
+            .disable_multi_stroke(self.disable_multi_stroke)
             .build()
             .unwrap();
 
