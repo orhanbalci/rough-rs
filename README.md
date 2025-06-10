@@ -18,6 +18,8 @@ packages functionality
 
 - [rough_tiny_skia](https://github.com/orhanbalci/rough-rs/tree/main/rough_tiny_skia) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [tiny-skia](https://github.com/RazrFalcon/tiny-skia)
 
+- [rough_iced](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [iced](https://github.com/iced-rs/iced)
+
 ## 📝 License
 
 Licensed under MIT License ([LICENSE](LICENSE)).
