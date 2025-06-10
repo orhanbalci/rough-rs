@@ -1,6 +1,6 @@
 [package]
 name = "rough_iced"
-version = "0.1.0"
+version = "0.12.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Draw Hand Sketched 2D Drawings Using Iced"
@@ -18,7 +18,7 @@ iced_core = { version = "0.13" }
 iced_widget = { version = "0.13", features = ["canvas"] }
 euclid = "0.22"
 palette = "0.7"
-roughr = { path = "../roughr", version = "0.11.0" }
+roughr = { path = "../roughr", version = "0.12.0" }
 num-traits = "0.2"
 
 [dev-dependencies]
