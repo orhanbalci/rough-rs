@@ -23,7 +23,7 @@ rough_iced = "0.1"
 ```
 
 ## 🔧 Configuration Tool
-![rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/tree/main/rough_iced/assets/conf.png)
+![rectangle](https://github.com/orhanbalci/rough-rs/blob/main/rough_iced/assets/conf.png)
 
 ## 🔭 Examples
 
