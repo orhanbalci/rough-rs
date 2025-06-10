@@ -1,8 +1,8 @@
 
 # rough_iced
 
-[![Crates.io](https://img.shields.io/crates/v/rough_piet.svg)](https://crates.io/crates/rough_piet)
-[![Documentation](https://docs.rs/rough_piet/badge.svg)](https://docs.rs/rough_piet)
+[![Crates.io](https://img.shields.io/crates/v/rough_iced.svg)](https://crates.io/crates/rough_iced)
+[![Documentation](https://docs.rs/rough_iced/badge.svg)](https://docs.rs/rough_iced)
 [![License](https://img.shields.io/github/license/orhanbalci/rough-rs.svg)](https://github.com/orhanbalci/rough-rs/LICENSE)
 
 <!-- cargo-sync-readme start -->
