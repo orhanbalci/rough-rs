@@ -89,6 +89,7 @@ enum Shape {
     Heart,
     Line,
     RustLogo,
+    Polygon,
 }
 
 impl ToString for Shape {
@@ -102,11 +103,12 @@ impl ToString for Shape {
             Shape::Heart => "Heart".to_string(),
             Shape::Line => "Line".to_string(),
             Shape::RustLogo => "Rust Logo".to_string(),
+            Shape::Polygon => "Polygon".to_string(),
         }
     }
 }
 
-const SHAPES: [Shape; 8] = [
+const SHAPES: [Shape; 9] = [
     Shape::Arc,
     Shape::Rectangle,
     Shape::Circle,
@@ -115,6 +117,7 @@ const SHAPES: [Shape; 8] = [
     Shape::Heart,
     Shape::Line,
     Shape::RustLogo,
+    Shape::Polygon,
 ];
 
 #[derive(Debug, Clone)]
@@ -733,6 +736,16 @@ impl<Message> canvas::Program<Message> for DrawingApp {
                 let translated_path_string = translated_path.to_string();
                 let rust_logo_path = generator.path::<f32>(translated_path_string);
                 rust_logo_path.draw(&mut frame);
+            }
+            Shape::Polygon => {
+                let points = [
+                    Point2D::new(bounds.width / 4.0, bounds.height / 2.0),
+                    Point2D::new(bounds.width / 2.0, bounds.height),
+                    Point2D::new(3.0 * bounds.width / 4.0, bounds.height / 2.0),
+                    Point2D::new(bounds.width / 2.0, 0.0),
+                ];
+                let polygon_path = generator.polygon::<f32>(&points);
+                polygon_path.draw(&mut frame);
             }
         }
 

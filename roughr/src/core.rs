@@ -30,7 +30,7 @@ pub enum FillStyle {
 impl ToString for FillStyle {
     fn to_string(&self) -> String {
         match self {
-            FillStyle::Solid => "Soid".into(),
+            FillStyle::Solid => "Solid".into(),
             FillStyle::Hachure => "Hachure".into(),
             FillStyle::ZigZag => "ZigZag".into(),
             FillStyle::CrossHatch => "CrossHatch".into(),
