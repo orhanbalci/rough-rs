@@ -20,6 +20,8 @@ packages functionality
 
 - [rough_iced](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [iced](https://github.com/iced-rs/iced)
 
+- [rough_vello](https://github.com/orhanbalci/rough-rs/tree/main/rough_vello) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [vello](https://github.com/linebender/vello)
+
 ## 📝 License
 
 Licensed under MIT License ([LICENSE](LICENSE)).
