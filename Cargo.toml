@@ -6,5 +6,6 @@ members = [
     "svg_path_ops",
     "rough_tiny_skia",
     "rough_iced",
+    "rough_vello",
 ]
 resolver = "2"
