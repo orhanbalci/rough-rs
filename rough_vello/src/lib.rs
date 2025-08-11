@@ -21,40 +21,7 @@
 //!
 //! ## 🔧 Example
 //!
-//! ### Rectangle
-//!
-//! ```ignore
-//! use rough_vello::VelloGenerator;
-//! use vello::Scene;
-//! use palette::Srgba;
-//! use roughr::core::{FillStyle, OptionsBuilder};
-//!
-//! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
-//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
-//!     .fill_style(FillStyle::ZigZagLine)
-//!     .fill_weight(1.0)
-//!     .build()
-//!     .unwrap();
-//!
-//! let generator = VelloGenerator::new(options);
-//! let rect_width = 100.0;
-//! let rect_height = 50.0;
-//! let rect = generator.rectangle::<f32>(
-//!     (192.0 - rect_width) / 2.0,
-//!     (108.0 - rect_height) / 2.0,
-//!     rect_width,
-//!     rect_height,
-//! );
-//!
-//! let mut scene = Scene::new();
-//! rect.draw(&mut scene);
-//! ```
-//!
-//! ### 🖨️ Output Rectangle
-//! ![rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/rectangle.png)
-//!
-//! ### Circle
+//! ### Rust Logo
 //!
 //! ```ignore
 //! use rough_vello::VelloGenerator;
@@ -67,82 +34,20 @@
 //!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
 //!     .fill_style(FillStyle::Hachure)
 //!     .fill_weight(1.0)
+//!     .bowing(0.8)
 //!     .build()
 //!     .unwrap();
 //!
 //! let generator = VelloGenerator::new(options);
-//! let circle_paths = generator.circle::<f32>(
-//!     192.0 / 2.0,
-//!     108.0 / 2.0,
-//!     108.0 - 10.0,
-//! );
+//! let rust_logo_svg_path = "..."; // SVG path data for the Rust logo
+//! let rust_logo_drawing = generator.path::<f32>(rust_logo_svg_path);
 //!
 //! let mut scene = Scene::new();
-//! circle_paths.draw(&mut scene);
+//! rust_logo_drawing.draw(&mut scene);
 //! ```
 //!
-//! ### 🖨️ Output Circle
-//! ![circle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/circle.png)
-//!
-//!
-//! ### Ellipse
-//!
-//! ```ignore
-//! use rough_vello::VelloGenerator;
-//! use vello::Scene;
-//! use palette::Srgba;
-//! use roughr::core::{FillStyle, OptionsBuilder};
-//!
-//! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
-//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
-//!     .fill_style(FillStyle::Hachure)
-//!     .fill_weight(1.0)
-//!     .build()
-//!     .unwrap();
-//!
-//! let generator = VelloGenerator::new(options);
-//! let ellipse_paths = generator.ellipse::<f32>(
-//!     192.0 / 2.0,
-//!     108.0 / 2.0,
-//!     192.0 - 10.0,
-//!     108.0 - 10.0,
-//! );
-//!
-//! let mut scene = Scene::new();
-//! ellipse_paths.draw(&mut scene);
-//! ```
-//!
-//! ### 🖨️ Output Ellipse
-//! ![ellipse](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/ellipse.png)
-//!
-//!
-//! ### Svg Path
-//!
-//! ```ignore
-//! use rough_vello::VelloGenerator;
-//! use vello::Scene;
-//! use palette::Srgba;
-//! use roughr::core::{FillStyle, OptionsBuilder};
-//!
-//! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
-//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
-//!     .fill_style(FillStyle::Hachure)
-//!     .fill_weight(1.0)
-//!     .build()
-//!     .unwrap();
-//!
-//! let generator = VelloGenerator::new(options);
-//! let heart_svg_path = "M140 20C73 20 20 74 20 140c0 135 136 170 228 303 88-132 229-173 229-303 0-66-54-120-120-120-48 0-90 28-109 69-19-41-60-69-108-69z".into();
-//! let heart_svg_path_drawing = generator.path::<f32>(heart_svg_path);
-//!
-//! let mut scene = Scene::new();
-//! heart_svg_path_drawing.draw(&mut scene);
-//! ```
-//!
-//! ### 🖨️ Output Svg Path
-//! ![svgheart](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/heart_svg_path.png)
+//! ### 🖨️ Output Rust Logo
+//! ![rust_logo](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_vello/assets/rust_logo.png)
 //!
 //! ## Filler Implementation Status
 //! - [x] Hachure
