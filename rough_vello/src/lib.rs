@@ -61,6 +61,19 @@
 //!
 //! For more examples have a look at the
 //! [examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_vello/examples) folder.
+//!
+//! ## 🔌 Integration
+//!
+//! ### Bevy Integration
+//!
+//! For Bevy game engine integration, you can use [bevy_vello](https://github.com/linebender/bevy_vello) which provides a Bevy plugin for vello. This allows you to render `rough_vello` drawings directly in your Bevy applications by converting the vello Scene to Bevy-compatible rendering.
+//!
+//! ```toml
+//! [dependencies]
+//! rough_vello = "0.1"
+//! bevy_vello = "0.1"  # Check latest version
+//! bevy = "0.14"       # Or latest compatible version
+//! ```
 
 pub mod vello_generator;
 pub use vello_generator::*;

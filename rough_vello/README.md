@@ -1,8 +1,7 @@
+# rough_vello
 
-# rough_piet
-
-[![Crates.io](https://img.shields.io/crates/v/rough_piet.svg)](https://crates.io/crates/rough_piet)
-[![Documentation](https://docs.rs/rough_piet/badge.svg)](https://docs.rs/rough_piet)
+[![Crates.io](https://img.shields.io/crates/v/rough_vello.svg)](https://crates.io/crates/rough_vello)
+[![Documentation](https://docs.rs/rough_vello/badge.svg)](https://docs.rs/rough_vello)
 [![License](https://img.shields.io/github/license/orhanbalci/rough-rs.svg)](https://github.com/orhanbalci/rough-rs/LICENSE)
 
 <!-- cargo-sync-readme start -->
@@ -64,6 +63,19 @@ rust_logo_drawing.draw(&mut scene);
 
 For more examples have a look at the
 [examples](https://github.com/orhanbalci/rough-rs/tree/main/rough_vello/examples) folder.
+
+## 🔌 Integration
+
+### Bevy Integration
+
+For Bevy game engine integration, you can use [bevy_vello](https://github.com/linebender/bevy_vello) which provides a Bevy plugin for vello. This allows you to render `rough_vello` drawings directly in your Bevy applications by converting the vello Scene to Bevy-compatible rendering.
+
+```toml
+[dependencies]
+rough_vello = "0.1"
+bevy_vello = "0.1"  # Check latest version
+bevy = "0.14"       # Or latest compatible version
+```
 
 <!-- cargo-sync-readme end -->
 
