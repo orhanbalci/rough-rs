@@ -9,7 +9,7 @@ use palette::Srgba;
 use roughr::core::{Drawable, OpSet, OpSetType, OpType, Options};
 use roughr::generator::Generator;
 use roughr::PathSegment;
-use vello::kurbo::{BezPath, PathEl, Point, Stroke, Cap, Join, Affine};
+use vello::kurbo::{Affine, BezPath, Cap, Join, PathEl, Point, Stroke};
 use vello::peniko::{Brush, Color, Fill};
 use vello::Scene;
 
@@ -75,28 +75,32 @@ impl<F: Float + Trig> VelloDrawable<F> {
                 OpSetType::Path => {
                     // Convert stroke options to Vello stroke
                     let mut stroke = Stroke::new(self.options.stroke_width.unwrap_or(1.0) as f64);
-                    
+
                     // Set dash pattern if available
                     if let Some(ref dash_pattern) = self.options.stroke_line_dash {
-                        let dash_pattern_f64: Vec<f64> = dash_pattern.iter().map(|&x| x as f64).collect();
-                        stroke = stroke.with_dashes(self.options.stroke_line_dash_offset.unwrap_or(0.0) as f64, dash_pattern_f64);
+                        let dash_pattern_f64: Vec<f64> =
+                            dash_pattern.iter().map(|&x| x as f64).collect();
+                        stroke = stroke.with_dashes(
+                            self.options.stroke_line_dash_offset.unwrap_or(0.0) as f64,
+                            dash_pattern_f64,
+                        );
                     }
-                    
+
                     // Set line caps and joins
-                    stroke = stroke.with_caps(convert_line_cap_from_roughr_to_vello(self.options.line_cap));
-                    stroke = stroke.with_join(convert_line_join_from_roughr_to_vello(self.options.line_join));
+                    stroke = stroke
+                        .with_caps(convert_line_cap_from_roughr_to_vello(self.options.line_cap));
+                    stroke = stroke.with_join(convert_line_join_from_roughr_to_vello(
+                        self.options.line_join,
+                    ));
 
                     // Convert stroke color
-                    let stroke_color = self.options.stroke.unwrap_or_else(|| Srgba::new(0.0, 0.0, 0.0, 1.0));
+                    let stroke_color = self
+                        .options
+                        .stroke
+                        .unwrap_or_else(|| Srgba::new(0.0, 0.0, 0.0, 1.0));
                     let stroke_brush = convert_color_to_vello_brush(stroke_color);
 
-                    scene.stroke(
-                        &stroke,
-                        Affine::IDENTITY,
-                        &stroke_brush,
-                        None,
-                        &set.ops,
-                    );
+                    scene.stroke(&stroke, Affine::IDENTITY, &stroke_brush, None, &set.ops);
                 }
                 OpSetType::FillPath => {
                     let fill_rule = match self.shape.as_str() {
@@ -107,13 +111,7 @@ impl<F: Float + Trig> VelloDrawable<F> {
                     let fill_color = self.options.fill.unwrap_or(Rgba::new(0.0, 0.0, 0.0, 1.0));
                     let fill_brush = convert_rgba_to_vello_brush(fill_color);
 
-                    scene.fill(
-                        fill_rule,
-                        Affine::IDENTITY,
-                        &fill_brush,
-                        None,
-                        &set.ops,
-                    );
+                    scene.fill(fill_rule, Affine::IDENTITY, &fill_brush, None, &set.ops);
                 }
                 OpSetType::FillSketch => {
                     let mut fweight = self.options.fill_weight.unwrap_or_default();
@@ -122,26 +120,30 @@ impl<F: Float + Trig> VelloDrawable<F> {
                     }
 
                     let mut stroke = Stroke::new(fweight as f64);
-                    
+
                     // Set dash pattern if available
                     if let Some(ref dash_pattern) = self.options.fill_line_dash {
-                        let dash_pattern_f64: Vec<f64> = dash_pattern.iter().map(|&x| x as f64).collect();
-                        stroke = stroke.with_dashes(self.options.fill_line_dash_offset.unwrap_or(0.0) as f64, dash_pattern_f64);
+                        let dash_pattern_f64: Vec<f64> =
+                            dash_pattern.iter().map(|&x| x as f64).collect();
+                        stroke = stroke.with_dashes(
+                            self.options.fill_line_dash_offset.unwrap_or(0.0) as f64,
+                            dash_pattern_f64,
+                        );
                     }
-                    
-                    stroke = stroke.with_caps(convert_line_cap_from_roughr_to_vello(self.options.line_cap));
-                    stroke = stroke.with_join(convert_line_join_from_roughr_to_vello(self.options.line_join));
 
-                    let fill_color = self.options.fill.unwrap_or_else(|| Rgba::new(0.0, 0.0, 0.0, 1.0));
+                    stroke = stroke
+                        .with_caps(convert_line_cap_from_roughr_to_vello(self.options.line_cap));
+                    stroke = stroke.with_join(convert_line_join_from_roughr_to_vello(
+                        self.options.line_join,
+                    ));
+
+                    let fill_color = self
+                        .options
+                        .fill
+                        .unwrap_or_else(|| Rgba::new(0.0, 0.0, 0.0, 1.0));
                     let fill_brush = convert_rgba_to_vello_brush(fill_color);
 
-                    scene.stroke(
-                        &stroke,
-                        Affine::IDENTITY,
-                        &fill_brush,
-                        None,
-                        &set.ops,
-                    );
+                    scene.stroke(&stroke, Affine::IDENTITY, &fill_brush, None, &set.ops);
                 }
             }
         }
@@ -306,9 +308,7 @@ impl VelloGenerator {
     }
 }
 
-fn convert_line_cap_from_roughr_to_vello(
-    roughr_line_cap: Option<roughr::core::LineCap>,
-) -> Cap {
+fn convert_line_cap_from_roughr_to_vello(roughr_line_cap: Option<roughr::core::LineCap>) -> Cap {
     match roughr_line_cap {
         Some(roughr::core::LineCap::Butt) => Cap::Butt,
         Some(roughr::core::LineCap::Round) => Cap::Round,
