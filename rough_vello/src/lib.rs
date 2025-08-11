@@ -24,29 +24,31 @@
 //! ### Rectangle
 //!
 //! ```ignore
+//! use rough_vello::VelloGenerator;
+//! use vello::Scene;
+//! use palette::Srgba;
+//! use roughr::core::{FillStyle, OptionsBuilder};
+//!
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
-//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
-//!     .fill_style(FillStyle::Hachure)
-//!     .fill_weight(DPI * 0.01)
+//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
+//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
+//!     .fill_style(FillStyle::ZigZagLine)
+//!     .fill_weight(1.0)
 //!     .build()
 //!     .unwrap();
-//! let generator = KurboGenerator::new(options);
+//!
+//! let generator = VelloGenerator::new(options);
 //! let rect_width = 100.0;
 //! let rect_height = 50.0;
 //! let rect = generator.rectangle::<f32>(
-//!     (WIDTH as f32 - rect_width) / 2.0,
-//!     (HEIGHT as f32 - rect_height) / 2.0,
+//!     (192.0 - rect_width) / 2.0,
+//!     (108.0 - rect_height) / 2.0,
 //!     rect_width,
 //!     rect_height,
 //! );
-//! let background_color = Color::from_hex_str("96C0B7").unwrap();
 //!
-//! rc.fill(
-//!     Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
-//!     &background_color,
-//! );
-//! rect.draw(&mut rc);
+//! let mut scene = Scene::new();
+//! rect.draw(&mut scene);
 //! ```
 //!
 //! ### 🖨️ Output Rectangle
@@ -55,26 +57,28 @@
 //! ### Circle
 //!
 //! ```ignore
+//! use rough_vello::VelloGenerator;
+//! use vello::Scene;
+//! use palette::Srgba;
+//! use roughr::core::{FillStyle, OptionsBuilder};
+//!
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
-//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
+//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
+//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
 //!     .fill_style(FillStyle::Hachure)
-//!     .fill_weight(DPI * 0.01)
+//!     .fill_weight(1.0)
 //!     .build()
 //!     .unwrap();
-//! let generator = KurboGenerator::new(options);
-//! let circle_paths = generator.circle::<f32>(
-//!     (WIDTH as f32) / 2.0,
-//!     (HEIGHT as f32) / 2.0,
-//!     HEIGHT as f32 - 10.0f32,
-//! );
-//! let background_color = Color::from_hex_str("96C0B7").unwrap();
 //!
-//! rc.fill(
-//!     Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
-//!     &background_color,
+//! let generator = VelloGenerator::new(options);
+//! let circle_paths = generator.circle::<f32>(
+//!     192.0 / 2.0,
+//!     108.0 / 2.0,
+//!     108.0 - 10.0,
 //! );
-//! circle_paths.draw(&mut rc);
+//!
+//! let mut scene = Scene::new();
+//! circle_paths.draw(&mut scene);
 //! ```
 //!
 //! ### 🖨️ Output Circle
@@ -84,27 +88,29 @@
 //! ### Ellipse
 //!
 //! ```ignore
+//! use rough_vello::VelloGenerator;
+//! use vello::Scene;
+//! use palette::Srgba;
+//! use roughr::core::{FillStyle, OptionsBuilder};
+//!
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
-//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
+//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
+//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
 //!     .fill_style(FillStyle::Hachure)
-//!     .fill_weight(DPI * 0.01)
+//!     .fill_weight(1.0)
 //!     .build()
 //!     .unwrap();
-//! let generator = KurboGenerator::new(options);
-//! let ellipse_paths = generator.ellipse::<f32>(
-//!     (WIDTH as f32) / 2.0,
-//!     (HEIGHT as f32) / 2.0,
-//!     WIDTH as f32 - 10.0,
-//!     HEIGHT as f32 - 10.0,
-//! );
-//! let background_color = Color::from_hex_str("96C0B7").unwrap();
 //!
-//! rc.fill(
-//!     Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
-//!     &background_color,
+//! let generator = VelloGenerator::new(options);
+//! let ellipse_paths = generator.ellipse::<f32>(
+//!     192.0 / 2.0,
+//!     108.0 / 2.0,
+//!     192.0 - 10.0,
+//!     108.0 - 10.0,
 //! );
-//! ellipse_paths.draw(&mut rc);
+//!
+//! let mut scene = Scene::new();
+//! ellipse_paths.draw(&mut scene);
 //! ```
 //!
 //! ### 🖨️ Output Ellipse
@@ -114,23 +120,25 @@
 //! ### Svg Path
 //!
 //! ```ignore
+//! use rough_vello::VelloGenerator;
+//! use vello::Scene;
+//! use palette::Srgba;
+//! use roughr::core::{FillStyle, OptionsBuilder};
+//!
 //! let options = OptionsBuilder::default()
-//!     .stroke(Srgba::from_raw(&[114u8, 87u8, 82u8, 255u8]).into_format())
-//!     .fill(Srgba::from_raw(&[254u8, 246u8, 201u8, 255u8]).into_format())
+//!     .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
+//!     .fill(Srgba::from_components((254u8, 246u8, 201u8, 255)).into_format())
 //!     .fill_style(FillStyle::Hachure)
-//!     .fill_weight(DPI * 0.01)
+//!     .fill_weight(1.0)
 //!     .build()
 //!     .unwrap();
-//! let generator = KurboGenerator::new(options);
-//! let heart_svg_path  = "M140 20C73 20 20 74 20 140c0 135 136 170 228 303 88-132 229-173 229-303 0-66-54-120-120-120-48 0-90 28-109 69-19-41-60-69-108-69z".into();
-//! let heart_svg_path_drawing = generator.path::<f32>(heart_svg_path);
-//! let background_color = Color::from_hex_str("96C0B7").unwrap();
 //!
-//! rc.fill(
-//!     Rect::new(0.0, 0.0, WIDTH as f64, HEIGHT as f64),
-//!     &background_color,
-//! );
-//! heart_svg_path_drawing.draw(&mut rc);
+//! let generator = VelloGenerator::new(options);
+//! let heart_svg_path = "M140 20C73 20 20 74 20 140c0 135 136 170 228 303 88-132 229-173 229-303 0-66-54-120-120-120-48 0-90 28-109 69-19-41-60-69-108-69z".into();
+//! let heart_svg_path_drawing = generator.path::<f32>(heart_svg_path);
+//!
+//! let mut scene = Scene::new();
+//! heart_svg_path_drawing.draw(&mut scene);
 //! ```
 //!
 //! ### 🖨️ Output Svg Path
