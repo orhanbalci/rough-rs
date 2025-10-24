@@ -2,6 +2,16 @@
 name = "rough_plotters_svg"
 version = "0.1.0"
 edition = "2021"
+authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
+description = "Draw Hand Sketched 2D Charts and Plots Using Plotters"
+repository = "https://github.com/orhanbalci/rough-rs.git"
+homepage = "https://github.com/orhanbalci"
+keywords = ["graphics", "plotting", "charts", "sketch", "svg"]
+categories = ["graphics", "visualization"]
+license = "MIT"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 plotters-svg = "0.3.7"
