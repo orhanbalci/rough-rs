@@ -1,0 +1,19 @@
+[package]
+name = "rough_plotters_svg"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+plotters-svg = "0.3.7"
+plotters-backend = "0.3.7"
+roughr = { path = "../roughr" }
+euclid = "0.22"
+num-traits = "0.2"
+palette = "0.7"
+
+[dev-dependencies]
+plotters = "0.3.7"
+rand = "0.8"
+rand_distr = "0.4"
+rand_xorshift = "0.3"
+chrono = "0.4"
