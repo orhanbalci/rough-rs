@@ -16,6 +16,8 @@ packages functionality
 
 - [rough_piet](https://github.com/orhanbalci/rough-rs/tree/main/rough_piet) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [piet](https://github.com/linebender/piet)
 
+- [rough_plotters_svg](https://github.com/orhanbalci/rough-rs/tree/main/rough_plotters_svg) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [plotters-svg](https://github.com/plotters-rs/plotters)
+
 - [rough_tiny_skia](https://github.com/orhanbalci/rough-rs/tree/main/rough_tiny_skia) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [tiny-skia](https://github.com/RazrFalcon/tiny-skia)
 
 - [rough_iced](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced) adapter between [roughr](https://github.com/orhanbalci/rough-rs/tree/main/roughr) and [iced](https://github.com/iced-rs/iced)

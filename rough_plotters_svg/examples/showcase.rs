@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     options.roughness = Some(1.5);
     options.bowing = Some(1.0);
     
-    let backend = RoughSVGBackend::with_options("assets/showcase.svg", (800, 400), options);
+    let backend = RoughSVGBackend::with_options("showcase_test.svg", (800, 400), options);
     let root = backend.into_drawing_area();
     root.fill(&RGBColor(254, 246, 201))?; // Cream background
 
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     root.present()?;
-    println!("Shapes & colors showcase saved to assets/showcase.svg");
+    println!("Shapes & colors showcase saved to showcase_test.svg");
 
     Ok(())
 }
