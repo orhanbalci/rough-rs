@@ -1,6 +1,6 @@
 [package]
 name = "rough_plotters_svg"
-version = "0.3.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Draw Hand Sketched 2D Charts and Plots Using Plotters"
