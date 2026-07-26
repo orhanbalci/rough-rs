@@ -964,7 +964,12 @@ impl PathTransformer {
         let mut prev_segment: PathSegment = PathSegment::MoveTo { abs: false, x: 0.0, y: 0.0 };
         let mut cur_control_x = 0.0;
         let mut cur_control_y = 0.0;
-        let segments_cache = self.path_segments.clone();
+        // Kept in sync with the expanded output during the pass so a smooth
+        // segment following another smooth segment reads its predecessor's
+        // resolved (Quadratic / CurveTo) form rather than the pre-pass
+        // snapshot. Mirrors svgpath writing each expanded segment back with
+        // `segments[idx] = [...]`.
+        let mut segments_cache = self.path_segments.clone();
 
         // TODO: add lazy evaluation flag when relative commands supported
 
@@ -1001,13 +1006,15 @@ impl PathTransformer {
                         cur_control_x += x;
                         cur_control_y += y;
                     }
-                    vec![PathSegment::Quadratic {
-                        abs: abs,
+                    let expanded = PathSegment::Quadratic {
+                        abs,
                         x1: cur_control_x,
                         y1: cur_control_y,
                         x: seg_outer_x,
                         y: seg_outer_y,
-                    }]
+                    };
+                    segments_cache[idx] = expanded;
+                    vec![expanded]
                 }
                 PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_outer_x, y: seg_outer_y } => {
                     prev_segment = segments_cache[idx - 1];
@@ -1043,15 +1050,17 @@ impl PathTransformer {
                         cur_control_y += y;
                     }
 
-                    vec![PathSegment::CurveTo {
-                        abs: abs,
+                    let expanded = PathSegment::CurveTo {
+                        abs,
                         x1: cur_control_x,
                         y1: cur_control_y,
-                        x2: x2,
-                        y2: y2,
+                        x2,
+                        y2,
                         x: seg_outer_x,
                         y: seg_outer_y,
-                    }]
+                    };
+                    segments_cache[idx] = expanded;
+                    vec![expanded]
                 }
                 _ => {
                     vec![]
@@ -1930,6 +1939,23 @@ mod test {
             }
 
             #[test]
+            pub fn should_reflect_through_consecutive_smooth_curves() {
+                // Regression: a smooth segment following another smooth segment
+                // used to read the pre-pass snapshot of its predecessor, so its
+                // control point collapsed to (0,0). The second S must reflect the
+                // first S's resolved control point.
+                let actual = PathTransformer::new(
+                    "M0 0 C 5 10 15 10 20 0 S 35 -10 40 0 S 55 10 60 0".into(),
+                )
+                .unshort()
+                .to_string();
+                assert_eq!(
+                    actual,
+                    "M 0 0 C 5 10 15 10 20 0 C 25 -10 35 -10 40 0 C 45 10 55 10 60 0"
+                );
+            }
+
+            #[test]
             pub fn should_copy_starting_point() {
                 let actual = PathTransformer::new("M10 10 S 50 50, 90 10".into())
                     .unshort()
@@ -1961,6 +1987,16 @@ mod test {
                     .unshort()
                     .to_string();
                 assert_eq!(actual, "M 30 50 Q 50 90 90 50 Q 130 10 150 50");
+            }
+
+            #[test]
+            pub fn quadratic_should_reflect_through_consecutive_smooth_curves() {
+                // Regression: two consecutive T segments. The second T must
+                // reflect the first T's resolved control point, not (0,0).
+                let actual = PathTransformer::new("M0 0 Q 10 20 20 0 T 40 0 T 60 0".into())
+                    .unshort()
+                    .to_string();
+                assert_eq!(actual, "M 0 0 Q 10 20 20 0 Q 30 -20 40 0 Q 50 20 60 0");
             }
 
             #[test]
