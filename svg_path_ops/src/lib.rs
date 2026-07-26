@@ -574,8 +574,10 @@ fn arc_to_cubic_curves(
         cx = k * r1 * y / r2 + (x1 + x2) / 2.0;
         cy = k * -r2 * x / r1 + (y1 + y2) / 2.0;
 
-        f1 = ((y1 - cy) / r2).asin();
-        f2 = ((y2 - cy) / r2).asin();
+        // Rounding errors can push the argument slightly outside [-1, 1],
+        // e.g. -1.0000000000000002, which makes f64::asin return NaN.
+        f1 = (((y1 - cy) / r2).clamp(-1.0, 1.0)).asin();
+        f2 = (((y2 - cy) / r2).clamp(-1.0, 1.0)).asin();
 
         if x1 < cx {
             f1 = PI - f1;
@@ -674,6 +676,60 @@ mod test {
     use svgtypes::{PathParser, PathSegment};
 
     use super::absolutize;
+
+    /// Assert two path segments are equal, comparing coordinates with a small
+    /// tolerance so tests stay robust against last-ULP differences in the
+    /// arc-to-cubic conversion across platforms/compilers.
+    fn assert_segment_close(actual: PathSegment, expected: PathSegment) {
+        let close = |a: f64, b: f64| (a - b).abs() < 1e-9;
+        match (actual, expected) {
+            (
+                PathSegment::MoveTo { abs: aa, x: ax, y: ay },
+                PathSegment::MoveTo { abs: ea, x: ex, y: ey },
+            )
+            | (
+                PathSegment::LineTo { abs: aa, x: ax, y: ay },
+                PathSegment::LineTo { abs: ea, x: ex, y: ey },
+            ) => {
+                assert_eq!(aa, ea);
+                assert!(close(ax, ex) && close(ay, ey), "{ax},{ay} vs {ex},{ey}");
+            }
+            (
+                PathSegment::CurveTo {
+                    abs: aa,
+                    x1: ax1,
+                    y1: ay1,
+                    x2: ax2,
+                    y2: ay2,
+                    x: ax,
+                    y: ay,
+                },
+                PathSegment::CurveTo {
+                    abs: ea,
+                    x1: ex1,
+                    y1: ey1,
+                    x2: ex2,
+                    y2: ey2,
+                    x: ex,
+                    y: ey,
+                },
+            ) => {
+                assert_eq!(aa, ea);
+                assert!(
+                    close(ax1, ex1)
+                        && close(ay1, ey1)
+                        && close(ax2, ex2)
+                        && close(ay2, ey2)
+                        && close(ax, ex)
+                        && close(ay, ey),
+                    "CurveTo {ax1},{ay1},{ax2},{ay2},{ax},{ay} vs \
+                     {ex1},{ey1},{ex2},{ey2},{ex},{ey}"
+                );
+            }
+            // ClosePath and any mismatched variants: fall back to exact equality.
+            (a, e) => assert_eq!(a, e),
+        }
+    }
 
     #[test]
     pub fn absolutize_happy_path() {
@@ -804,11 +860,11 @@ mod test {
         let path_segments: Vec<PathSegment> = path_parser.flatten().collect();
         let absolute = absolutize(path_segments.iter());
         let mut normalized = super::normalize(absolute);
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::MoveTo { abs: true, x: 5.5, y: 0.5 }
+            PathSegment::MoveTo { abs: true, x: 5.5, y: 0.5 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -818,13 +874,13 @@ mod test {
                 y2: 5.072653133236333e-17,
                 x: 6.0,
                 y: 0.0,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 10.0, y: 0.0 }
+            PathSegment::LineTo { abs: true, x: 10.0, y: 0.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -834,9 +890,9 @@ mod test {
                 y2: 0.4166666666666666,
                 x: 10.433012701892219,
                 y: 0.7499999999999999,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -845,18 +901,18 @@ mod test {
                 x2: 10.178632794954082,
                 y2: 1.0,
                 x: 10.0,
-                y: 1.0
-            }
+                y: 1.0,
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 9.0, y: 1.0 }
+            PathSegment::LineTo { abs: true, x: 9.0, y: 1.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 9.0, y: 2.0700000000000003 }
+            PathSegment::LineTo { abs: true, x: 9.0, y: 2.0700000000000003 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -866,9 +922,9 @@ mod test {
                 y2: 9.10006433409229,
                 x: 13.496068312614259,
                 y: 13.333630930046759,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -878,13 +934,13 @@ mod test {
                 y2: 14.030338740866595,
                 x: 12.536999999999999,
                 y: 14.33,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 13.354, y: 15.146 }
+            PathSegment::LineTo { abs: true, x: 13.354, y: 15.146 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -894,9 +950,9 @@ mod test {
                 y2: 15.883827656468444,
                 x: 13.129572992939691,
                 y: 15.983572992939692,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -906,13 +962,13 @@ mod test {
                 y2: 15.98047201882749,
                 x: 12.645999999999999,
                 y: 15.854000000000001,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 11.722, y: 14.929 }
+            PathSegment::LineTo { abs: true, x: 11.722, y: 14.929 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -922,9 +978,9 @@ mod test {
                 y2: 16.00195598169794,
                 x: 8.0,
                 y: 16.0,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -934,15 +990,15 @@ mod test {
                 y2: 15.63125361712913,
                 x: 4.2780000000000005,
                 y: 14.93,
-            }
+            },
         );
 
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 3.3540000000000005, y: 15.854 }
+            PathSegment::LineTo { abs: true, x: 3.3540000000000005, y: 15.854 },
         );
 
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -952,9 +1008,9 @@ mod test {
                 y2: 16.00182764550168,
                 x: 2.5164270103961,
                 y: 15.629572980490355,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -964,17 +1020,17 @@ mod test {
                 y2: 15.272472016947662,
                 x: 2.646000000000001,
                 y: 15.145999999999999,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::LineTo {
                 abs: true,
                 x: 3.463000000000001,
                 y: 14.329999999999998,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -984,9 +1040,9 @@ mod test {
                 y2: 4.208276195164306,
                 x: 5.6575849175682915,
                 y: 2.4023929877120027,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -996,17 +1052,17 @@ mod test {
                 y2: 2.1362282004438002,
                 x: 7.0,
                 y: 2.07,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 7.0, y: 1.0 }
+            PathSegment::LineTo { abs: true, x: 7.0, y: 1.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 5.999, y: 1.0 }
+            PathSegment::LineTo { abs: true, x: 5.999, y: 1.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1016,17 +1072,17 @@ mod test {
                 y2: 0.7761423749153966,
                 x: 5.499,
                 y: 0.5,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::ClosePath { abs: true }
+            PathSegment::ClosePath { abs: true },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::MoveTo { abs: true, x: 0.86, y: 5.387 }
+            PathSegment::MoveTo { abs: true, x: 0.86, y: 5.387 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1036,9 +1092,9 @@ mod test {
                 y2: 1.7626691682261253,
                 x: 1.6875827750713361,
                 y: 1.1366933345457033,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1048,9 +1104,9 @@ mod test {
                 y2: 1.0915255439623954,
                 x: 4.387,
                 y: 1.86,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1059,18 +1115,18 @@ mod test {
                 x2: 1.6317462542645806,
                 y2: 3.866949304852904,
                 x: 0.86,
-                y: 5.387
-            }
+                y: 5.387,
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::ClosePath { abs: true }
+            PathSegment::ClosePath { abs: true },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::MoveTo { abs: true, x: 13.5, y: 1.0 }
+            PathSegment::MoveTo { abs: true, x: 13.5, y: 1.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1080,9 +1136,9 @@ mod test {
                 y2: 1.333,
                 x: 11.613,
                 y: 1.8599999999999999,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1092,9 +1148,9 @@ mod test {
                 y2: 3.866949304852904,
                 x: 15.14,
                 y: 5.3870000000000005,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1104,9 +1160,9 @@ mod test {
                 y2: 1.7631227789691712,
                 x: 14.31435869929149,
                 y: 1.1363157677187599,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1116,17 +1172,17 @@ mod test {
                 y2: 0.9999875283075207,
                 x: 13.5,
                 y: 1.0,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::ClosePath { abs: true }
+            PathSegment::ClosePath { abs: true },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::MoveTo { abs: true, x: 8.5, y: 5.0 }
+            PathSegment::MoveTo { abs: true, x: 8.5, y: 5.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1136,9 +1192,9 @@ mod test {
                 y2: 4.374537208377905,
                 x: 7.75,
                 y: 4.56698729810778,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1148,18 +1204,18 @@ mod test {
                 y2: 4.821367205045918,
                 x: 7.5,
                 y: 5.0,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 7.5, y: 8.882 }
+            PathSegment::LineTo { abs: true, x: 7.5, y: 8.882 },
         );
 
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 6.053, y: 11.776 }
+            PathSegment::LineTo { abs: true, x: 6.053, y: 11.776 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1169,9 +1225,9 @@ mod test {
                 y2: 12.522545319767424,
                 x: 6.523908929541914,
                 y: 12.502804499213983,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1181,13 +1237,13 @@ mod test {
                 y2: 12.386803875011148,
                 x: 6.947,
                 y: 12.224,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 8.447, y: 9.224 }
+            PathSegment::LineTo { abs: true, x: 8.447, y: 9.224 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
             PathSegment::CurveTo {
                 abs: true,
@@ -1197,15 +1253,15 @@ mod test {
                 y2: 9.077772449437774,
                 x: 8.5,
                 y: 9.0,
-            }
+            },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::LineTo { abs: true, x: 8.5, y: 5.0 }
+            PathSegment::LineTo { abs: true, x: 8.5, y: 5.0 },
         );
-        assert_eq!(
+        assert_segment_close(
             normalized.next().unwrap(),
-            PathSegment::ClosePath { abs: true }
+            PathSegment::ClosePath { abs: true },
         );
     }
 
@@ -1225,5 +1281,55 @@ mod test {
                 249.6
             ]
         );
+    }
+
+    #[test]
+    pub fn normalize_arc_no_nan_control_points() {
+        // Regression: floating-point error used to push the asin argument
+        // slightly outside [-1, 1] for these well-formed arcs, producing NaN
+        // control points instead of a finite cubic.
+        for path in [
+            "M0 0 A7 7 30 0 0 -7 0",
+            "M0 0 A6 3 90 0 0 -3 -6",
+            "M170 39 A34 5 180 0 0 170 155",
+        ] {
+            let segments: Vec<PathSegment> = PathParser::from(path).flatten().collect();
+            for segment in super::normalize(absolutize(segments.iter())) {
+                if let PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } = segment {
+                    assert!(
+                        x1.is_finite()
+                            && y1.is_finite()
+                            && x2.is_finite()
+                            && y2.is_finite()
+                            && x.is_finite()
+                            && y.is_finite(),
+                        "non-finite control point in {path}: {segment:?}"
+                    );
+                }
+            }
+        }
+
+        // Expected cubic for the reported path (compared with tolerance to
+        // stay robust against last-ULP platform differences).
+        let segments: Vec<PathSegment> = PathParser::from("M0 0 A7 7 30 0 0 -7 0")
+            .flatten()
+            .collect();
+        let mut normalized = super::normalize(absolutize(segments.iter()));
+        assert_segment_close(
+            normalized.next().unwrap(),
+            PathSegment::MoveTo { abs: true, x: 0.0, y: 0.0 },
+        );
+        match normalized.next().unwrap() {
+            PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } => {
+                let close = |a: f64, b: f64| (a - b).abs() < 1e-9;
+                assert!(close(x1, -2.165807537309522), "x1 = {x1}");
+                assert!(close(y1, -1.2504295646785737), "y1 = {y1}");
+                assert!(close(x2, -4.8341924626904795), "x2 = {x2}");
+                assert!(close(y2, -1.2504295646785737), "y2 = {y2}");
+                assert!(close(x, -7.0), "x = {x}");
+                assert!(close(y, 0.0), "y = {y}");
+            }
+            other => panic!("expected CurveTo, got {other:?}"),
+        }
     }
 }

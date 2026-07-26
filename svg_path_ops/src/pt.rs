@@ -1124,7 +1124,6 @@ impl PathTransformer {
     /// - position x(Min|Mid|Max)Y(Min|Mid|Max).
     ///  example : .inbox('-10 10 300 400 meet xMidYMin')
     ///            .inbox(-10, 10, 300, 400, 'meet xMidYMin')
-    ///
     pub fn inbox(&mut self, params: InboxParameters) -> &mut Self {
         // Get the transformation matrix from the current bounding box
         let matrix = self.to_box(Some(2)).inbox_matrix(&params);
@@ -1982,10 +1981,8 @@ mod test {
         }
 
         pub mod bbox {
-            use crate::{
-                bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType},
-                pt::PathTransformer,
-            };
+            use crate::bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType};
+            use crate::pt::PathTransformer;
 
             #[test]
             fn get_bounding_box() {
@@ -1998,13 +1995,18 @@ mod test {
                 let bbox = path.round(3).to_box(None);
                 let bbox_array = bbox.to_array().unwrap();
 
-                assert_eq!(
-                    format!(
-                        "{} {} {} {}",
-                        bbox_array[0], bbox_array[1], bbox_array[2], bbox_array[3]
-                    ),
-                    "2.5 9.543027464337513 84.99999999999997 55"
-                );
+                // Compared with tolerance rather than an exact float string:
+                // arc-to-cubic conversion produces last-ULP differences across
+                // platforms/compilers (e.g. 9.543027464337511 vs …513).
+                let close = |a: f64, b: f64| (a - b).abs() < 1e-9;
+                let expected = [2.5, 9.543027464337513, 84.99999999999997, 55.0];
+                for (i, exp) in expected.iter().enumerate() {
+                    assert!(
+                        close(bbox_array[i], *exp),
+                        "bbox_array[{i}] = {} (expected ~{exp})",
+                        bbox_array[i]
+                    );
+                }
 
                 // // Test with different rounding precision
                 let mut path = PathTransformer::new(
