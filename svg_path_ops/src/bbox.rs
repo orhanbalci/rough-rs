@@ -357,7 +357,10 @@ pub fn minmax_q(a: &[f64]) -> [f64; 2] {
     let max = a[0].max(a[2]);
 
     // if no extremum in ]0,1[
-    if (a[1] > a[0] && a[2] >= a[1]) || (a[1] <= a[0] && a[2] <= a[1]) {
+    // Equality (a[1] == a[0]) belongs to the first disjunct: B'(0) = 0 puts the
+    // only critical point at the endpoint, so a rising curve has no interior
+    // extremum. Mirrors svgpath's `a[1] >= a[0] ? a[2] >= a[1] : a[2] <= a[1]`.
+    if (a[1] >= a[0] && a[2] >= a[1]) || (a[1] < a[0] && a[2] <= a[1]) {
         return [min, max];
     }
 
@@ -471,6 +474,19 @@ mod test {
 
         assert_approx_eq!(b.min_y.unwrap(), -0.8, epsilon = 0.1);
         assert_eq!(b.max_y, Some(1.0));
+    }
+
+    #[test]
+    fn minmax_q_control_equals_start_rising() {
+        // Regression: when a[1] == a[0] and the curve rises (a[2] > a[1]) there
+        // is no interior extremum, so the range is [min(a0,a2), max(a0,a2)].
+        // The strict `>` used to drop this into the extremum branch and return
+        // the start value as the max.
+        assert_eq!(super::minmax_q(&[0.0, 0.0, 13.0]), [0.0, 13.0]);
+        // Falling counterpart.
+        assert_eq!(super::minmax_q(&[0.0, 0.0, -13.0]), [-13.0, 0.0]);
+        // minmax_c inherits the fix through its near-quadratic fallback.
+        assert_eq!(super::minmax_c(&[0.0, 0.0, 1.0, 3.0]), [0.0, 3.0]);
     }
 
     #[test]
