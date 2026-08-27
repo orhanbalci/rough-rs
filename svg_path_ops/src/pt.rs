@@ -277,6 +277,13 @@ impl PathTransformer {
         (input * 10.0f64.pow(d)).round() / 10.0f64.pow(d)
     }
 
+    /// Like `to_fixed`, but rounds to `d + extra` decimal places without
+    /// risking overflow when `d` is near `u8::MAX`.
+    fn to_fixed_extra(input: f64, d: u8, extra: u32) -> f64 {
+        let factor = 10.0f64.powi(d as i32 + extra as i32);
+        (input * factor).round() / factor
+    }
+
     pub fn round(&mut self, d: u8) -> &mut Self {
         let mut contour_start_delta_x = 0.0;
         let mut contour_start_delta_y = 0.0;
@@ -358,7 +365,7 @@ impl PathTransformer {
 
                 rx = Self::to_fixed(rx, d);
                 ry = Self::to_fixed(ry, d);
-                x_axis_rotation = Self::to_fixed(x_axis_rotation, d + 2);
+                x_axis_rotation = Self::to_fixed_extra(x_axis_rotation, d, 2);
                 seg_x = Self::to_fixed(seg_x, d);
                 seg_y = Self::to_fixed(seg_y, d);
                 vec![PathSegment::EllipticalArc {
