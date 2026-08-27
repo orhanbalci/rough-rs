@@ -579,7 +579,7 @@ impl PathTransformer {
             .iter()
             .map(|a| PathTransformer::to_string_segment(a))
             .reduce(|segment1, segment2| format!("{} {}", segment1, segment2))
-            .expect("can not convert to string")
+            .unwrap_or_default()
     }
 
     fn to_string_segment(segment: &PathSegment) -> String {
@@ -1607,6 +1607,34 @@ mod test {
             .to_string();
 
         assert_eq!(actual, "M 10 10 l 10 0 l 0 10 z l 0 10 l 10 0 z l -1 -1");
+    }
+
+    #[test]
+    fn empty_input_to_string_returns_empty_string() {
+        let actual = PathTransformer::new(String::new()).to_string();
+        assert_eq!(actual, "");
+    }
+
+    #[test]
+    fn unparseable_input_to_string_returns_empty_string() {
+        let actual = PathTransformer::new("not a path".to_string()).to_string();
+        assert_eq!(actual, "");
+    }
+
+    #[test]
+    fn round_with_max_precision_does_not_panic_on_arc() {
+        let mut pt = PathTransformer::new("M0 0 A7 7 30 0 0 -7 0".to_string());
+        pt.round(255);
+        let actual = pt.to_string();
+        assert_eq!(actual, "M 0 0 A 7 7 30 0 0 -7 0");
+    }
+
+    #[test]
+    fn round_with_near_max_precision_does_not_panic_on_arc() {
+        let mut pt = PathTransformer::new("M0 0 A7 7 30 0 0 -7 0".to_string());
+        pt.round(254);
+        let actual = pt.to_string();
+        assert_eq!(actual, "M 0 0 A 7 7 30 0 0 -7 0");
     }
 
     pub mod transform_string {
