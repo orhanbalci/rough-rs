@@ -165,6 +165,8 @@ pub mod geometry;
 pub mod points_on_path;
 pub mod renderer;
 
-pub use euclid::Point2D;
+pub use euclid::default::Point2D;
+pub use euclid::Trig;
+pub use num_traits::{Float, FromPrimitive};
 pub use palette::Srgba;
 pub use svgtypes::*;
