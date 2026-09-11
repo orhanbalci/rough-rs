@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-09-11
+
+### Fixed
+
+- `pt::PathTransformer::to_string()` no longer panics on an empty or
+  unparseable path; it now returns an empty string.
+- `pt::PathTransformer::round()` no longer overflows `u8` when rounding an
+  elliptical arc's x-axis rotation with a precision near `u8::MAX`. Debug
+  builds panicked; release builds silently rounded the rotation to the wrong
+  number of decimal places.
+
 ## [0.11.1] - 2026-07-26
 
 ### Fixed
@@ -29,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previous releases; see the
   [git history](https://github.com/orhanbalci/rough-rs/commits/main) for details.
 
-[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.1...HEAD
+[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.2...HEAD
+[0.11.2]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.1...svg_path_ops@0.11.2
 [0.11.1]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.0...svg_path_ops@0.11.1
 [0.11.0]: https://github.com/orhanbalci/rough-rs/releases/tag/svg_path_ops@0.11.0

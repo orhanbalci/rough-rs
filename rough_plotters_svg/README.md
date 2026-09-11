@@ -26,7 +26,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rough_plotters_svg = "0.0.0"
+rough_plotters_svg = "0.2"
 plotters = "0.3"
 roughr = "0.13"
 ```

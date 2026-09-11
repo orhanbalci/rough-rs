@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rough_piet = "0.1"
+//! rough_piet = "0.14"
 //! ```
 //!
 //! ## 🔧 Example

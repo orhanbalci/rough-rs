@@ -20,7 +20,7 @@ Reverse of this operation is also supported meaning given some points generate b
 
 ```toml
 [dependencies]
-points_on_curve = "0.1"
+points_on_curve = "0.7"
 ```
 
 ## 🔧 Example

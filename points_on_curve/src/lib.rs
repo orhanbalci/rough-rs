@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! points_on_curve = "0.1"
+//! points_on_curve = "0.7"
 //! ```
 //!
 //! ## 🔧 Example

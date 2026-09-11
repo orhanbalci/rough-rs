@@ -22,7 +22,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! roughr = "0.1"
+//! roughr = "0.13"
 //! ```
 //!
 //! ## 🔧 Example

@@ -13,7 +13,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! svg_path_ops = "0.6"
+//! svg_path_ops = "0.11"
 //! ```
 //!
 //! ## 🔧 Example

@@ -24,7 +24,7 @@ output of [rough_piet](https://github.com/orhanbalci/rough-rs/tree/main/rough_pi
 
 ```toml
 [dependencies]
-roughr = "0.1"
+roughr = "0.13"
 ```
 
 ## 🔧 Example

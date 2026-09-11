@@ -1,0 +1,35 @@
+# Changelog
+
+All notable changes to this crate will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.13.0] - 2026-09-11
+
+### Added
+
+- Re-export `euclid::Trig` and `num_traits::{Float, FromPrimitive}`. These
+  traits bound the generic parameter of `OpSet` and other public types, so
+  consumers can now name them without depending on `euclid` or `num-traits`
+  directly ([#30](https://github.com/orhanbalci/rough-rs/pull/30)).
+
+### Changed
+
+- **Breaking:** `roughr::Point2D` now re-exports the one-parameter alias
+  `euclid::default::Point2D<T>` (`euclid::Point2D<T, UnknownUnit>`) instead of
+  the two-parameter `euclid::Point2D<T, U>`, matching the type used throughout
+  roughr's API. Code that wrote `roughr::Point2D<T, U>` must switch to
+  `roughr::Point2D<T>` or use `euclid::Point2D` directly
+  ([#30](https://github.com/orhanbalci/rough-rs/pull/30)).
+
+## [0.12.0] - 2025-06-10
+
+- Previous releases; see the
+  [git history](https://github.com/orhanbalci/rough-rs/commits/main/roughr) for details.
+
+[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.13.0...HEAD
+[0.13.0]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.12.0...roughr@0.13.0
+[0.12.0]: https://github.com/orhanbalci/rough-rs/releases/tag/roughr@0.12.0

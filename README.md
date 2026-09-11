@@ -32,13 +32,13 @@ other workspace crates it depends on. A `—` means there is no dependency.
 | Crate | Version | points_on_curve | svg_path_ops | roughr |
 |-------|---------|:---------------:|:------------:|:------:|
 | points_on_curve | 0.7.0 | — | — | — |
-| svg_path_ops | 0.11.1 | — | — | — |
-| roughr | 0.12.0 | 0.7.0 | 0.11.0 | — |
-| rough_piet | 0.13.0 | — | 0.11.0 | 0.12.0 |
-| rough_tiny_skia | 0.12.0 | — | — | 0.12.0 |
-| rough_vello | 0.13.0 | — | 0.11.0 | 0.12.0 |
-| rough_iced | 0.13.0 | — | 0.11.0 | 0.12.0 |
-| rough_plotters_svg | 0.1.0 | — | — | 0.12.0 |
+| svg_path_ops | 0.11.2 | — | — | — |
+| roughr | 0.13.0 | 0.7.0 | 0.11.0 | — |
+| rough_piet | 0.14.0 | — | 0.11.0 | 0.13.0 |
+| rough_tiny_skia | 0.13.0 | — | — | 0.13.0 |
+| rough_vello | 0.14.0 | — | 0.11.0 | 0.13.0 |
+| rough_iced | 0.14.0 | — | 0.11.0 | 0.13.0 |
+| rough_plotters_svg | 0.2.0 | — | — | 0.13.0 |
 
 > Dependency requirements use Cargo's default caret semantics, so a requirement
 > of `0.11.0` resolves to any `0.11.x` — the `svg_path_ops 0.11.1` bug-fix

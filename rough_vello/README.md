@@ -18,7 +18,7 @@ Below examples are output of [rough_vello](https://github.com/orhanbalci/rough-r
 
 ```toml
 [dependencies]
-rough_vello = "0.1"
+rough_vello = "0.14"
 ```
 
 ## 🔧 Example
@@ -72,9 +72,9 @@ For Bevy game engine integration, you can use [bevy_vello](https://github.com/li
 
 ```toml
 [dependencies]
-rough_vello = "0.1"
-bevy_vello = "0.1"  # Check latest version
-bevy = "0.14"       # Or latest compatible version
+rough_vello = "0.14"
+bevy_vello = "0.10"  # must use the same vello version as rough_vello (0.5)
+bevy = "0.16"
 ```
 
 <!-- cargo-sync-readme end -->
