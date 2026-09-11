@@ -4,7 +4,7 @@ use euclid::{default, point2};
 use piet::kurbo::{Circle, CubicBez, Point, TranslateScale, Vec2};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::Rect;
-use piet_common::{CairoRenderContext, Device};
+use piet_common::Device;
 use points_on_curve::points_on_bezier_curves;
 
 const WIDTH: usize = 740;
@@ -12,8 +12,7 @@ const HEIGHT: usize = 500;
 /// For now, assume pixel density (dots per inch)
 const DPI: f64 = 96.;
 
-/// Feature "png" needed for save_to_file() and it's disabled by default for optional dependencies
-/// cargo run --example mondrian --features png
+/// cargo run --example tolerance
 fn main() {
     let mut device = Device::new().unwrap();
     let mut bitmap = device.bitmap_target(WIDTH, HEIGHT, 1.0).unwrap();
@@ -76,7 +75,7 @@ fn draw_point_on_curve(
     original_curve: &CubicBez,
     estimation: Vec<default::Point2D<f64>>,
     translation: &TranslateScale,
-    rc: &mut CairoRenderContext,
+    rc: &mut impl RenderContext,
 ) {
     let dpi_multiplier = 0.05;
 
