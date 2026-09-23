@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Re-export the `svgtypes` crate as `svg_path_ops::svgtypes`, so consumers can
   name its types without adding a matching `svgtypes` dependency.
+- Add a dependency on `euclid` 0.22 and re-export it as
+  `svg_path_ops::euclid`. `euclid::default::Point2D<f64>` is the point type
+  for geometry results, shared with roughr, and converts to and from
+  `kurbo::Point` with `.into()`.
 
 ### Changed
 
@@ -20,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dependency must upgrade to 0.16 or use `svg_path_ops::svgtypes`.
 - Replace the `cgmath` dependency with `kurbo` 0.13 for the transform
   matrix math. `svgtypes` 0.16 already depends on `kurbo` 0.13, so this
-  removes `cgmath`, `approx` and `num-traits` from the dependency tree
-  without adding a new crate. The public API and output are unchanged.
+  removes `cgmath` and `approx` from the dependency tree without adding a
+  new crate. The public API and output are unchanged.
 
 ## [0.11.2] - 2026-09-11
 

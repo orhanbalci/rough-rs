@@ -15,4 +15,5 @@ readme = "README.md"
 
 [dependencies]
 svgtypes = "0.16"
-kurbo = "0.13"
+kurbo = { version = "0.13", features = ["euclid"] }
+euclid = "0.22"
