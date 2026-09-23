@@ -146,6 +146,36 @@ assert_eq!(
 );
 ```
 
+### Subpaths
+
+A path can hold several subpaths, each started by a move.
+[`split_subpaths`] returns them as paths of their own, and [`is_closed`]
+tells whether every subpath ends with a close path:
+
+![split_subpaths](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/split_subpaths.png)
+
+```rust
+use svg_path_ops::svgtypes::PathParser;
+use svg_path_ops::{is_closed, split_subpaths, write_path, WriteOptions};
+
+let segments: Vec<_> =
+    PathParser::from("M 0 0 h 10 v 10 z m 20 0 h 10").collect::<Result<_, _>>()?;
+assert!(!is_closed(&segments));
+
+let subpaths = split_subpaths(&segments);
+assert!(is_closed(&subpaths[0]));
+// The relative move depended on the first subpath, so it becomes absolute
+assert_eq!(
+    write_path(&subpaths[1], &WriteOptions::default()),
+    "M 20 0 h 10"
+);
+```
+
+Returning to the start is not the same as closing: without a close path
+the corner where the path starts gets two line ends instead of a join.
+
+![is_closed](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/is_closed.png)
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -221,6 +251,8 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+[`split_subpaths`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.split_subpaths.html
+[`is_closed`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.is_closed.html
 
 <!-- cargo-sync-readme end -->
 

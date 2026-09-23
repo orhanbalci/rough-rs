@@ -22,7 +22,15 @@ use roughr::core::{FillStyle, OptionsBuilder};
 use svg_path_ops::bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType};
 use svg_path_ops::pt::PathTransformer;
 use svg_path_ops::svgtypes::PathParser;
-use svg_path_ops::{reverse, segments_with_context, write_path, PathSegment, WriteOptions};
+use svg_path_ops::{
+    is_closed,
+    reverse,
+    segments_with_context,
+    split_subpaths,
+    write_path,
+    PathSegment,
+    WriteOptions,
+};
 use tiny_skia::{Paint, PathBuilder, Stroke, StrokeDash, Transform};
 
 const CELL_WIDTH: f32 = 170.0;
@@ -194,14 +202,7 @@ fn draw_ferris(canvas: &mut Canvas, path: &str) {
 
 /// Splits a path produced from [`ferris`] back into its parts.
 fn ferris_parts(path: &str) -> Vec<String> {
-    let mut subpaths: Vec<Vec<PathSegment>> = Vec::new();
-    for segment in parse(path) {
-        if matches!(segment, PathSegment::MoveTo { .. }) || subpaths.is_empty() {
-            subpaths.push(Vec::new());
-        }
-        subpaths.last_mut().unwrap().push(segment);
-    }
-    subpaths
+    split_subpaths(parse(path))
         .iter()
         .map(|subpath| write_path(subpath, &WriteOptions::default()))
         .collect()
@@ -743,6 +744,87 @@ fn reverse_strip(out_dir: &Path) {
     canvas.save(out_dir, "reverse");
 }
 
+fn split_subpaths_strip(out_dir: &Path) {
+    // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
+    // legs on one side and 6 an eye
+    let cases = [
+        (None, "whole path"),
+        (Some(3), "subpath 3: body"),
+        (Some(1), "subpath 1: legs"),
+        (Some(6), "subpath 6: eye"),
+    ];
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "split_subpaths",
+        "each subpath of a path as a path of its own",
+        cases.len(),
+    );
+    for (i, (subpath, label)) in cases.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let ferris = fit(&ferris(), (center.0 - 60.0, center.1 - 44.0, 120.0, 88.0));
+        match subpath {
+            None => draw_ferris(&mut canvas, &ferris),
+            Some(index) => {
+                draw_dashed(&mut canvas, &ferris, BROWN, 0.8);
+                let part = &split_subpaths(parse(&ferris))[*index];
+                let data = write_path(part, &WriteOptions::default());
+                if matches!(FERRIS_PARTS[*index].0, Part::Eye) {
+                    draw_solid(&mut canvas, &data);
+                } else {
+                    draw_filled(&mut canvas, &data);
+                }
+            }
+        }
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "split_subpaths");
+}
+
+/// Strokes `path` exactly with a wide pen, so its corners and ends show.
+fn draw_wide_stroke(canvas: &mut Canvas, path: &str) {
+    let Some(tiny_path) = tiny_path(path) else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(BROWN.0, BROWN.1, BROWN.2, 255);
+    let stroke = Stroke {
+        width: 16.0,
+        line_join: tiny_skia::LineJoin::Miter,
+        line_cap: tiny_skia::LineCap::Butt,
+        ..Stroke::default()
+    };
+    canvas
+        .pixmap
+        .stroke_path(&tiny_path, &paint, &stroke, Transform::identity(), None);
+}
+
+fn is_closed_strip(out_dir: &Path) {
+    let cases = [
+        ("M 0 0 L 70 0 L 70 60 L 0 60 Z", "with z"),
+        ("M 0 0 L 70 0 L 70 60 L 0 60 L 0 0", "no z"),
+    ];
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "is_closed",
+        "both return to the top left corner, only z joins it",
+        cases.len(),
+    );
+    for (i, (path, label)) in cases.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let mut shape = PathTransformer::new((*path).into());
+        shape.translate(center.0 - 35.0, center.1 - 30.0);
+        let shape = shape.to_string();
+        draw_wide_stroke(&mut canvas, &shape);
+        let closed = if is_closed(parse(&shape)) {
+            "true"
+        } else {
+            "false"
+        };
+        canvas.label(i, &format!("{label}: {closed}"));
+    }
+    canvas.save(out_dir, "is_closed");
+}
+
 fn main() {
     let out_dir: PathBuf = [
         env!("CARGO_MANIFEST_DIR"),
@@ -867,4 +949,6 @@ fn main() {
     unshort_strip(out);
     segments_with_context_strip(out);
     reverse_strip(out);
+    split_subpaths_strip(out);
+    is_closed_strip(out);
 }

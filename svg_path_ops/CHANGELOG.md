@@ -35,11 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   direction of every subpath, keeping subpath order. Relative segments stay
   relative, arcs keep their shape with the sweep flag flipped, and smooth
   `S`/`T` segments stay smooth where their reversed neighbour allows it.
+- `split_subpaths()` returns each subpath as a path of its own, turning a
+  relative move that depended on the previous subpath into an absolute one
+  and giving a subpath that started after a close path its own move.
+- `is_closed()` tells whether every subpath that draws something ends with a
+  close path, as SVG defines it: returning to the start without one is open.
 - Crate documentation and README with a runnable example for each feature:
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
-  for translate, rotate, scale, skew, reverse, unarc, unshort, to_box, inbox
-  and segments_with_context. They replace the examples that only linked to
+  for translate, rotate, scale, skew, reverse, split_subpaths, is_closed,
+  unarc, unshort, to_box, inbox and segments_with_context. They replace the examples that only linked to
   rough_piet programs.
 
 ### Changed

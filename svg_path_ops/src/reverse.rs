@@ -4,6 +4,7 @@ use euclid::default::Point2D;
 use svgtypes::PathSegment;
 
 use crate::context::{segments_with_context, SegmentContext};
+use crate::subpaths::subpath_ranges;
 
 /// Reverses the drawing direction of every subpath, keeping the subpaths in
 /// their original order.
@@ -36,7 +37,8 @@ pub fn reverse(segments: impl IntoIterator<Item = impl Borrow<PathSegment>>) -> 
     // Where the reversed path currently is, for writing relative segments
     let mut current = Point2D::zero();
 
-    for subpath in split_subpaths(&contexts) {
+    for range in subpath_ranges(&contexts) {
+        let subpath = Subpath { contexts: &contexts[range] };
         let (end, drawing, move_abs, close) = subpath.parts();
 
         let (x, y) = if move_abs {
@@ -93,25 +95,6 @@ impl<'a> Subpath<'_, 'a> {
         let end = contexts.last().map_or(start, |last| last.end);
         (end, contexts, move_abs, close)
     }
-}
-
-/// Splits a path into subpaths. A subpath starts at a move, or at a drawing
-/// segment that follows a close path without a move of its own.
-fn split_subpaths<'s, 'a>(contexts: &'s [SegmentContext<'a>]) -> Vec<Subpath<'s, 'a>> {
-    let mut subpaths = Vec::new();
-    let mut start = 0;
-    for (i, context) in contexts.iter().enumerate() {
-        let after_close = i > 0 && matches!(contexts[i - 1].segment, PathSegment::ClosePath { .. });
-        let starts_subpath = matches!(context.segment, PathSegment::MoveTo { .. }) || after_close;
-        if i > start && starts_subpath {
-            subpaths.push(Subpath { contexts: &contexts[start..i] });
-            start = i;
-        }
-    }
-    if start < contexts.len() {
-        subpaths.push(Subpath { contexts: &contexts[start..] });
-    }
-    subpaths
 }
 
 /// Reverses one drawing segment, so it runs from `context.end` back to
