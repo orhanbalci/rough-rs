@@ -18,7 +18,7 @@ Below examples are output of [rough_vello](https://github.com/orhanbalci/rough-r
 
 ```toml
 [dependencies]
-rough_vello = "0.14"
+rough_vello = "0.15"
 ```
 
 ## 🧩 Vello Compatibility
@@ -28,7 +28,7 @@ vello version as `rough_vello`.
 
 | rough_vello        | vello |
 |--------------------|-------|
-| 0.15 (unreleased)  | 0.10  |
+| 0.15               | 0.10  |
 | 0.14               | 0.5   |
 | 0.13               | 0.5   |
 | 0.1                | 0.5   |
