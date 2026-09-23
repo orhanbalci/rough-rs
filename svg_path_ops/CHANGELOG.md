@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   documented: it keeps the segments before the first error, as SVG
   renderers do.
 - `pt::PathTransformer` implements `Display`.
+- `write_path()` and `WriteOptions` write any sequence of path segments as
+  path data. Options round numbers to a precision and write compact output
+  (`M10 10l.5-5 2 0`) without redundant spaces, leading zeros or repeated
+  command letters.
+- `pt::PathTransformer::to_string_with()` writes the transformed path with
+  `WriteOptions`.
 
 ### Changed
 

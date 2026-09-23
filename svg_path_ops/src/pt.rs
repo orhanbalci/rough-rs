@@ -8,6 +8,7 @@ use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken}
 use super::ellipse::Ellipse;
 use crate::a2c::a2c;
 use crate::bbox::{BBox, InboxParameters};
+use crate::write::{write_path, WriteOptions};
 
 #[derive(Clone)]
 pub struct PathTransformer {
@@ -36,6 +37,18 @@ impl PathTransformer {
             path_segments: PathParser::from(path).collect::<Result<_, _>>()?,
             stack: Vec::new(),
         })
+    }
+
+    /// Writes the path data with pending transforms applied. The transformer
+    /// itself is left unchanged.
+    pub fn to_string_with(&self, options: &WriteOptions) -> String {
+        if self.stack.is_empty() {
+            write_path(&self.path_segments, options)
+        } else {
+            let mut evaluated = self.clone();
+            evaluated.evaluate_stack();
+            write_path(&evaluated.path_segments, options)
+        }
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
@@ -576,96 +589,6 @@ impl PathTransformer {
         }
     }
 
-    fn to_string_segment(segment: &PathSegment) -> String {
-        match segment {
-            PathSegment::MoveTo { abs, x, y } => {
-                if *abs {
-                    format!("M {} {}", x, y)
-                } else {
-                    format!("m {} {}", x, y)
-                }
-            }
-            PathSegment::LineTo { abs, x, y } => {
-                if *abs {
-                    format!("L {} {}", x, y)
-                } else {
-                    format!("l {} {}", x, y)
-                }
-            }
-            PathSegment::HorizontalLineTo { abs, x } => {
-                if *abs {
-                    format!("H {}", x)
-                } else {
-                    format!("h {}", x)
-                }
-            }
-            PathSegment::VerticalLineTo { abs, y } => {
-                if *abs {
-                    format!("V {}", y)
-                } else {
-                    format!("v {}", y)
-                }
-            }
-            PathSegment::CurveTo { abs, x1, y1, x2, y2, x, y } => {
-                if *abs {
-                    format!("C {} {} {} {} {} {}", x1, y1, x2, y2, x, y)
-                } else {
-                    format!("c {} {} {} {} {} {}", x1, y1, x2, y2, x, y)
-                }
-            }
-            PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
-                if *abs {
-                    format!("S {} {} {} {}", x2, y2, x, y)
-                } else {
-                    format!("s {} {} {} {}", x2, y2, x, y)
-                }
-            }
-            PathSegment::Quadratic { abs, x1, y1, x, y } => {
-                if *abs {
-                    format!("Q {} {} {} {}", x1, y1, x, y)
-                } else {
-                    format!("q {} {} {} {}", x1, y1, x, y)
-                }
-            }
-            PathSegment::SmoothQuadratic { abs, x, y } => {
-                if *abs {
-                    format!("T {} {}", x, y)
-                } else {
-                    format!("t {} {}", x, y)
-                }
-            }
-            PathSegment::EllipticalArc {
-                abs,
-                rx,
-                ry,
-                x_axis_rotation,
-                large_arc,
-                sweep,
-                x,
-                y,
-            } => {
-                if *abs {
-                    format!(
-                        "A {} {} {} {} {} {} {}",
-                        rx, ry, x_axis_rotation, *large_arc as i32, *sweep as i32, x, y
-                    )
-                } else {
-                    format!(
-                        "a {} {} {} {} {} {} {}",
-                        rx, ry, x_axis_rotation, *large_arc as i32, *sweep as i32, x, y
-                    )
-                }
-            }
-            PathSegment::ClosePath { abs } => {
-                if *abs {
-                    format!("Z")
-                } else {
-                    format!("z")
-                }
-            }
-        }
-    }
-
     pub fn abs(&mut self) -> &mut Self {
         self.iterate(|s, _, x, y| match s {
             PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
@@ -1153,26 +1076,11 @@ impl FromStr for PathTransformer {
     }
 }
 
-/// Writes the path data with pending transforms applied. The transformer
-/// itself is left unchanged.
+/// Writes the path data with pending transforms applied, using the default
+/// [`WriteOptions`]. The transformer itself is left unchanged.
 impl fmt::Display for PathTransformer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut evaluated;
-        let segments = if self.stack.is_empty() {
-            &self.path_segments
-        } else {
-            evaluated = self.clone();
-            evaluated.evaluate_stack();
-            &evaluated.path_segments
-        };
-
-        for (i, segment) in segments.iter().enumerate() {
-            if i > 0 {
-                f.write_str(" ")?;
-            }
-            f.write_str(&PathTransformer::to_string_segment(segment))?;
-        }
-        Ok(())
+        f.write_str(&self.to_string_with(&WriteOptions::default()))
     }
 }
 
@@ -1184,6 +1092,7 @@ fn roundp(value: f64, precision: u8) -> f64 {
 #[cfg(test)]
 mod test {
     use super::PathTransformer;
+    use crate::WriteOptions;
 
     #[test]
     fn parse_valid_path() {
@@ -1220,6 +1129,14 @@ mod test {
         // Transforms apply in the order they were added, as when to_string
         // used to apply the pending ones to the transformer itself.
         assert_eq!(transformer.to_string(), "M 30 20 L 50 40");
+    }
+
+    #[test]
+    fn to_string_with_applies_options_and_transforms() {
+        let mut transformer = PathTransformer::new("M 10 10 L 20.555 20".into());
+        transformer.translate(-10.0, 0.0);
+        let options = WriteOptions { precision: Some(1), compact: true };
+        assert_eq!(transformer.to_string_with(&options), "M0 10L10.6 20");
     }
 
     #[test]

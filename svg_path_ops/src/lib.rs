@@ -75,11 +75,13 @@ pub(crate) mod a2c;
 pub mod bbox;
 pub(crate) mod ellipse;
 pub mod pt;
+mod write;
 
 use std::borrow::Borrow;
 use std::f64::consts::PI;
 
 pub use svgtypes::PathSegment;
+pub use write::{write_path, WriteOptions};
 pub use {euclid, svgtypes};
 
 /// Translates relative commands to absolute commands. All commands that use relative positions (lower-case ones),
