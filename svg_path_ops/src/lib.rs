@@ -59,6 +59,19 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! [`flip_x`] and [`flip_y`] mirror a path in place, about the center of its
+//! bounding box:
+//!
+//! ![flip](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/flip.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//!
+//! let mut triangle = PathTransformer::parse("M 0 0 L 16 0 L 8 16")?;
+//! assert_eq!(triangle.flip_y().to_string(), "M 0 16 L 16 16 L 8 0");
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! ### Writing path data
 //!
 //! [`WriteOptions`] rounds numbers and writes compact output. Use it with
@@ -255,6 +268,8 @@
 //! [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 //! [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 //! [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+//! [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x
+//! [`flip_y`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_y
 //! [`split_subpaths`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.split_subpaths.html
 //! [`is_closed`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.is_closed.html
 

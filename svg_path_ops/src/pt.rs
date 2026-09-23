@@ -83,6 +83,29 @@ impl PathTransformer {
         self
     }
 
+    /// Mirrors the path left to right about the center of its bounding box,
+    /// so it stays in place. The box includes pending transforms.
+    pub fn flip_x(&mut self) -> &mut Self {
+        self.flip(-1.0, 1.0)
+    }
+
+    /// Mirrors the path top to bottom about the center of its bounding box,
+    /// so it stays in place. The box includes pending transforms.
+    pub fn flip_y(&mut self) -> &mut Self {
+        self.flip(1.0, -1.0)
+    }
+
+    fn flip(&mut self, sx: f64, sy: f64) -> &mut Self {
+        let bbox = self.to_box(None);
+        let (Some(min_x), Some(min_y), Some(max_x), Some(max_y)) =
+            (bbox.min_x, bbox.min_y, bbox.max_x, bbox.max_y)
+        else {
+            return self;
+        };
+        let (cx, cy) = ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
+        self.translate(-cx, -cy).scale(sx, sy).translate(cx, cy)
+    }
+
     pub fn matrix(&mut self, matrix: [f64; 6]) -> &mut Self {
         self.stack.push(Affine::new(matrix));
         self
@@ -1154,6 +1177,45 @@ mod test {
         let mut transformer = PathTransformer::new("M 0 0 L 10 0 L 10 10".into());
         transformer.translate(5.0, 0.0).reverse();
         assert_eq!(transformer.to_string(), "M 15 10 L 15 0 L 5 0");
+    }
+
+    #[test]
+    fn flip_x_mirrors_left_to_right_in_place() {
+        // The triangle from svg-path-commander's flipX test
+        let mut triangle = PathTransformer::new("M0 0L16 0 L8 16".into());
+        assert_eq!(triangle.flip_x().to_string(), "M 16 0 L 0 0 L 8 16");
+    }
+
+    #[test]
+    fn flip_y_mirrors_top_to_bottom_in_place() {
+        let mut triangle = PathTransformer::new("M0 0L16 0 L8 16".into());
+        assert_eq!(triangle.flip_y().to_string(), "M 0 16 L 16 16 L 8 0");
+    }
+
+    #[test]
+    fn flip_keeps_relative_segments_and_flips_arc_sweep() {
+        let mut path = PathTransformer::new("M0 0 l10 0 A5 5 0 0 1 20 0".into());
+        assert_eq!(path.flip_x().to_string(), "M 20 0 l -10 0 A 5 5 0 0 0 0 0");
+    }
+
+    #[test]
+    fn flip_uses_the_box_after_pending_transforms() {
+        let mut path = PathTransformer::new("M0 0 L10 0 L10 5".into());
+        path.translate(100.0, 0.0).flip_x();
+        assert_eq!(path.to_string(), "M 110 0 L 100 0 L 100 5");
+    }
+
+    #[test]
+    fn flipping_twice_restores_the_path() {
+        let mut path = PathTransformer::new("M1 2 C3 4 5 6 7 1 Q9 9 3 3 Z".into());
+        path.flip_x().flip_x().flip_y().flip_y();
+        assert_eq!(path.to_string(), "M 1 2 C 3 4 5 6 7 1 Q 9 9 3 3 Z");
+    }
+
+    #[test]
+    fn flip_of_empty_path_does_nothing() {
+        let mut path = PathTransformer::new(String::new());
+        assert_eq!(path.flip_x().flip_y().to_string(), "");
     }
 
     #[test]

@@ -744,6 +744,41 @@ fn reverse_strip(out_dir: &Path) {
     canvas.save(out_dir, "reverse");
 }
 
+fn flip_strip(out_dir: &Path) {
+    // Ferris is symmetric, so tilt him first to make a left-right flip show
+    let flips = [
+        ("tilted 30", false, false),
+        ("flip_x", true, false),
+        ("flip_y", false, true),
+        ("flip_x, flip_y", true, true),
+    ];
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "flip",
+        "mirrors the path in place, about the center of its box",
+        flips.len(),
+    );
+    for (i, &(label, flip_x, flip_y)) in flips.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let tilted = about(&subject(center), center, |t| {
+            t.rotate(30.0, 0.0, 0.0);
+        });
+        let mut transformer = PathTransformer::new(tilted.clone());
+        if flip_x {
+            transformer.flip_x();
+        }
+        if flip_y {
+            transformer.flip_y();
+        }
+        if i > 0 {
+            draw_ferris_ghost(&mut canvas, &tilted);
+        }
+        draw_ferris(&mut canvas, &transformer.to_string());
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "flip");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -948,6 +983,7 @@ fn main() {
     unarc_strip(out);
     unshort_strip(out);
     segments_with_context_strip(out);
+    flip_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);
     is_closed_strip(out);
