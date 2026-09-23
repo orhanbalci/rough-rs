@@ -22,7 +22,7 @@ use roughr::core::{FillStyle, OptionsBuilder};
 use svg_path_ops::bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType};
 use svg_path_ops::pt::PathTransformer;
 use svg_path_ops::svgtypes::PathParser;
-use svg_path_ops::{segments_with_context, write_path, PathSegment, WriteOptions};
+use svg_path_ops::{reverse, segments_with_context, write_path, PathSegment, WriteOptions};
 use tiny_skia::{Paint, PathBuilder, Stroke, StrokeDash, Transform};
 
 const CELL_WIDTH: f32 = 170.0;
@@ -563,21 +563,63 @@ fn segments_with_context_strip(out_dir: &Path) {
         let shape = fit(path, (center.0 - 50.0, center.1 - 30.0, 100.0, 60.0));
         // Keep the relative commands: fit only wraps them in a transform
         draw_outline(&mut canvas, &shape);
-        for context in segments_with_context(&parse(&shape)) {
-            let end = (context.end.x, context.end.y);
-            draw_dot(&mut canvas, end, false);
-            // A close path ends on the subpath start, so label it below
-            // instead of over the move's label
-            let (dx, dy) = match context.segment {
-                PathSegment::ClosePath { .. } => (5.0, 5.0),
-                _ => (5.0, -13.0),
-            };
-            let index = context.index.to_string();
-            canvas.text(&index, end.0 as f32 + dx, end.1 as f32 + dy, 1.0, BROWN);
-        }
+        draw_numbered_ends(&mut canvas, &shape, false);
         canvas.label(i, label);
     }
     canvas.save(out_dir, "segments_with_context");
+}
+
+/// Draws a dot on the end point of every segment of `path`, numbered in
+/// order. With `hollow_start`, the move that starts the path is hollow.
+fn draw_numbered_ends(canvas: &mut Canvas, path: &str, hollow_start: bool) {
+    let segments = parse(path);
+    for context in segments_with_context(&segments) {
+        let end = (context.end.x, context.end.y);
+        draw_dot(canvas, end, false);
+        // A close path ends on the subpath start, so label it below
+        // instead of over the move's label
+        let (dx, dy) = match context.segment {
+            PathSegment::ClosePath { .. } => (5.0, 5.0),
+            _ => (5.0, -13.0),
+        };
+        let index = context.index.to_string();
+        canvas.text(&index, end.0 as f32 + dx, end.1 as f32 + dy, 1.0, BROWN);
+    }
+    // Drawn last, so a close path's dot on the same point does not cover it
+    let start = segments_with_context(&segments)
+        .next()
+        .map(|start| start.end);
+    if let (true, Some(start)) = (hollow_start, start) {
+        draw_dot(canvas, (start.x, start.y), true);
+    }
+}
+
+fn reverse_strip(out_dir: &Path) {
+    let open = "M 0 40 C 0 0 40 0 40 40 S 80 80 80 40 L 110 40";
+    let closed = "M 0 0 L 60 0 L 60 40 L 0 40 Z";
+    let cases = [
+        (open, false, "open"),
+        (open, true, "open reversed"),
+        (closed, false, "closed"),
+        (closed, true, "closed reversed"),
+    ];
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "reverse",
+        "draws each subpath the other way (hollow: where it starts)",
+        cases.len(),
+    );
+    for (i, (path, reversed, label)) in cases.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let mut shape = fit(path, (center.0 - 55.0, center.1 - 30.0, 110.0, 60.0));
+        if *reversed {
+            shape = write_path(reverse(parse(&shape)), &WriteOptions::default());
+        }
+        draw_outline(&mut canvas, &shape);
+        draw_numbered_ends(&mut canvas, &shape, true);
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "reverse");
 }
 
 fn main() {
@@ -703,4 +745,5 @@ fn main() {
     unarc_strip(out);
     unshort_strip(out);
     segments_with_context_strip(out);
+    reverse_strip(out);
 }

@@ -8,6 +8,7 @@ use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken}
 use super::ellipse::Ellipse;
 use crate::a2c::a2c;
 use crate::bbox::{BBox, InboxParameters};
+use crate::reverse::reverse;
 use crate::write::{write_path, WriteOptions};
 
 #[derive(Clone)]
@@ -704,6 +705,15 @@ impl PathTransformer {
         self
     }
 
+    /// Reverses the drawing direction of every subpath. See
+    /// [`reverse`](crate::reverse) for how segments are rewritten. Pending
+    /// transforms still apply afterwards, since reversing does not change the
+    /// shape.
+    pub fn reverse(&mut self) -> &mut Self {
+        self.path_segments = reverse(&self.path_segments).into();
+        self
+    }
+
     pub fn rel(&mut self) -> &mut Self {
         self.iterate(|s, pos, x, y| match s {
             PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
@@ -1137,6 +1147,13 @@ mod test {
         transformer.translate(-10.0, 0.0);
         let options = WriteOptions { precision: Some(1), compact: true };
         assert_eq!(transformer.to_string_with(&options), "M0 10L10.6 20");
+    }
+
+    #[test]
+    fn reverse_keeps_pending_transforms() {
+        let mut transformer = PathTransformer::new("M 0 0 L 10 0 L 10 10".into());
+        transformer.translate(5.0, 0.0).reverse();
+        assert_eq!(transformer.to_string(), "M 15 10 L 15 0 L 5 0");
     }
 
     #[test]

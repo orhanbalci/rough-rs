@@ -125,6 +125,23 @@ assert_eq!(
 );
 ```
 
+### Reversing a path
+
+[`reverse`] draws every subpath in the opposite direction, keeping
+relative segments relative and arcs as arcs:
+
+![reverse](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/reverse.png)
+
+```rust
+use svg_path_ops::pt::PathTransformer;
+
+let mut path = PathTransformer::parse("M 0 0 L 10 0 l 0 10 A 5 5 0 0 1 0 10 Z")?;
+assert_eq!(
+    path.reverse().to_string(),
+    "M 0 10 A 5 5 0 0 0 10 10 l 0 -10 L 0 0 Z"
+);
+```
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -199,6 +216,7 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`write_path`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.write_path.html
 [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
+[`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
 
 <!-- cargo-sync-readme end -->
 

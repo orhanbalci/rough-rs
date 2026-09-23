@@ -31,11 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   index and absolute start, end and subpath start points, plus the control
   point implied by smooth curves (`S`/`T`). Relative and shorthand segments
   can be handled without tracking the current point by hand.
+- `reverse()` and `pt::PathTransformer::reverse()` reverse the drawing
+  direction of every subpath, keeping subpath order. Relative segments stay
+  relative, arcs keep their shape with the sweep flag flipped, and smooth
+  `S`/`T` segments stay smooth where their reversed neighbour allows it.
 - Crate documentation and README with a runnable example for each feature:
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
-  for translate, rotate, scale, skew, unarc, unshort, to_box, inbox and
-  segments_with_context. They replace the examples that only linked to
+  for translate, rotate, scale, skew, reverse, unarc, unshort, to_box, inbox
+  and segments_with_context. They replace the examples that only linked to
   rough_piet programs.
 
 ### Changed
