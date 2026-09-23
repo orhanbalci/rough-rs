@@ -20,7 +20,7 @@ pub struct DrawingSurface {
 /// [`OptionsBuilder::fill_style`]; it only has an effect when
 /// [`Options::fill`] is set.
 ///
-/// ![fill_style](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/fill_style.png)
+/// ![fill_style](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/fill_style.png)
 #[derive(Clone, PartialEq, Debug, Copy, Eq)]
 pub enum FillStyle {
     /// Fills the shape with the fill color, like a regular fill.
@@ -116,7 +116,7 @@ pub struct Options {
     ///
     /// Default: `2.0`.
     ///
-    /// ![max_randomness_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/max_randomness_offset.png)
+    /// ![max_randomness_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/max_randomness_offset.png)
     #[builder(default = "Some(2.0)")]
     pub max_randomness_offset: Option<f32>,
     /// How far lines wander from the true shape. `0` draws a clean shape;
@@ -125,7 +125,7 @@ pub struct Options {
     ///
     /// Default: `1.0`.
     ///
-    /// ![roughness](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/roughness.png)
+    /// ![roughness](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/roughness.png)
     #[builder(default = "Some(1.0)")]
     pub roughness: Option<f32>,
     /// How much straight lines bend in the middle, like a hand drawn line.
@@ -133,7 +133,7 @@ pub struct Options {
     ///
     /// Default: `2.0`.
     ///
-    /// ![bowing](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/bowing.png)
+    /// ![bowing](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/bowing.png)
     #[builder(default = "Some(2.0)")]
     pub bowing: Option<f32>,
     /// Outline color. Set it to a transparent color to hide the outline.
@@ -147,7 +147,7 @@ pub struct Options {
     ///
     /// Default: `1.0`.
     ///
-    /// ![stroke_width](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/stroke_width.png)
+    /// ![stroke_width](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/stroke_width.png)
     #[builder(default = "Some(1.0)")]
     pub stroke_width: Option<f32>,
     /// How closely ellipses, circles and arcs follow their true radius, from
@@ -155,7 +155,7 @@ pub struct Options {
     ///
     /// Default: `0.95`.
     ///
-    /// ![curve_fitting](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/curve_fitting.png)
+    /// ![curve_fitting](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/curve_fitting.png)
     #[builder(default = "Some(0.95)")]
     pub curve_fitting: Option<f32>,
     /// How tightly [`curve`](crate::generator::Generator::curve) passes
@@ -163,7 +163,7 @@ pub struct Options {
     ///
     /// Default: `0.0`.
     ///
-    /// ![curve_tightness](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/curve_tightness.png)
+    /// ![curve_tightness](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/curve_tightness.png)
     #[builder(default = "Some(0.0)")]
     pub curve_tightness: Option<f32>,
     /// How many points are used to approximate ellipses, circles and arcs.
@@ -172,7 +172,7 @@ pub struct Options {
     ///
     /// Default: `9.0`.
     ///
-    /// ![curve_step_count](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/curve_step_count.png)
+    /// ![curve_step_count](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/curve_step_count.png)
     #[builder(default = "Some(9.0)")]
     pub curve_step_count: Option<f32>,
     /// Fill color of closed shapes. Shapes are only filled when this is set.
@@ -191,14 +191,14 @@ pub struct Options {
     ///
     /// Default: `-1.0`.
     ///
-    /// ![fill_weight](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/fill_weight.png)
+    /// ![fill_weight](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/fill_weight.png)
     #[builder(default = "Some(-1.0)")]
     pub fill_weight: Option<f32>,
     /// Angle of the fill lines, in degrees.
     ///
     /// Default: `-41.0`.
     ///
-    /// ![hachure_angle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/hachure_angle.png)
+    /// ![hachure_angle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/hachure_angle.png)
     #[builder(default = "Some(-41.0)")]
     pub hachure_angle: Option<f32>,
     /// Space between fill lines, in pixels. A negative value uses four times
@@ -206,7 +206,7 @@ pub struct Options {
     ///
     /// Default: `-1.0`.
     ///
-    /// ![hachure_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/hachure_gap.png)
+    /// ![hachure_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/hachure_gap.png)
     #[builder(default = "Some(-1.0)")]
     pub hachure_gap: Option<f32>,
     /// Below `1`, SVG paths passed to
@@ -215,7 +215,7 @@ pub struct Options {
     ///
     /// Default: `1.0`.
     ///
-    /// ![simplification](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/simplification.png)
+    /// ![simplification](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/simplification.png)
     #[builder(default = "Some(1.0)")]
     pub simplification: Option<f32>,
     /// Length of each dash for [`FillStyle::Dashed`], in pixels. A negative
@@ -223,7 +223,7 @@ pub struct Options {
     ///
     /// Default: `-1.0`.
     ///
-    /// ![dash_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/dash_offset.png)
+    /// ![dash_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/dash_offset.png)
     #[builder(default = "Some(-1.0)")]
     pub dash_offset: Option<f32>,
     /// Gap between dashes for [`FillStyle::Dashed`], in pixels. A negative
@@ -231,7 +231,7 @@ pub struct Options {
     ///
     /// Default: `-1.0`.
     ///
-    /// ![dash_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/dash_gap.png)
+    /// ![dash_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/dash_gap.png)
     #[builder(default = "Some(-1.0)")]
     pub dash_gap: Option<f32>,
     /// Size of each zigzag for [`FillStyle::ZigZagLine`], in pixels. A
@@ -239,7 +239,7 @@ pub struct Options {
     ///
     /// Default: `-1.0`.
     ///
-    /// ![zigzag_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/zigzag_offset.png)
+    /// ![zigzag_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/zigzag_offset.png)
     #[builder(default = "Some(-1.0)")]
     pub zigzag_offset: Option<f32>,
     /// Seed for the random number generator. The same seed and options always
@@ -248,7 +248,7 @@ pub struct Options {
     ///
     /// Default: `345`.
     ///
-    /// ![seed](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/seed.png)
+    /// ![seed](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/seed.png)
     #[builder(default = "Some(345_u64)")]
     pub seed: Option<u64>,
     /// Dash pattern for outlines, as alternating dash and gap lengths in
@@ -256,7 +256,7 @@ pub struct Options {
     ///
     /// Default: `None`.
     ///
-    /// ![stroke_line_dash](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/stroke_line_dash.png)
+    /// ![stroke_line_dash](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/stroke_line_dash.png)
     #[builder(default = "None")]
     pub stroke_line_dash: Option<Vec<f64>>,
     /// Offset into [`stroke_line_dash`](Options::stroke_line_dash), in pixels.
@@ -290,14 +290,14 @@ pub struct Options {
     ///
     /// Default: `false`.
     ///
-    /// ![disable_multi_stroke](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/disable_multi_stroke.png)
+    /// ![disable_multi_stroke](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/disable_multi_stroke.png)
     #[builder(default = "Some(false)")]
     pub disable_multi_stroke: Option<bool>,
     /// Draws each fill line once instead of twice.
     ///
     /// Default: `false`.
     ///
-    /// ![disable_multi_stroke_fill](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/disable_multi_stroke_fill.png)
+    /// ![disable_multi_stroke_fill](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/disable_multi_stroke_fill.png)
     #[builder(default = "Some(false)")]
     pub disable_multi_stroke_fill: Option<bool>,
     /// Keeps the corners of polygons, rectangles and paths at their exact
@@ -305,7 +305,7 @@ pub struct Options {
     ///
     /// Default: `false`.
     ///
-    /// ![preserve_vertices](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/preserve_vertices.png)
+    /// ![preserve_vertices](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/preserve_vertices.png)
     #[builder(default = "Some(false)")]
     pub preserve_vertices: Option<bool>,
     /// Carried over from Rough.js. Currently has no effect.

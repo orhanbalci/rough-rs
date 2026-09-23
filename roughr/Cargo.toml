@@ -1,6 +1,6 @@
 [package]
 name = "roughr"
-version = "0.13.0"
+version = "0.13.1"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Generate Hand Sketched 2D Drawings"
@@ -10,6 +10,8 @@ keywords = ["graphics", "bezier", "sketch", "2D"]
 categories = ["graphics"]
 license = "MIT"
 readme = "README.md"
+# Images are linked from GitHub, so they do not need to ship in the package
+exclude = ["assets/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
