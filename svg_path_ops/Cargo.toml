@@ -10,6 +10,8 @@ keywords = ["graphics", "bezier", "sketch", "2D", "svg"]
 categories = ["graphics"]
 license = "MIT"
 readme = "README.md"
+# Images are linked from GitHub, so they do not need to ship in the package
+exclude = ["assets/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

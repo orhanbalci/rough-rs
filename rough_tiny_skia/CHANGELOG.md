@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `path_ops_gallery` example: generates the operation reference images used
+  in the `svg_path_ops` docs, drawing Ferris the crab. It shares the framed
+  canvas, font and labels with `options_gallery` through `examples/common`.
+
 ## [0.13.1] - 2026-09-23
 
 ### Fixed

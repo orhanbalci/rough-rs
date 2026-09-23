@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   index and absolute start, end and subpath start points, plus the control
   point implied by smooth curves (`S`/`T`). Relative and shorthand segments
   can be handled without tracking the current point by hand.
+- Crate documentation and README with a runnable example for each feature:
+  transforming, writing, converting commands, bounding boxes, walking
+  segments and handling invalid path data, illustrated by reference images
+  for translate, rotate, scale, skew, unarc, unshort, to_box, inbox and
+  segments_with_context. They replace the examples that only linked to
+  rough_piet programs.
 
 ### Changed
 
@@ -46,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Display` and takes `&self` instead of `&mut self`. It no longer applies
   pending transforms to the transformer itself; it writes them applied and
   leaves the transformer unchanged. The output string is the same.
+
+- The package no longer ships the `assets/` images; the docs load them from
+  GitHub.
 
 ### Removed
 
