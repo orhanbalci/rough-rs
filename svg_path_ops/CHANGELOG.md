@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `svg_path_ops::euclid`. `euclid::default::Point2D<f64>` is the point type
   for geometry results, shared with roughr, and converts to and from
   `kurbo::Point` with `.into()`.
+- `pt::PathTransformer::parse(&str)` and a `FromStr` implementation. Both
+  return an `svgtypes::Error` for invalid path data instead of dropping it
+  silently. `PathTransformer::new` keeps its lenient behavior, now
+  documented: it keeps the segments before the first error, as SVG
+  renderers do.
+- `pt::PathTransformer` implements `Display`.
 
 ### Changed
 
@@ -26,6 +32,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matrix math. `svgtypes` 0.16 already depends on `kurbo` 0.13, so this
   removes `cgmath` and `approx` from the dependency tree without adding a
   new crate. The public API and output are unchanged.
+- **Breaking:** `pt::PathTransformer::to_string()` is now provided by
+  `Display` and takes `&self` instead of `&mut self`. It no longer applies
+  pending transforms to the transformer itself; it writes them applied and
+  leaves the transformer unchanged. The output string is the same.
+
+### Removed
+
+- **Breaking:** `print_line_segment()`, a debugging helper that printed a
+  segment to stdout. Format the path with `PathTransformer`'s `Display`
+  instead.
 
 ## [0.11.2] - 2026-09-11
 

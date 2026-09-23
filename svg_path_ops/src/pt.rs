@@ -1,4 +1,6 @@
 use std::collections::{HashMap, VecDeque};
+use std::fmt;
+use std::str::FromStr;
 
 use kurbo::{Affine, Point, Vec2};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
@@ -14,19 +16,26 @@ pub struct PathTransformer {
 }
 
 impl PathTransformer {
+    /// Creates a transformer from SVG path data, keeping every segment before
+    /// the first error and dropping the rest. This matches how the SVG spec
+    /// renders invalid path data. Use [`PathTransformer::parse`] to get the
+    /// error instead.
     pub fn new(path: String) -> Self {
-        let path_parser = PathParser::from(path.as_ref());
-        // if path_parser.any(|a| a.is_err()) {
-        //     panic!("unexpected path string. can not parse it.")
-        // }
-
         PathTransformer {
-            path_segments: path_parser
-                .filter(|ps| ps.is_ok())
-                .map(|ps| ps.unwrap())
+            path_segments: PathParser::from(path.as_ref())
+                .map_while(Result::ok)
                 .collect(),
             stack: Vec::new(),
         }
+    }
+
+    /// Creates a transformer from SVG path data, returning an error if any
+    /// part of it is invalid.
+    pub fn parse(path: &str) -> Result<Self, svgtypes::Error> {
+        Ok(PathTransformer {
+            path_segments: PathParser::from(path).collect::<Result<_, _>>()?,
+            stack: Vec::new(),
+        })
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
@@ -565,16 +574,6 @@ impl PathTransformer {
 
             return self;
         }
-    }
-
-    pub fn to_string(&mut self) -> String {
-        self.evaluate_stack();
-
-        self.path_segments
-            .iter()
-            .map(|a| PathTransformer::to_string_segment(a))
-            .reduce(|segment1, segment2| format!("{} {}", segment1, segment2))
-            .unwrap_or_default()
     }
 
     fn to_string_segment(segment: &PathSegment) -> String {
@@ -1146,6 +1145,37 @@ impl PathTransformer {
     }
 }
 
+impl FromStr for PathTransformer {
+    type Err = svgtypes::Error;
+
+    fn from_str(path: &str) -> Result<Self, Self::Err> {
+        PathTransformer::parse(path)
+    }
+}
+
+/// Writes the path data with pending transforms applied. The transformer
+/// itself is left unchanged.
+impl fmt::Display for PathTransformer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut evaluated;
+        let segments = if self.stack.is_empty() {
+            &self.path_segments
+        } else {
+            evaluated = self.clone();
+            evaluated.evaluate_stack();
+            &evaluated.path_segments
+        };
+
+        for (i, segment) in segments.iter().enumerate() {
+            if i > 0 {
+                f.write_str(" ")?;
+            }
+            f.write_str(&PathTransformer::to_string_segment(segment))?;
+        }
+        Ok(())
+    }
+}
+
 fn roundp(value: f64, precision: u8) -> f64 {
     let factor = 10.0f64.powi(precision as i32);
     (value * factor).round() / factor
@@ -1154,6 +1184,43 @@ fn roundp(value: f64, precision: u8) -> f64 {
 #[cfg(test)]
 mod test {
     use super::PathTransformer;
+
+    #[test]
+    fn parse_valid_path() {
+        let parsed = PathTransformer::parse("M 10 10 L 20 20").unwrap();
+        assert_eq!(parsed.to_string(), "M 10 10 L 20 20");
+    }
+
+    #[test]
+    fn parse_reports_invalid_path() {
+        assert!(PathTransformer::parse("M 10 10 L 20 x").is_err());
+    }
+
+    #[test]
+    fn from_str_matches_parse() {
+        let parsed: PathTransformer = "M 10 10 L 20 20".parse().unwrap();
+        assert_eq!(parsed.to_string(), "M 10 10 L 20 20");
+        assert!("M 10 10 L 20 x".parse::<PathTransformer>().is_err());
+    }
+
+    #[test]
+    fn new_keeps_segments_before_first_error() {
+        let actual = PathTransformer::new("M 10 10 L 20 20 L 30 x L 40 40".into()).to_string();
+        assert_eq!(actual, "M 10 10 L 20 20");
+    }
+
+    #[test]
+    fn display_leaves_transformer_unchanged() {
+        let mut transformer = PathTransformer::new("M 10 10 L 20 20".into());
+        transformer.translate(5.0, 0.0);
+        assert_eq!(transformer.to_string(), "M 15 10 L 25 20");
+        assert_eq!(transformer.to_string(), "M 15 10 L 25 20");
+
+        transformer.scale(2.0, 2.0);
+        // Transforms apply in the order they were added, as when to_string
+        // used to apply the pending ones to the transformer itself.
+        assert_eq!(transformer.to_string(), "M 30 20 L 50 40");
+    }
 
     #[test]
     fn basic_translate() {
