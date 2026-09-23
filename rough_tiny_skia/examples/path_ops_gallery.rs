@@ -21,6 +21,7 @@ use rough_tiny_skia::SkiaGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 use svg_path_ops::bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType};
 use svg_path_ops::pt::PathTransformer;
+use svg_path_ops::shapes::Shape;
 use svg_path_ops::svgtypes::PathParser;
 use svg_path_ops::{
     is_closed,
@@ -779,6 +780,75 @@ fn flip_strip(out_dir: &Path) {
     canvas.save(out_dir, "flip");
 }
 
+fn shapes_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "shapes",
+        "svg shapes as the paths svg 2 defines (hollow: start, arrows: direction)",
+        6,
+    );
+    for i in 0..6 {
+        let (cx, cy) = cell_center(canvas.cell(i));
+        let (shape, label) = match i {
+            0 => (
+                Shape::Rect {
+                    x: cx - 50.0,
+                    y: cy - 35.0,
+                    width: 100.0,
+                    height: 70.0,
+                    rx: None,
+                    ry: None,
+                },
+                "rect",
+            ),
+            1 => (
+                Shape::Rect {
+                    x: cx - 50.0,
+                    y: cy - 35.0,
+                    width: 100.0,
+                    height: 70.0,
+                    rx: Some(18.0),
+                    ry: None,
+                },
+                "rect rx 18",
+            ),
+            2 => (Shape::Circle { cx, cy, r: 38.0 }, "circle"),
+            3 => (
+                Shape::Ellipse { cx, cy, rx: Some(55.0), ry: Some(32.0) },
+                "ellipse",
+            ),
+            4 => (
+                Shape::Polygon(vec![
+                    (cx - 50.0, cy + 30.0).into(),
+                    (cx, cy - 38.0).into(),
+                    (cx + 50.0, cy + 30.0).into(),
+                ]),
+                "polygon",
+            ),
+            _ => (
+                Shape::Polyline(vec![
+                    (cx - 55.0, cy + 25.0).into(),
+                    (cx - 20.0, cy - 30.0).into(),
+                    (cx + 15.0, cy + 25.0).into(),
+                    (cx + 55.0, cy - 30.0).into(),
+                ]),
+                "polyline",
+            ),
+        };
+        let path = write_path(shape.to_path(), &WriteOptions::default());
+        if matches!(shape, Shape::Polyline(_)) {
+            draw_outline(&mut canvas, &path);
+        } else {
+            draw_filled(&mut canvas, &path);
+        }
+        draw_direction(&mut canvas, &path);
+        let start = segments_with_context(&parse(&path)).next().unwrap().end;
+        draw_dot(&mut canvas, (start.x, start.y), true);
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "shapes");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -984,6 +1054,7 @@ fn main() {
     unshort_strip(out);
     segments_with_context_strip(out);
     flip_strip(out);
+    shapes_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);
     is_closed_strip(out);

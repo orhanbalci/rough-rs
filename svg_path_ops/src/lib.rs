@@ -138,6 +138,26 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! ### Converting shapes
+//!
+//! [`Shape`] turns the SVG basic shapes into the paths SVG 2 defines for
+//! them, starting where a browser starts and going the same way, so markers
+//! and dashes land in the same places:
+//!
+//! ![shapes](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/shapes.png)
+//!
+//! ```
+//! use svg_path_ops::shapes::Shape;
+//! use svg_path_ops::{write_path, WriteOptions};
+//!
+//! let circle = Shape::Circle { cx: 50.0, cy: 50.0, r: 10.0 };
+//! assert_eq!(
+//!     write_path(circle.to_path(), &WriteOptions::default()),
+//!     "M 60 50 A 10 10 0 0 1 50 60 A 10 10 0 0 1 40 50 \
+//!      A 10 10 0 0 1 50 40 A 10 10 0 0 1 60 50 Z"
+//! );
+//! ```
+//!
 //! ### Reversing a path
 //!
 //! [`reverse`] draws every subpath in the opposite direction, keeping
@@ -268,6 +288,7 @@
 //! [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 //! [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 //! [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+//! [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 //! [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x
 //! [`flip_y`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_y
 //! [`split_subpaths`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.split_subpaths.html
@@ -279,6 +300,7 @@ mod context;
 pub(crate) mod ellipse;
 pub mod pt;
 mod reverse;
+pub mod shapes;
 mod subpaths;
 mod write;
 
