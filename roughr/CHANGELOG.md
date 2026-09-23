@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `svgtypes::*`, so all of those re-exported types (including `PathSegment`
   and `PathParser`) now come from 0.16. Code that mixes them with types from
   its own `svgtypes` 0.11 dependency must upgrade to 0.16.
+- Arcs in SVG paths are sketched from curves of at most 90 degrees instead
+  of 120, as `svg_path_ops::normalize()` now converts them more accurately.
+  The same seed sketches paths with arcs slightly differently.
 
 ## [0.13.1] - 2026-09-23
 

@@ -71,6 +71,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matrix math. `svgtypes` 0.16 already depends on `kurbo` 0.13, so this
   removes `cgmath` and `approx` from the dependency tree without adding a
   new crate. The public API and output are unchanged.
+- `normalize()` turns arcs into cubic curves of at most 90 degrees, like
+  `pt::PathTransformer::unarc()`, instead of 120 degrees. The curves now
+  stay within 0.03% of the arc's radius instead of about 0.15%, and there
+  is one arc converter in the crate instead of two.
 - **Breaking:** `pt::PathTransformer::to_string()` is now provided by
   `Display` and takes `&self` instead of `&mut self`. It no longer applies
   pending transforms to the transformer itself; it writes them applied and
