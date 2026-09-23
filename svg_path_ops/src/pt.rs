@@ -1,7 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use cgmath::num_traits::Pow;
-use cgmath::{Angle, Deg, Matrix3, Rad, Vector2, Vector3};
+use kurbo::{Affine, Point, Vec2};
 use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
 use super::ellipse::Ellipse;
@@ -11,7 +10,7 @@ use crate::bbox::{BBox, InboxParameters};
 #[derive(Clone)]
 pub struct PathTransformer {
     path_segments: VecDeque<PathSegment>,
-    stack: Vec<Matrix3<f64>>,
+    stack: Vec<Affine>,
 }
 
 impl PathTransformer {
@@ -31,20 +30,19 @@ impl PathTransformer {
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
-        self.stack
-            .push(Matrix3::from_translation(Vector2::new(tx, ty)));
+        self.stack.push(Affine::translate((tx, ty)));
         self
     }
 
     pub fn scale(&mut self, sx: f64, sy: f64) -> &mut Self {
-        self.stack.push(Matrix3::from_nonuniform_scale(sx, sy));
+        self.stack.push(Affine::scale_non_uniform(sx, sy));
         self
     }
 
     pub fn rotate(&mut self, angle: f64, rx: f64, ry: f64) -> &mut Self {
         if angle != 0.0 {
             self.translate(-rx, -ry);
-            let rad = Rad::from(Deg(angle));
+            let rad = angle.to_radians();
             self.matrix([rad.cos(), rad.sin(), -rad.sin(), rad.cos(), 0.0, 0.0]);
             self.translate(rx, ry);
         }
@@ -52,21 +50,18 @@ impl PathTransformer {
     }
 
     pub fn skew_x(&mut self, degrees: f64) -> &mut Self {
-        let rad = Rad::from(Deg(degrees));
+        let rad = degrees.to_radians();
         self.matrix([1.0, 0.0, rad.tan(), 1.0, 0.0, 0.0]);
         self
     }
     pub fn skew_y(&mut self, degrees: f64) -> &mut Self {
-        let rad = Rad::from(Deg(degrees));
+        let rad = degrees.to_radians();
         self.matrix([1.0, rad.tan(), 0.0, 1.0, 0.0, 0.0]);
         self
     }
 
     pub fn matrix(&mut self, matrix: [f64; 6]) -> &mut Self {
-        let converted = Matrix3::new(
-            matrix[0], matrix[1], 0.0, matrix[2], matrix[3], 0.0, matrix[4], matrix[5], 1.0,
-        );
-        self.stack.push(converted);
+        self.stack.push(Affine::new(matrix));
         self
     }
 
@@ -108,13 +103,12 @@ impl PathTransformer {
                 self.apply_matrix(single_transformation);
                 return self;
             } else {
-                let mut combined = Matrix3::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+                let mut combined = Affine::IDENTITY;
                 while !self.stack.is_empty() {
-                    combined = combined
-                        * self
-                            .stack
-                            .pop()
-                            .expect("can not find transformation matrix");
+                    combined *= self
+                        .stack
+                        .pop()
+                        .expect("can not find transformation matrix");
                 }
                 self.apply_matrix(combined);
                 return self;
@@ -122,38 +116,46 @@ impl PathTransformer {
         }
     }
 
-    fn apply_matrix(&mut self, final_matrix: Matrix3<f64>) -> &mut Self {
+    fn apply_matrix(&mut self, final_matrix: Affine) -> &mut Self {
+        // Relative coordinates are offsets, so they get the linear part only.
+        let linear = final_matrix.with_translation(Vec2::ZERO);
+        let map = |x: f64, y: f64, abs: bool| {
+            if abs {
+                final_matrix * Point::new(x, y)
+            } else {
+                linear * Point::new(x, y)
+            }
+        };
         self.iterate(|segment, pos, x, y| {
             let result: PathSegment;
             match *segment {
                 PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
                     if abs {
-                        let p = final_matrix * Vector3::new(seg_x, seg_y, 1.0);
+                        let p = final_matrix * Point::new(seg_x, seg_y);
                         result = PathSegment::MoveTo { abs: true, x: p.x, y: p.y }
                     } else {
                         // Edge case. The very first `m` should be processed as absolute, if happens.
                         // Make sense for coord shift transforms.
                         let is_relative = pos > 0;
-                        let p = final_matrix
-                            * Vector3::new(seg_x, seg_y, if is_relative { 0.0 } else { 1.0 });
+                        let p = map(seg_x, seg_y, !is_relative);
 
                         result = PathSegment::MoveTo { abs: !is_relative, x: p.x, y: p.y };
                     }
                 }
                 PathSegment::LineTo { abs, x: seg_x, y: seg_y } => {
-                    let p = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    let p = map(seg_x, seg_y, abs);
                     result = PathSegment::LineTo { abs, x: p.x, y: p.y }
                 }
                 PathSegment::HorizontalLineTo { abs, x: seg_x } => {
                     if abs {
-                        let p = final_matrix * Vector3::new(seg_x, y, 1.0);
-                        result = if p.y == (final_matrix * Vector3::new(x, y, 1.0)).y {
+                        let p = final_matrix * Point::new(seg_x, y);
+                        result = if p.y == (final_matrix * Point::new(x, y)).y {
                             PathSegment::HorizontalLineTo { abs: true, x: p.x }
                         } else {
                             PathSegment::LineTo { abs: true, x: p.x, y: p.y }
                         }
                     } else {
-                        let p = final_matrix * Vector3::new(seg_x, 0.0, 0.0);
+                        let p = linear * Point::new(seg_x, 0.0);
 
                         result = if p.y == 0.0 {
                             PathSegment::HorizontalLineTo { abs: false, x: p.x }
@@ -164,14 +166,14 @@ impl PathTransformer {
                 }
                 PathSegment::VerticalLineTo { abs, y: seg_y } => {
                     if abs {
-                        let p = final_matrix * Vector3::new(x, seg_y, 1.0);
-                        result = if p.x == (final_matrix * Vector3::new(x, y, 1.0)).x {
+                        let p = final_matrix * Point::new(x, seg_y);
+                        result = if p.x == (final_matrix * Point::new(x, y)).x {
                             PathSegment::VerticalLineTo { abs: true, y: p.y }
                         } else {
                             PathSegment::LineTo { abs: true, x: p.x, y: p.y }
                         };
                     } else {
-                        let p = final_matrix * Vector3::new(0.0, seg_y, 0.0);
+                        let p = linear * Point::new(0.0, seg_y);
                         result = if p.x == 0.0 {
                             PathSegment::VerticalLineTo { abs: false, y: p.y }
                         } else {
@@ -180,9 +182,9 @@ impl PathTransformer {
                     }
                 }
                 PathSegment::CurveTo { abs, x1, y1, x2, y2, x: seg_x, y: seg_y } => {
-                    let p1 = final_matrix * Vector3::new(x1, y1, if abs { 1.0 } else { 0.0 });
-                    let p2 = final_matrix * Vector3::new(x2, y2, if abs { 1.0 } else { 0.0 });
-                    let p3 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    let p1 = map(x1, y1, abs);
+                    let p2 = map(x2, y2, abs);
+                    let p3 = map(seg_x, seg_y, abs);
                     result = PathSegment::CurveTo {
                         abs,
                         x1: p1.x,
@@ -194,18 +196,18 @@ impl PathTransformer {
                     };
                 }
                 PathSegment::SmoothCurveTo { abs, x2, y2, x: seg_x, y: seg_y } => {
-                    let p2 = final_matrix * Vector3::new(x2, y2, if abs { 1.0 } else { 0.0 });
-                    let p3 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    let p2 = map(x2, y2, abs);
+                    let p3 = map(seg_x, seg_y, abs);
                     result =
                         PathSegment::SmoothCurveTo { abs, x2: p2.x, y2: p2.y, x: p3.x, y: p3.y };
                 }
                 PathSegment::Quadratic { abs, x1, y1, x: seg_x, y: seg_y } => {
-                    let p1 = final_matrix * Vector3::new(x1, y1, if abs { 1.0 } else { 0.0 });
-                    let p2 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    let p1 = map(x1, y1, abs);
+                    let p2 = map(seg_x, seg_y, abs);
                     result = PathSegment::Quadratic { abs, x1: p1.x, y1: p1.y, x: p2.x, y: p2.y };
                 }
                 PathSegment::SmoothQuadratic { abs, x: seg_x, y: seg_y } => {
-                    let p2 = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    let p2 = map(seg_x, seg_y, abs);
                     result = PathSegment::SmoothQuadratic { abs, x: p2.x, y: p2.y }
                 }
 
@@ -223,23 +225,16 @@ impl PathTransformer {
                     // Transform rx, ry and the x-axis-rotation
                     // var ma = m.toArray();
                     let mut e = Ellipse::new(rx, ry, x_axis_rotation);
-                    e.transform(&[
-                        final_matrix[0][0],
-                        final_matrix[0][1],
-                        final_matrix[1][0],
-                        final_matrix[1][1],
-                    ]);
+                    let [a, b, c, d, _, _] = final_matrix.as_coeffs();
+                    e.transform(&[a, b, c, d]);
 
                     // flip sweep-flag if matrix is not orientation-preserving
-                    if final_matrix[0][0] * final_matrix[1][1]
-                        - final_matrix[0][1] * final_matrix[1][0]
-                        < 0.0
-                    {
+                    if final_matrix.determinant() < 0.0 {
                         sweep = if sweep { false } else { true };
                     }
 
                     // Transform end point as usual (without translation for relative notation)
-                    let p = final_matrix * Vector3::new(seg_x, seg_y, if abs { 1.0 } else { 0.0 });
+                    let p = map(seg_x, seg_y, abs);
 
                     // Empty arcs can be ignored by renderer, but should not be dropped
                     // to avoid collisions with `S A S` and so on. Replace with empty line.
@@ -257,7 +252,7 @@ impl PathTransformer {
                                 abs,
                                 rx: e.rx,
                                 ry: e.ry,
-                                x_axis_rotation: e.ax.0,
+                                x_axis_rotation: e.ax,
                                 large_arc,
                                 sweep,
                                 x: p.x,
@@ -274,7 +269,7 @@ impl PathTransformer {
     }
 
     fn to_fixed(input: f64, d: u8) -> f64 {
-        (input * 10.0f64.pow(d)).round() / 10.0f64.pow(d)
+        (input * 10.0f64.powi(d as i32)).round() / 10.0f64.powi(d as i32)
     }
 
     /// Like `to_fixed`, but rounds to `d + extra` decimal places without

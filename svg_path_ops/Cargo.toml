@@ -15,4 +15,4 @@ readme = "README.md"
 
 [dependencies]
 svgtypes = "0.16"
-cgmath = "0.18"
+kurbo = "0.13"

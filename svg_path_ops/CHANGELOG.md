@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `PathSegment`, and every function that takes or returns it, now uses the
   0.16 type. Code that passes segments from its own `svgtypes` 0.11
   dependency must upgrade to 0.16 or use `svg_path_ops::svgtypes`.
+- Replace the `cgmath` dependency with `kurbo` 0.13 for the transform
+  matrix math. `svgtypes` 0.16 already depends on `kurbo` 0.13, so this
+  removes `cgmath`, `approx` and `num-traits` from the dependency tree
+  without adding a new crate. The public API and output are unchanged.
 
 ## [0.11.2] - 2026-09-11
 

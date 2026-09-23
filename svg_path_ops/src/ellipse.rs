@@ -1,11 +1,10 @@
 use std::f64::consts::PI;
 
-use cgmath::{Angle, Deg, Rad};
-
 pub struct Ellipse {
     pub rx: f64,
     pub ry: f64,
-    pub ax: Deg<f64>,
+    /// x-axis rotation in degrees
+    pub ax: f64,
 }
 
 const EPSILON: f64 = 1e-10;
@@ -14,12 +13,12 @@ impl Ellipse {
     // constructor
     // an ellipse centred at 0 with radii rx,ry and x - axis - angle ax.
     pub fn new(rx: f64, ry: f64, ax: f64) -> Self {
-        Ellipse { rx, ry, ax: Deg(ax) }
+        Ellipse { rx, ry, ax }
     }
 
     pub fn transform(&mut self, matrix: &[f64; 4]) -> &mut Self {
-        let c = Rad::from(self.ax).cos();
-        let s = Rad::from(self.ax).sin();
+        let c = self.ax.to_radians().cos();
+        let s = self.ax.to_radians().sin();
         let ma = [
             self.rx * (matrix[0] * c + matrix[2] * s),
             self.rx * (matrix[1] * c + matrix[3] * s),
@@ -42,7 +41,7 @@ impl Ellipse {
             // if it is
             self.rx = jk.sqrt();
             self.ry = jk.sqrt();
-            self.ax = Deg(0.0);
+            self.ax = 0.0;
             self
         } else {
             // if it is not a circle
@@ -54,7 +53,7 @@ impl Ellipse {
             let l1 = jk + d / 2.0;
             let l2 = jk - d / 2.0;
             // the x - axis - rotation angle is the argument of the l1 - eigenvector
-            self.ax = Deg(if l.abs() < EPSILON && (l1 - k).abs() < EPSILON {
+            self.ax = if l.abs() < EPSILON && (l1 - k).abs() < EPSILON {
                 90.0
             } else {
                 if l.abs() > (l1 - k).abs() {
@@ -65,16 +64,16 @@ impl Ellipse {
                 .atan()
                     * 180.0
                     / PI
-            });
+            };
 
             // if ax > 0 => rx = sqrt(l1), ry = sqrt(l2), else exchange axes and ax += 90
-            if self.ax >= Deg(0.0) {
+            if self.ax >= 0.0 {
                 // if ax in [0,90]
                 self.rx = l1.sqrt();
                 self.ry = l2.sqrt();
             } else {
                 // if ax in ]-90,0[ => exchange axes
-                self.ax += Deg(90.0);
+                self.ax += 90.0;
                 self.rx = l2.sqrt();
                 self.ry = l1.sqrt();
             }
