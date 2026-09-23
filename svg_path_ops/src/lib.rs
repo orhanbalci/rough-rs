@@ -128,7 +128,11 @@
 //! ### Reversing a path
 //!
 //! [`reverse`] draws every subpath in the opposite direction, keeping
-//! relative segments relative and arcs as arcs:
+//! relative segments relative and arcs as arcs. The shape stays the same;
+//! the direction matters for holes under the default nonzero fill rule, for
+//! the order a pen plotter draws in, for stroke animations and for where
+//! markers and text on a path go. Below, the inner square only cuts a hole
+//! once it is reversed:
 //!
 //! ![reverse](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/reverse.png)
 //!

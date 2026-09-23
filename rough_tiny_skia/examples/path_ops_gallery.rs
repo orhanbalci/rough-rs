@@ -232,22 +232,7 @@ fn draw_solid(canvas: &mut Canvas, path: &str) {
 
 /// Strokes `path` with an exact dashed line, for originals and guides.
 fn draw_dashed(canvas: &mut Canvas, path: &str, color: (u8, u8, u8), width: f32) {
-    let mut builder = PathBuilder::new();
-    let segments: Vec<PathSegment> = PathParser::from(path).map(Result::unwrap).collect();
-    let normalized: Vec<PathSegment> =
-        svg_path_ops::normalize(svg_path_ops::absolutize(segments.iter())).collect();
-    for segment in normalized {
-        match segment {
-            PathSegment::MoveTo { x, y, .. } => builder.move_to(x as f32, y as f32),
-            PathSegment::LineTo { x, y, .. } => builder.line_to(x as f32, y as f32),
-            PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } => builder.cubic_to(
-                x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32,
-            ),
-            PathSegment::ClosePath { .. } => builder.close(),
-            _ => unreachable!("normalize only emits M, L, C and Z"),
-        }
-    }
-    let Some(tiny_path) = builder.finish() else {
+    let Some(tiny_path) = tiny_path(path) else {
         return;
     };
     let mut paint = Paint::default();
@@ -260,6 +245,123 @@ fn draw_dashed(canvas: &mut Canvas, path: &str, color: (u8, u8, u8), width: f32)
     canvas
         .pixmap
         .stroke_path(&tiny_path, &paint, &stroke, Transform::identity(), None);
+}
+
+/// Absolute move, line, cubic curve and close segments drawing `path`.
+fn normalized(path: &str) -> Vec<PathSegment> {
+    let segments = parse(path);
+    svg_path_ops::normalize(svg_path_ops::absolutize(segments.iter())).collect()
+}
+
+/// Converts SVG path data to an exact tiny-skia path.
+fn tiny_path(path: &str) -> Option<tiny_skia::Path> {
+    let mut builder = PathBuilder::new();
+    for segment in normalized(path) {
+        match segment {
+            PathSegment::MoveTo { x, y, .. } => builder.move_to(x as f32, y as f32),
+            PathSegment::LineTo { x, y, .. } => builder.line_to(x as f32, y as f32),
+            PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } => builder.cubic_to(
+                x1 as f32, y1 as f32, x2 as f32, y2 as f32, x as f32, y as f32,
+            ),
+            PathSegment::ClosePath { .. } => builder.close(),
+            _ => unreachable!("normalize only emits M, L, C and Z"),
+        }
+    }
+    builder.finish()
+}
+
+/// Fills `path` with the nonzero rule, the SVG default: a region is filled
+/// unless the contours around it wind in opposite directions.
+fn fill_nonzero(canvas: &mut Canvas, path: &str) {
+    let Some(tiny_path) = tiny_path(path) else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(CREAM.0, CREAM.1, CREAM.2, 255);
+    canvas.pixmap.fill_path(
+        &tiny_path,
+        &paint,
+        tiny_skia::FillRule::Winding,
+        Transform::identity(),
+        None,
+    );
+}
+
+/// The point halfway along each segment of `path`, with the direction the
+/// path is drawn in there.
+fn segment_midpoints(path: &str) -> Vec<((f64, f64), (f64, f64))> {
+    let mut midpoints = Vec::new();
+    let (mut current, mut subpath_start) = ((0.0, 0.0), (0.0, 0.0));
+    let line = |from: (f64, f64), to: (f64, f64)| {
+        (
+            ((from.0 + to.0) / 2.0, (from.1 + to.1) / 2.0),
+            (to.0 - from.0, to.1 - from.1),
+        )
+    };
+    for segment in normalized(path) {
+        match segment {
+            PathSegment::MoveTo { x, y, .. } => {
+                current = (x, y);
+                subpath_start = current;
+            }
+            PathSegment::LineTo { x, y, .. } => {
+                midpoints.push(line(current, (x, y)));
+                current = (x, y);
+            }
+            PathSegment::CurveTo { x1, y1, x2, y2, x, y, .. } => {
+                // A cubic curve at t = 0.5 and its derivative there
+                let (p0, p1, p2, p3) = (current, (x1, y1), (x2, y2), (x, y));
+                let at = |a: f64, b: f64, c: f64, d: f64| (a + 3.0 * b + 3.0 * c + d) / 8.0;
+                let slope = |a: f64, b: f64, c: f64, d: f64| 0.75 * (c + d - a - b);
+                midpoints.push((
+                    (at(p0.0, p1.0, p2.0, p3.0), at(p0.1, p1.1, p2.1, p3.1)),
+                    (slope(p0.0, p1.0, p2.0, p3.0), slope(p0.1, p1.1, p2.1, p3.1)),
+                ));
+                current = p3;
+            }
+            PathSegment::ClosePath { .. } => {
+                if current != subpath_start {
+                    midpoints.push(line(current, subpath_start));
+                }
+                current = subpath_start;
+            }
+            _ => unreachable!("normalize only emits M, L, C and Z"),
+        }
+    }
+    midpoints
+}
+
+/// Draws an arrowhead halfway along each segment of `path`, pointing the way
+/// the path is drawn.
+fn draw_direction(canvas: &mut Canvas, path: &str) {
+    for ((x, y), (dx, dy)) in segment_midpoints(path) {
+        let length = dx.hypot(dy);
+        if length == 0.0 {
+            continue;
+        }
+        let (ux, uy) = (dx / length, dy / length);
+        let tip = (x + ux * 5.0, y + uy * 5.0);
+        let base = (x - ux * 4.0, y - uy * 4.0);
+        let side = (-uy * 4.5, ux * 4.5);
+
+        let mut builder = PathBuilder::new();
+        builder.move_to(tip.0 as f32, tip.1 as f32);
+        builder.line_to((base.0 + side.0) as f32, (base.1 + side.1) as f32);
+        builder.line_to((base.0 - side.0) as f32, (base.1 - side.1) as f32);
+        builder.close();
+        let Some(arrow) = builder.finish() else {
+            continue;
+        };
+        let mut paint = Paint::default();
+        paint.set_color_rgba8(BROWN.0, BROWN.1, BROWN.2, 255);
+        canvas.pixmap.fill_path(
+            &arrow,
+            &paint,
+            tiny_skia::FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
+    }
 }
 
 /// Draws a dot; hollow dots are outlined and filled with the canvas color.
@@ -595,30 +697,49 @@ fn draw_numbered_ends(canvas: &mut Canvas, path: &str, hollow_start: bool) {
 }
 
 fn reverse_strip(out_dir: &Path) {
-    let open = "M 0 40 C 0 0 40 0 40 40 S 80 80 80 40 L 110 40";
-    let closed = "M 0 0 L 60 0 L 60 40 L 0 40 Z";
-    let cases = [
-        (open, false, "open"),
-        (open, true, "open reversed"),
-        (closed, false, "closed"),
-        (closed, true, "closed reversed"),
-    ];
     let mut canvas = Canvas::new(
         LAYOUT,
         "reverse",
-        "draws each subpath the other way (hollow: where it starts)",
-        cases.len(),
+        "flips the drawing direction. with nonzero fill, holes need it",
+        4,
     );
-    for (i, (path, reversed, label)) in cases.iter().enumerate() {
+
+    // An open path, drawn forward and reversed
+    let open = "M 0 40 C 0 0 40 0 40 40 S 80 80 80 40 L 110 40";
+    for (i, reversed, label) in [(0, false, "open"), (1, true, "reversed")] {
         let center = cell_center(canvas.cell(i));
-        let mut shape = fit(path, (center.0 - 55.0, center.1 - 30.0, 110.0, 60.0));
-        if *reversed {
+        let mut shape = fit(open, (center.0 - 55.0, center.1 - 30.0, 110.0, 60.0));
+        if reversed {
             shape = write_path(reverse(parse(&shape)), &WriteOptions::default());
         }
         draw_outline(&mut canvas, &shape);
-        draw_numbered_ends(&mut canvas, &shape, true);
+        draw_direction(&mut canvas, &shape);
         canvas.label(i, label);
     }
+
+    // A frame: the inner square only cuts a hole once it runs the other way
+    let outer = "M 0 0 L 90 0 L 90 70 L 0 70 Z";
+    let inner = "M 25 20 L 65 20 L 65 50 L 25 50 Z";
+    for (i, reversed, label) in [(2, false, "same direction"), (3, true, "inner reversed")] {
+        let center = cell_center(canvas.cell(i));
+        let origin = (center.0 - 45.0, center.1 - 35.0);
+        let place = |path: &str| {
+            let mut transformer = PathTransformer::new(path.into());
+            transformer.translate(origin.0, origin.1);
+            transformer.to_string()
+        };
+        let mut hole = place(inner);
+        if reversed {
+            hole = write_path(reverse(parse(&hole)), &WriteOptions::default());
+        }
+        let frame = format!("{} {}", place(outer), hole);
+
+        fill_nonzero(&mut canvas, &frame);
+        draw_outline(&mut canvas, &frame);
+        draw_direction(&mut canvas, &frame);
+        canvas.label(i, label);
+    }
+
     canvas.save(out_dir, "reverse");
 }
 
