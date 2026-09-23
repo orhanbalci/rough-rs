@@ -92,7 +92,29 @@ let rounded = WriteOptions { precision: Some(3), ..WriteOptions::default() };
 assert_eq!(path.to_string_with(&rounded), "M 10 10 L 10 50");
 
 let compact = WriteOptions { precision: Some(3), compact: true };
-assert_eq!(path.to_string_with(&compact), "M10 10L10 50");
+assert_eq!(path.to_string_with(&compact), "M10 10 10 50");
+```
+
+[`optimize`] goes further and rewrites each segment in its shortest
+form: relative or absolute, `H`/`V` for straight lines, `S`/`T` for
+mirrored curves, lines for straight curves and arcs for curves that
+follow a circle, dropping segments that draw nothing. Relative
+coordinates are taken between rounded absolute points, so rounding does
+not drift along a path:
+
+```rust
+use svg_path_ops::pt::PathTransformer;
+use svg_path_ops::WriteOptions;
+
+let mut path = PathTransformer::parse(
+    "M 100 100 L 110 100 L 110 110 C 110 120 120 120 120 110 \
+     C 120 100 130 100 130 110 L 100 100 Z",
+)?;
+let options = WriteOptions { precision: Some(2), compact: true };
+assert_eq!(
+    path.optimize(Some(2)).to_string_with(&options),
+    "M100 100h10v10c0 10 10 10 10 0s10-10 10 0z"
+);
 ```
 
 ### Converting commands
@@ -283,6 +305,7 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+[`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x
 [`flip_y`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_y

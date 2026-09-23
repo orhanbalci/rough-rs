@@ -23,8 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pt::PathTransformer` implements `Display`.
 - `write_path()` and `WriteOptions` write any sequence of path segments as
   path data. Options round numbers to a precision and write compact output
-  (`M10 10l.5-5 2 0`) without redundant spaces, leading zeros or repeated
-  command letters.
+  (`M10 10l.5-5 2 0`) without redundant spaces, leading zeros or command
+  letters SVG implies (a repeated command, or a line right after a move),
+  and with arc flags written without separators (`a5 5 0 0110 0`).
 - `pt::PathTransformer::to_string_with()` writes the transformed path with
   `WriteOptions`.
 - `segments_with_context()` iterates over segments together with their
@@ -40,6 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `shapes::Shape` converts the SVG basic shapes (`rect`, `circle`,
   `ellipse`, `line`, `polyline`, `polygon`) to the equivalent paths SVG 2
   defines, including its rules for missing and oversized `rx`/`ry`.
+- `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
+  shortest form: absolute or relative per segment, `H`/`V` for straight
+  lines, `S`/`T` for mirrored curves, lines for curves whose control points
+  lie on the line between their ends, a single arc for a run of cubic curves
+  that follows one circle, and no segments that draw nothing.
+  With a precision, relative coordinates are taken between rounded absolute
+  points, so rounding does not drift along the path; without one, no point
+  moves.
 - `split_subpaths()` returns each subpath as a path of its own, turning a
   relative move that depended on the previous subpath into an absolute one
   and giving a subpath that started after a close path its own move.

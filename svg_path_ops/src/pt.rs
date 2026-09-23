@@ -8,6 +8,7 @@ use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken}
 use super::ellipse::Ellipse;
 use crate::a2c::a2c;
 use crate::bbox::{BBox, InboxParameters};
+use crate::optimize::optimize;
 use crate::reverse::reverse;
 use crate::write::{write_path, WriteOptions};
 
@@ -737,6 +738,16 @@ impl PathTransformer {
         self
     }
 
+    /// Applies pending transforms, then rewrites the path in its shortest
+    /// form. See [`optimize`](crate::optimize) for what changes. Write the
+    /// result with [`to_string_with`](Self::to_string_with) and
+    /// `WriteOptions { compact: true, precision }`.
+    pub fn optimize(&mut self, precision: Option<u8>) -> &mut Self {
+        self.evaluate_stack();
+        self.path_segments = optimize(&self.path_segments, precision).into();
+        self
+    }
+
     pub fn rel(&mut self) -> &mut Self {
         self.iterate(|s, pos, x, y| match s {
             PathSegment::MoveTo { abs, x: seg_x, y: seg_y } => {
@@ -1169,7 +1180,7 @@ mod test {
         let mut transformer = PathTransformer::new("M 10 10 L 20.555 20".into());
         transformer.translate(-10.0, 0.0);
         let options = WriteOptions { precision: Some(1), compact: true };
-        assert_eq!(transformer.to_string_with(&options), "M0 10L10.6 20");
+        assert_eq!(transformer.to_string_with(&options), "M0 10 10.6 20");
     }
 
     #[test]
@@ -1216,6 +1227,14 @@ mod test {
     fn flip_of_empty_path_does_nothing() {
         let mut path = PathTransformer::new(String::new());
         assert_eq!(path.flip_x().flip_y().to_string(), "");
+    }
+
+    #[test]
+    fn optimize_applies_pending_transforms_first() {
+        let mut path = PathTransformer::new("M 0 0 L 10 0 L 10 10".into());
+        path.scale(2.0, 2.0).optimize(None);
+        let options = WriteOptions { precision: None, compact: true };
+        assert_eq!(path.to_string_with(&options), "M0 0h20v20");
     }
 
     #[test]

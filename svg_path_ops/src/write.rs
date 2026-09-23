@@ -12,9 +12,10 @@ pub struct WriteOptions {
     pub precision: Option<u8>,
     /// Write the shortest equivalent path data: no space after a command,
     /// separators between numbers only where needed, no leading zeros, and no
-    /// command letter when the previous segment used the same one, as in
-    /// `M10 10l.5-5 2 0`. Move commands always keep their letter, since a
-    /// repeated one would otherwise read as a line.
+    /// command letter where SVG implies it, as in `M10 10l.5-5 2 0`. A letter
+    /// is implied when the previous segment used the same one, and for a line
+    /// right after a move of the same case (`M` then `L`, `m` then `l`).
+    /// Moves and close paths always keep their letter.
     pub compact: bool,
 }
 
@@ -63,8 +64,7 @@ struct PathWriter<'a> {
 impl PathWriter<'_> {
     fn segment(&mut self, segment: &PathSegment) {
         let command = segment.command();
-        let repeats =
-            self.prev_command == Some(command) && !matches!(command, b'M' | b'm' | b'Z' | b'z');
+        let repeats = letter_implied(self.prev_command, command);
 
         if !self.options.compact || !repeats {
             if !self.options.compact && !self.out.is_empty() {
@@ -88,15 +88,11 @@ impl PathWriter<'_> {
             PathSegment::Quadratic { x1, y1, x, y, .. } => self.numbers(&[x1, y1, x, y]),
             PathSegment::EllipticalArc {
                 rx, ry, x_axis_rotation, large_arc, sweep, x, y, ..
-            } => self.numbers(&[
-                rx,
-                ry,
-                x_axis_rotation,
-                f64::from(u8::from(large_arc)),
-                f64::from(u8::from(sweep)),
-                x,
-                y,
-            ]),
+            } => {
+                self.numbers(&[rx, ry, x_axis_rotation]);
+                self.flags(large_arc, sweep);
+                self.numbers(&[x, y]);
+            }
             PathSegment::ClosePath { .. } => {}
         }
     }
@@ -105,6 +101,22 @@ impl PathWriter<'_> {
         for &value in values {
             self.number(value);
         }
+    }
+
+    /// Writes an arc's flags. Compact output needs no separator between the
+    /// flags or after them, since each is a single `0` or `1`, but still one
+    /// before them, or the first flag would read as more digits of the
+    /// rotation.
+    fn flags(&mut self, large_arc: bool, sweep: bool) {
+        let flag = |on: bool| if on { '1' } else { '0' };
+        self.out.push(' ');
+        self.out.push(flag(large_arc));
+        if !self.options.compact {
+            self.out.push(' ');
+        }
+        self.out.push(flag(sweep));
+        // In compact output the next number follows the flag directly
+        self.prev_number_has_dot = None;
     }
 
     fn number(&mut self, value: f64) {
@@ -139,7 +151,18 @@ impl PathWriter<'_> {
     }
 }
 
-fn round(value: f64, precision: u8) -> f64 {
+/// Whether compact output can leave out `command`'s letter after a segment
+/// with `previous`: SVG repeats the previous command, and reads coordinates
+/// after a move as lines. Moves and close paths always need their letter.
+pub(crate) fn letter_implied(previous: Option<u8>, command: u8) -> bool {
+    match (previous, command) {
+        (_, b'M' | b'm' | b'Z' | b'z') => false,
+        (Some(b'M'), b'L') | (Some(b'm'), b'l') => true,
+        (previous, command) => previous == Some(command),
+    }
+}
+
+pub(crate) fn round(value: f64, precision: u8) -> f64 {
     let factor = 10.0f64.powi(i32::from(precision));
     let rounded = (value * factor).round() / factor;
     if !rounded.is_finite() {
@@ -204,7 +227,7 @@ mod test {
     #[test]
     fn compact_drops_redundant_separators() {
         let segments = parse("M 10 10 L 0.5 -0.5 L 0.25 0.75 Z");
-        assert_eq!(write_path(&segments, &compact()), "M10 10L.5-.5.25.75Z");
+        assert_eq!(write_path(&segments, &compact()), "M10 10 .5-.5.25.75Z");
     }
 
     #[test]
@@ -216,7 +239,30 @@ mod test {
     #[test]
     fn compact_keeps_letter_when_case_changes() {
         let segments = parse("M0 0 L1 1 l2 2 l3 3");
-        assert_eq!(write_path(&segments, &compact()), "M0 0L1 1l2 2 3 3");
+        assert_eq!(write_path(&segments, &compact()), "M0 0 1 1l2 2 3 3");
+    }
+
+    #[test]
+    fn compact_leaves_out_a_line_letter_after_a_move() {
+        let segments = parse("M0 0 L1 1 m2 2 l3 3 M4 4 l5 5");
+        assert_eq!(
+            write_path(&segments, &compact()),
+            "M0 0 1 1m2 2 3 3M4 4l5 5"
+        );
+    }
+
+    #[test]
+    fn compact_writes_arc_flags_without_separators() {
+        let segments = parse("M0 0 a5 5 0 0 1 10 0 a5 5 30.5 1 0 -10 -10");
+        assert_eq!(
+            write_path(&segments, &compact()),
+            "M0 0a5 5 0 0110 0 5 5 30.5 10-10-10"
+        );
+        // Default output keeps a space between the flags
+        assert_eq!(
+            write_path(&segments, &WriteOptions::default()),
+            "M 0 0 a 5 5 0 0 1 10 0 a 5 5 30.5 1 0 -10 -10"
+        );
     }
 
     #[test]
