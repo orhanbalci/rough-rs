@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
+  <!-- Sample drawing for the svg example: plain SVG shapes, a group transform and a curved path -->
+  <circle cx="262" cy="52" r="26" fill="#f2c14e" stroke="#725752" stroke-width="2"/>
+  <path d="M 0 190 C 60 150 120 170 170 185 C 220 200 270 160 320 175 L 320 220 L 0 220 Z"
+        fill="#7fb069" stroke="#725752" stroke-width="2"/>
+  <g transform="translate(70 70)">
+    <rect x="0" y="50" width="120" height="85" fill="#fef6c9" stroke="#725752" stroke-width="2"/>
+    <polygon points="-10,55 60,0 130,55" fill="#d1495b" stroke="#725752" stroke-width="2"/>
+    <rect x="48" y="90" width="26" height="45" fill="#725752"/>
+    <rect x="15" y="70" width="22" height="22" fill="#96c0b7" stroke="#725752" stroke-width="2"/>
+    <rect x="85" y="70" width="22" height="22" fill="#96c0b7" stroke="#725752" stroke-width="2"/>
+  </g>
+</svg>

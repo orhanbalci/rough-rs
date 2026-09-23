@@ -17,3 +17,6 @@ num-traits = "0.2"
 euclid = "0.22"
 palette = "0.7"
 tiny-skia = "0.11"
+
+[dev-dependencies]
+usvg = "0.48"

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Sketched fills (hachure, zigzag, dots, ...) were invisible unless
+  `fill_weight` was set explicitly: the default `-1` was used as the line
+  width instead of `stroke_width / 2`.
+
+### Added
+
+- `svg` example: sketches a whole SVG file by converting it to plain paths
+  with `usvg`.
+- `options_gallery` example: generates the option reference images used in
+  the `roughr` docs.
+
 ## [0.13.0] - 2026-09-11
 
 ### Changed

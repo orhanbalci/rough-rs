@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Documentation for every `Options` field, `FillStyle` variant and `LineCap`,
+  including its default and a reference image showing its effect.
+- "Options" and "Drawing SVG files" sections in the crate docs and README.
+
 ## [0.13.0] - 2026-09-11
 
 ### Added

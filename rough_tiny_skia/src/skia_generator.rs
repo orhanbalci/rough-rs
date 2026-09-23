@@ -188,7 +188,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
 
                     if self.options.fill_line_dash.is_some() {
                         let mut stroke = Stroke::default();
-                        stroke.width = self.options.fill_weight.unwrap_or(1.0);
+                        stroke.width = fweight;
                         stroke.line_cap =
                             convert_line_cap_from_roughr_to_piet(self.options.line_cap);
                         stroke.line_join =
@@ -225,7 +225,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);
                     } else {
                         let mut stroke = Stroke::default();
-                        stroke.width = self.options.fill_weight.unwrap_or(1.0);
+                        stroke.width = fweight;
                         stroke.line_cap =
                             convert_line_cap_from_roughr_to_piet(self.options.line_cap);
                         stroke.line_join =

@@ -152,6 +152,102 @@ heart_svg_path_drawing.draw(&mut rc);
 - [x] Dashed
 - [x] Zigzag-Line
 
+## 🎛️ Options
+
+Every drawing is controlled by an `Options` value, built with `OptionsBuilder`. All fields
+have defaults, so set only what you want to change. The most useful ones are `roughness`,
+`bowing`, `stroke`, `stroke_width`, `fill`, `fill_style`, `hachure_gap` and `seed`.
+
+Each image below draws the same shape with only one option changed, from left to right.
+The field docs of [`Options`](https://docs.rs/roughr/latest/roughr/core/struct.Options.html)
+explain every option and its default. To try options interactively, run the
+[`drawing_app`](https://github.com/orhanbalci/rough-rs/tree/main/rough_iced/examples) example
+of `rough_iced`.
+
+<details>
+<summary><b>Outline</b></summary>
+
+![roughness](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/roughness.png)
+
+![bowing](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/bowing.png)
+
+![max_randomness_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/max_randomness_offset.png)
+
+![stroke_width](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/stroke_width.png)
+
+![disable_multi_stroke](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/disable_multi_stroke.png)
+
+![preserve_vertices](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/preserve_vertices.png)
+
+![stroke_line_dash](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/stroke_line_dash.png)
+
+![seed](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/seed.png)
+
+</details>
+
+<details>
+<summary><b>Curves and SVG paths</b></summary>
+
+![curve_fitting](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/curve_fitting.png)
+
+![curve_step_count](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/curve_step_count.png)
+
+![curve_tightness](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/curve_tightness.png)
+
+![simplification](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/simplification.png)
+
+</details>
+
+<details>
+<summary><b>Fill</b></summary>
+
+![fill_style](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/fill_style.png)
+
+![hachure_angle](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/hachure_angle.png)
+
+![hachure_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/hachure_gap.png)
+
+![fill_weight](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/fill_weight.png)
+
+![dash_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/dash_offset.png)
+
+![dash_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/dash_gap.png)
+
+![zigzag_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/zigzag_offset.png)
+
+![disable_multi_stroke_fill](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/roughr/assets/options/disable_multi_stroke_fill.png)
+
+</details>
+
+## 🧾 Drawing SVG files
+
+`path` takes SVG path data, the `d` attribute of a `<path>` element. To sketch a whole SVG
+file, which may also contain shapes like `<rect>` and `<circle>`, transforms and styles,
+first convert it to plain paths with [usvg](https://crates.io/crates/usvg), then draw every
+path with its own colors:
+
+```ignore
+let tree = usvg::Tree::from_data(&svg_bytes, &usvg::Options::default())?;
+// For each usvg::Path in the tree:
+let data = path.data().clone().transform(path.abs_transform()).unwrap();
+let options = OptionsBuilder::default()
+    .fill(/* the path's fill color */)
+    .stroke(/* the path's stroke color */)
+    .build()?;
+let drawing = SkiaGenerator::new(options).path::<f32>(to_svg_path_data(&data));
+drawing.draw(&mut pixmap.as_mut());
+```
+
+The complete, runnable version is the
+[`svg` example](https://github.com/orhanbalci/rough-rs/blob/main/rough_tiny_skia/examples/svg.rs)
+of `rough_tiny_skia`:
+
+```sh
+cargo run -p rough_tiny_skia --example svg -- input.svg output.png
+```
+
+![svg](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_tiny_skia/assets/house.png)
+
 ## 🔭 Examples
 
 For more examples have a look at the
