@@ -1,30 +1,15 @@
-use std::ops::DerefMut;
+mod common;
 
-use bevy::prelude::*;
-use bevy_vello::{prelude::*, VelloPlugin};
 use palette::Srgba;
 use rough_vello::VelloGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
+use vello::kurbo::Affine;
+use vello::peniko::Color;
 
-const CANVAS_WIDTH: u32 = 800;
-const CANVAS_HEIGHT: u32 = 600;
+const CANVAS_WIDTH: f64 = 800.0;
+const CANVAS_HEIGHT: f64 = 600.0;
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(VelloPlugin::default())
-        .add_systems(Startup, setup_vector_graphics)
-        .run();
-}
-
-fn setup_vector_graphics(mut commands: Commands) {
-    // Set clear color for the background
-    commands.insert_resource(ClearColor(Color::srgb(
-        150.0 / 255.0,
-        192.0 / 255.0,
-        183.0 / 255.0,
-    )));
-
     // Create rough rectangle using Vello
     let options = OptionsBuilder::default()
         .stroke(Srgba::from_components((114u8, 87u8, 82u8, 255u8)).into_format())
@@ -47,21 +32,21 @@ fn setup_vector_graphics(mut commands: Commands) {
         rect_height,
     );
 
-    // Create Vello scene and add the rough rectangle
-    let mut scene = vello::Scene::new();
+    // Draw the rough rectangle into its own scene once
+    let mut rect_scene = vello::Scene::new();
+    rect.draw(&mut rect_scene);
 
-    // Draw the rough rectangle to the scene
-    rect.draw(&mut scene);
-
-    commands.spawn((Camera2d, VelloView));
-    commands.spawn(VelloSceneBundle {
-        scene: VelloScene::from(scene),
-
-        transform: Transform::from_translation(Vec3::new(
-            -(CANVAS_WIDTH as f32) / 2.0,
-            (CANVAS_HEIGHT as f32) / 2.0,
-            0.0,
-        )),
-        ..default()
-    });
+    common::run(
+        "rough_vello: rectangle",
+        Color::from_rgb8(150, 192, 183),
+        false,
+        move |scene, frame| {
+            // Keep the canvas centered in the window
+            let offset = Affine::translate((
+                (frame.width - CANVAS_WIDTH) / 2.0,
+                (frame.height - CANVAS_HEIGHT) / 2.0,
+            ));
+            scene.append(&rect_scene, Some(offset));
+        },
+    );
 }

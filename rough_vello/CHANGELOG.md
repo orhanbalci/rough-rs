@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** Upgrade `vello` from 0.5 to 0.10. This crate's public API
+  exposes `vello::Scene`, so callers must use vello 0.10 as well.
+- Examples no longer depend on Bevy/`bevy_vello`; they render with plain
+  `winit` + `vello::util::RenderContext` so vello upgrades are no longer
+  blocked on `bevy_vello` releases.
+
 ## [0.14.0] - 2026-09-11
 
 ### Changed

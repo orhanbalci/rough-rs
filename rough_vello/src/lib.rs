@@ -19,6 +19,18 @@
 //! rough_vello = "0.14"
 //! ```
 //!
+//! ## 🧩 Vello Compatibility
+//!
+//! `rough_vello` exposes `vello::Scene` in its public API, so your project must use the same
+//! vello version as `rough_vello`.
+//!
+//! | rough_vello        | vello |
+//! |--------------------|-------|
+//! | 0.15 (unreleased)  | 0.10  |
+//! | 0.14               | 0.5   |
+//! | 0.13               | 0.5   |
+//! | 0.1                | 0.5   |
+//!
 //! ## 🔧 Example
 //!
 //! ### Rust Logo
@@ -64,16 +76,17 @@
 //!
 //! ## 🔌 Integration
 //!
+//! ### Windowing
+//!
+//! `rough_vello` only produces `vello::Scene`s, so it works with any setup that can render
+//! vello scenes. The examples open a plain [winit](https://github.com/rust-windowing/winit)
+//! window and render with `vello::util::RenderContext`; see `examples/common/mod.rs`.
+//!
 //! ### Bevy Integration
 //!
-//! For Bevy game engine integration, you can use [bevy_vello](https://github.com/linebender/bevy_vello) which provides a Bevy plugin for vello. This allows you to render `rough_vello` drawings directly in your Bevy applications by converting the vello Scene to Bevy-compatible rendering.
-//!
-//! ```toml
-//! [dependencies]
-//! rough_vello = "0.14"
-//! bevy_vello = "0.10"  # must use the same vello version as rough_vello (0.5)
-//! bevy = "0.16"
-//! ```
+//! For Bevy, [bevy_vello](https://github.com/linebender/bevy_vello) can render vello scenes.
+//! Pick a `bevy_vello` release that depends on the same vello version as `rough_vello`
+//! (currently vello 0.10), otherwise the `Scene` types will not match.
 
 pub mod vello_generator;
 pub use vello_generator::*;
