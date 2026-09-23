@@ -73,6 +73,7 @@
 
 pub(crate) mod a2c;
 pub mod bbox;
+mod context;
 pub(crate) mod ellipse;
 pub mod pt;
 mod write;
@@ -80,6 +81,7 @@ mod write;
 use std::borrow::Borrow;
 use std::f64::consts::PI;
 
+pub use context::{segments_with_context, SegmentContext};
 pub use svgtypes::PathSegment;
 pub use write::{write_path, WriteOptions};
 pub use {euclid, svgtypes};

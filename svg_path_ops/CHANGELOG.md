@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   command letters.
 - `pt::PathTransformer::to_string_with()` writes the transformed path with
   `WriteOptions`.
+- `segments_with_context()` iterates over segments together with their
+  index and absolute start, end and subpath start points, plus the control
+  point implied by smooth curves (`S`/`T`). Relative and shorthand segments
+  can be handled without tracking the current point by hand.
 
 ### Changed
 
