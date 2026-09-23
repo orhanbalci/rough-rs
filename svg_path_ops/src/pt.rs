@@ -8,6 +8,7 @@ use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken}
 use super::ellipse::Ellipse;
 use crate::a2c::a2c;
 use crate::bbox::{BBox, InboxParameters};
+use crate::measure::PathMeasure;
 use crate::optimize::optimize;
 use crate::reverse::reverse;
 use crate::write::{write_path, WriteOptions};
@@ -738,6 +739,18 @@ impl PathTransformer {
         self
     }
 
+    /// Measures the path with pending transforms applied, leaving the
+    /// transformer unchanged. See [`PathMeasure`].
+    pub fn measure(&self) -> PathMeasure {
+        if self.stack.is_empty() {
+            PathMeasure::new(&self.path_segments)
+        } else {
+            let mut evaluated = self.clone();
+            evaluated.evaluate_stack();
+            PathMeasure::new(&evaluated.path_segments)
+        }
+    }
+
     /// Applies pending transforms, then rewrites the path in its shortest
     /// form. See [`optimize`](crate::optimize) for what changes. Write the
     /// result with [`to_string_with`](Self::to_string_with) and
@@ -1235,6 +1248,15 @@ mod test {
         path.scale(2.0, 2.0).optimize(None);
         let options = WriteOptions { precision: None, compact: true };
         assert_eq!(path.to_string_with(&options), "M0 0h20v20");
+    }
+
+    #[test]
+    fn measure_applies_pending_transforms() {
+        let mut path = PathTransformer::new("M 0 0 L 3 4".into());
+        path.scale(2.0, 2.0);
+        assert_eq!(path.measure().total_length(), 10.0);
+        // The transformer is left as it was
+        assert_eq!(path.to_string(), "M 0 0 L 6 8");
     }
 
     #[test]

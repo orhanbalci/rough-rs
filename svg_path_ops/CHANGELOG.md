@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `shapes::Shape` converts the SVG basic shapes (`rect`, `circle`,
   `ellipse`, `line`, `polyline`, `polygon`) to the equivalent paths SVG 2
   defines, including its rules for missing and oversized `rx`/`ry`.
+- `PathMeasure` and `pt::PathTransformer::measure()` measure a path: its
+  total length, and the point, unit tangent and segment with parameter
+  (`Position`) at any length along it. Arcs are measured as ellipse arcs,
+  lengths are accurate to 1e-9, and a close path counts as the line back to
+  its subpath start.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -57,8 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Crate documentation and README with a runnable example for each feature:
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
-  for translate, rotate, scale, skew, flip, shapes, reverse, split_subpaths,
-  is_closed, unarc, unshort, to_box, inbox and segments_with_context. They
+  for translate, rotate, scale, skew, flip, shapes, measure, reverse,
+  split_subpaths, is_closed, unarc, unshort, to_box, inbox and
+  segments_with_context. They
   replace the examples that only linked to rough_piet programs.
 
 ### Changed

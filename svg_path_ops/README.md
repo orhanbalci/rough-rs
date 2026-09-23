@@ -230,6 +230,29 @@ the corner where the path starts gets two line ends instead of a join.
 
 ![is_closed](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/is_closed.png)
 
+### Measuring a path
+
+[`PathMeasure`] finds the length of a path and the point, direction and
+segment at any length along it. Arcs are measured as arcs, not as the
+curves that approximate them:
+
+![measure](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/measure.png)
+
+```rust
+use svg_path_ops::euclid::default::Point2D;
+use svg_path_ops::pt::PathTransformer;
+
+let path = PathTransformer::parse("M 10 0 A 10 10 0 0 1 -10 0")?;
+let measure = path.measure();
+
+// A half circle of radius 10
+let length = measure.total_length();
+assert!((length - 10.0 * std::f64::consts::PI).abs() < 1e-9);
+
+let middle = measure.point_at(length / 2.0).unwrap();
+assert!((middle - Point2D::new(0.0, 10.0)).length() < 1e-9);
+```
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -305,6 +328,7 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+[`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
 [`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x

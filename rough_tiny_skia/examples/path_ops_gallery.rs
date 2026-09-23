@@ -29,6 +29,7 @@ use svg_path_ops::{
     segments_with_context,
     split_subpaths,
     write_path,
+    PathMeasure,
     PathSegment,
     WriteOptions,
 };
@@ -336,34 +337,39 @@ fn segment_midpoints(path: &str) -> Vec<((f64, f64), (f64, f64))> {
 /// Draws an arrowhead halfway along each segment of `path`, pointing the way
 /// the path is drawn.
 fn draw_direction(canvas: &mut Canvas, path: &str) {
-    for ((x, y), (dx, dy)) in segment_midpoints(path) {
-        let length = dx.hypot(dy);
-        if length == 0.0 {
-            continue;
-        }
-        let (ux, uy) = (dx / length, dy / length);
-        let tip = (x + ux * 5.0, y + uy * 5.0);
-        let base = (x - ux * 4.0, y - uy * 4.0);
-        let side = (-uy * 4.5, ux * 4.5);
-
-        let mut builder = PathBuilder::new();
-        builder.move_to(tip.0 as f32, tip.1 as f32);
-        builder.line_to((base.0 + side.0) as f32, (base.1 + side.1) as f32);
-        builder.line_to((base.0 - side.0) as f32, (base.1 - side.1) as f32);
-        builder.close();
-        let Some(arrow) = builder.finish() else {
-            continue;
-        };
-        let mut paint = Paint::default();
-        paint.set_color_rgba8(BROWN.0, BROWN.1, BROWN.2, 255);
-        canvas.pixmap.fill_path(
-            &arrow,
-            &paint,
-            tiny_skia::FillRule::Winding,
-            Transform::identity(),
-            None,
-        );
+    for (at, direction) in segment_midpoints(path) {
+        draw_arrowhead(canvas, at, direction);
     }
+}
+
+/// Draws an arrowhead centered on `(x, y)`, pointing along `(dx, dy)`.
+fn draw_arrowhead(canvas: &mut Canvas, (x, y): (f64, f64), (dx, dy): (f64, f64)) {
+    let length = dx.hypot(dy);
+    if length == 0.0 {
+        return;
+    }
+    let (ux, uy) = (dx / length, dy / length);
+    let tip = (x + ux * 5.0, y + uy * 5.0);
+    let base = (x - ux * 4.0, y - uy * 4.0);
+    let side = (-uy * 4.5, ux * 4.5);
+
+    let mut builder = PathBuilder::new();
+    builder.move_to(tip.0 as f32, tip.1 as f32);
+    builder.line_to((base.0 + side.0) as f32, (base.1 + side.1) as f32);
+    builder.line_to((base.0 - side.0) as f32, (base.1 - side.1) as f32);
+    builder.close();
+    let Some(arrow) = builder.finish() else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(BROWN.0, BROWN.1, BROWN.2, 255);
+    canvas.pixmap.fill_path(
+        &arrow,
+        &paint,
+        tiny_skia::FillRule::Winding,
+        Transform::identity(),
+        None,
+    );
 }
 
 /// Draws a dot; hollow dots are outlined and filled with the canvas color.
@@ -849,6 +855,61 @@ fn shapes_strip(out_dir: &Path) {
     canvas.save(out_dir, "shapes");
 }
 
+fn measure_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "measure",
+        "points at equal lengths along the path, pointing along its tangent",
+        3,
+    );
+    for i in 0..3 {
+        let center = cell_center(canvas.cell(i));
+        let (path, label, count) = match i {
+            0 => {
+                let rect = Shape::Rect {
+                    x: center.0 - 55.0,
+                    y: center.1 - 38.0,
+                    width: 110.0,
+                    height: 76.0,
+                    rx: Some(22.0),
+                    ry: None,
+                };
+                (
+                    write_path(rect.to_path(), &WriteOptions::default()),
+                    "rect with arcs",
+                    16,
+                )
+            }
+            1 => {
+                let ferris = fit(&ferris(), (center.0 - 62.0, center.1 - 46.0, 124.0, 92.0));
+                (ferris_parts(&ferris)[3].clone(), "ferris body", 18)
+            }
+            _ => (
+                fit(
+                    "M 0 40 C 0 0 40 0 40 40 A 20 20 0 0 0 80 40 Q 100 0 120 40",
+                    (center.0 - 60.0, center.1 - 25.0, 120.0, 50.0),
+                ),
+                "curves and an arc",
+                14,
+            ),
+        };
+        draw_outline(&mut canvas, &path);
+        let measure = PathMeasure::new(parse(&path));
+        let step = measure.total_length() / f64::from(count);
+        for k in 0..count {
+            let length = step * (f64::from(k) + 0.5);
+            let (Some(point), Some(tangent)) =
+                (measure.point_at(length), measure.tangent_at(length))
+            else {
+                continue;
+            };
+            draw_arrowhead(&mut canvas, (point.x, point.y), (tangent.x, tangent.y));
+        }
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "measure");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1054,6 +1115,7 @@ fn main() {
     unshort_strip(out);
     segments_with_context_strip(out);
     flip_strip(out);
+    measure_strip(out);
     shapes_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);
