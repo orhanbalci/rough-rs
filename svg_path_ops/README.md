@@ -32,7 +32,7 @@ svg_path_ops = "0.11"
 
 [`PathTransformer`] applies transforms in the order
 they are added, and writes the result with its `Display` implementation.
-In the images below the original path is dashed.
+In the images below the original path is dashed in purple.
 
 ![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/translate.png)
 

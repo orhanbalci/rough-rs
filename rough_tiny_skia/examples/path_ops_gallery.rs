@@ -2,8 +2,8 @@
 //! documentation.
 //!
 //! Each image is a strip of cells that apply one operation with a different
-//! value from left to right. The original path is drawn dashed, the result
-//! filled. Run it from the workspace root after changing an operation:
+//! value from left to right. The original path is drawn dashed in purple,
+//! the result filled. Run it from the workspace root after changing an operation:
 //!
 //! ```sh
 //! cargo run -p rough_tiny_skia --example path_ops_gallery
@@ -15,7 +15,7 @@ mod common;
 
 use std::path::{Path, PathBuf};
 
-use common::{Canvas, Layout, BROWN, CREAM, SUBTITLE_COLOR};
+use common::{Canvas, Layout, BROWN, CREAM};
 use palette::Srgba;
 use rough_tiny_skia::SkiaGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
@@ -37,6 +37,10 @@ const LAYOUT: Layout = Layout {
 /// Side of the square Ferris is fitted into before an operation, leaving
 /// room in the cell for the transformed result.
 const SUBJECT_SIZE: f64 = 84.0;
+
+/// Color of the dashed outline marking where the path was before an
+/// operation: the purple from the original svg_path_ops images.
+const GHOST_COLOR: (u8, u8, u8) = (156, 1, 188);
 
 /// Ferris the crab, the Rust mascot by Karen Rustad Tölva, dedicated to the
 /// public domain (CC0) at <https://rustacean.net>. The parts come from
@@ -207,7 +211,7 @@ fn ferris_parts(path: &str) -> Vec<String> {
 fn draw_ferris_ghost(canvas: &mut Canvas, path: &str) {
     for ((part, _), data) in FERRIS_PARTS.iter().zip(ferris_parts(path)) {
         if matches!(part, Part::Body) {
-            draw_dashed(canvas, &data, SUBTITLE_COLOR);
+            draw_dashed(canvas, &data, GHOST_COLOR, 2.0);
         }
     }
 }
@@ -227,7 +231,7 @@ fn draw_solid(canvas: &mut Canvas, path: &str) {
 }
 
 /// Strokes `path` with an exact dashed line, for originals and guides.
-fn draw_dashed(canvas: &mut Canvas, path: &str, color: (u8, u8, u8)) {
+fn draw_dashed(canvas: &mut Canvas, path: &str, color: (u8, u8, u8), width: f32) {
     let mut builder = PathBuilder::new();
     let segments: Vec<PathSegment> = PathParser::from(path).map(Result::unwrap).collect();
     let normalized: Vec<PathSegment> =
@@ -249,8 +253,8 @@ fn draw_dashed(canvas: &mut Canvas, path: &str, color: (u8, u8, u8)) {
     let mut paint = Paint::default();
     paint.set_color_rgba8(color.0, color.1, color.2, 255);
     let stroke = Stroke {
-        width: 1.2,
-        dash: StrokeDash::new(vec![4.0, 3.0], 0.0),
+        width,
+        dash: StrokeDash::new(vec![5.0, 3.0], 0.0),
         ..Stroke::default()
     };
     canvas
@@ -309,7 +313,7 @@ fn draw_line(canvas: &mut Canvas, from: (f64, f64), to: (f64, f64)) {
 /// Draws the axis-aligned rectangle `(x, y, w, h)` as a dashed guide.
 fn draw_box(canvas: &mut Canvas, (x, y, w, h): (f64, f64, f64, f64)) {
     let rect = format!("M {x} {y} h {w} v {h} h {} Z", -w);
-    draw_dashed(canvas, &rect, BROWN);
+    draw_dashed(canvas, &rect, BROWN, 1.2);
 }
 
 /// Fits `path` into the box `(x, y, w, h)`, keeping its aspect ratio.
@@ -498,7 +502,7 @@ fn draw_implied_controls(canvas: &mut Canvas, path: &str) {
                         "M {} {} L {} {}",
                         mirrored.0, mirrored.1, implied.x, implied.y
                     );
-                    draw_dashed(canvas, &guide, BROWN);
+                    draw_dashed(canvas, &guide, BROWN, 1.2);
                 }
                 draw_dot(canvas, (implied.x, implied.y), true);
                 draw_dot(canvas, (x2, y2), false);
@@ -511,7 +515,7 @@ fn draw_implied_controls(canvas: &mut Canvas, path: &str) {
                         "M {} {} L {} {}",
                         mirrored.0, mirrored.1, implied.x, implied.y
                     );
-                    draw_dashed(canvas, &guide, BROWN);
+                    draw_dashed(canvas, &guide, BROWN, 1.2);
                 }
                 draw_dot(canvas, (implied.x, implied.y), true);
                 previous_control = Some((implied.x, implied.y));
