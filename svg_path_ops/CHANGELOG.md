@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Re-export the `svgtypes` crate as `svg_path_ops::svgtypes`, so consumers can
+  name its types without adding a matching `svgtypes` dependency.
+
+### Changed
+
+- **Breaking:** Upgrade `svgtypes` from 0.11 to 0.16. The re-exported
+  `PathSegment`, and every function that takes or returns it, now uses the
+  0.16 type. Code that passes segments from its own `svgtypes` 0.11
+  dependency must upgrade to 0.16 or use `svg_path_ops::svgtypes`.
+
 ## [0.11.2] - 2026-09-11
 
 ### Fixed

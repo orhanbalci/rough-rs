@@ -79,6 +79,7 @@ pub mod pt;
 use std::borrow::Borrow;
 use std::f64::consts::PI;
 
+pub use svgtypes;
 pub use svgtypes::PathSegment;
 
 /// Translates relative commands to absolute commands. All commands that use relative positions (lower-case ones),

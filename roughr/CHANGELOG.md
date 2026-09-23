@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** Upgrade `svgtypes` from 0.11 to 0.16. roughr re-exports
+  `svgtypes::*`, so all of those re-exported types (including `PathSegment`
+  and `PathParser`) now come from 0.16. Code that mixes them with types from
+  its own `svgtypes` 0.11 dependency must upgrade to 0.16.
+
 ## [0.13.1] - 2026-09-23
 
 ### Added
