@@ -328,6 +328,35 @@ assert!(lines
     .all(|segment| matches!(segment, PathSegment::LineTo { .. })));
 ```
 
+### Simplifying
+
+[`PathMeasure::simplify`] redraws a path of many short segments, as a
+freehand stroke, a traced outline or flattened lines, with a few cubic
+curves that stay within a tolerance of it. Joins that turn more than a
+given angle stay corners, and straight stretches stay lines:
+
+![simplify](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/simplify.png)
+
+```rust
+use svg_path_ops::pt::PathTransformer;
+
+// A quarter circle drawn with 90 lines
+let mut data = String::from("M 100 0");
+for degree in 1..=90 {
+    let angle = f64::from(degree).to_radians();
+    data += &format!(" L {} {}", 100.0 * angle.cos(), 100.0 * angle.sin());
+}
+let simplified = PathTransformer::parse(&data)?.measure().simplify(0.5, 60.0);
+// A move and one curve
+assert_eq!(simplified.len(), 2);
+```
+
+The curves are fitted with Philip J. Schneider's algorithm, the one
+Paper.js uses: control points along the path's direction, placed by
+least squares, then refined with Newton's method. Each curve takes the
+longest stretch of the path one curve can follow, so the result has few
+curves, and neighbouring curves join smoothly.
+
 ### Intersections
 
 [`PathMeasure::intersections`] finds the points where two paths meet,
@@ -437,6 +466,7 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
 [`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
 [`PathMeasure::intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.intersections
+[`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
 [`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x

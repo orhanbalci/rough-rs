@@ -61,6 +61,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`Intersection`, `Location`). Lines and curves meet in closed form;
   two curves are subdivided by bounding boxes and refined by Newton's
   method to about 1e-10. The algorithm is described in the method's docs.
+- `PathMeasure::simplify()` redraws a path of many short segments, as a
+  freehand stroke, a traced outline or flattened lines, with a few cubic
+  curves within a tolerance. Joins turning more than a given angle stay
+  corners, straight stretches stay lines, and stretches that curves would
+  not shorten keep their segments. The curves are fitted with Schneider's
+  algorithm, as in Paper.js, each taking the longest stretch one curve can
+  follow; the algorithm is described in the method's docs.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -78,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, measure, curvature,
-  nearest, contains, crop, intersections, reverse, split_subpaths,
+  nearest, contains, crop, simplify, intersections, reverse, split_subpaths,
   is_closed, unarc, unshort, to_box, inbox and segments_with_context. They
   replace the examples that only linked to rough_piet programs.
 

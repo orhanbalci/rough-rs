@@ -89,10 +89,14 @@ pub struct PathMeasure {
 pub(crate) struct Piece {
     pub(crate) index: usize,
     /// Which subpath the segment belongs to, counting from 0
-    subpath: usize,
+    pub(crate) subpath: usize,
     /// Whether the segment is a close path
-    closes: bool,
+    pub(crate) closes: bool,
     pub(crate) shape: PieceShape,
+    /// Where the segment starts and ends, exactly as the path gives them;
+    /// an arc's shape only gets there to rounding
+    pub(crate) from: kurbo::Point,
+    pub(crate) to: kurbo::Point,
     pub(crate) start: f64,
     pub(crate) length: f64,
 }
@@ -137,6 +141,8 @@ impl PathMeasure {
                     subpath,
                     closes: matches!(context.segment, PathSegment::ClosePath { .. }),
                     shape,
+                    from: kurbo::Point::new(context.start.x, context.start.y),
+                    to: kurbo::Point::new(context.end.x, context.end.y),
                     start: total,
                     length,
                 });
@@ -351,7 +357,7 @@ impl PathMeasure {
     }
 
     /// The pieces of each subpath that draws something.
-    fn subpaths(&self) -> impl Iterator<Item = &[Piece]> {
+    pub(crate) fn subpaths(&self) -> impl Iterator<Item = &[Piece]> {
         self.pieces.chunk_by(|a, b| a.subpath == b.subpath)
     }
 
@@ -568,7 +574,7 @@ impl PieceShape {
         }
     }
 
-    fn length(&self) -> f64 {
+    pub(crate) fn length(&self) -> f64 {
         match self {
             PieceShape::Line(line) => line.arclen(ACCURACY),
             PieceShape::Quadratic(quad) => quad.arclen(ACCURACY),
@@ -633,7 +639,7 @@ impl PieceShape {
 
     /// The part of the piece between parameters `t0` and `t1` as an absolute
     /// segment of the same kind, starting at the point at `t0`.
-    fn segment(&self, t0: f64, t1: f64) -> PathSegment {
+    pub(crate) fn segment(&self, t0: f64, t1: f64) -> PathSegment {
         match self {
             PieceShape::Line(line) => {
                 let end = line.eval(t1);
@@ -689,7 +695,7 @@ impl PieceShape {
     }
 
     /// The derivative at `t`, or `None` where the piece does not move.
-    fn direction(&self, t: f64) -> Option<Vec2> {
+    pub(crate) fn direction(&self, t: f64) -> Option<Vec2> {
         self.moving_at(t).map(|t| self.derivative(t))
     }
 

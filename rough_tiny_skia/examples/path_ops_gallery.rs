@@ -1226,6 +1226,85 @@ fn curvature_strip(out_dir: &Path) {
     canvas.save(out_dir, "curvature");
 }
 
+fn simplify_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "simplify",
+        "a freehand stroke and Ferris in lines, redrawn with a few curves",
+        4,
+    );
+    let draw_ends = |canvas: &mut Canvas, segments: &[PathSegment]| {
+        for context in segments_with_context(segments) {
+            draw_small_dot(canvas, (context.end.x, context.end.y), true);
+        }
+    };
+    let label = |canvas: &mut Canvas, i: usize, segments: &[PathSegment]| {
+        let count = |line: bool| {
+            segments
+                .iter()
+                .filter(|s| match s {
+                    PathSegment::LineTo { .. } => line,
+                    PathSegment::CurveTo { .. } => !line,
+                    _ => false,
+                })
+                .count()
+        };
+        let text = match (count(false), count(true)) {
+            (0, lines) => format!("{lines} lines"),
+            (curves, 0) => format!("{curves} curves"),
+            (curves, lines) => format!("{curves} curves, {lines} lines"),
+        };
+        canvas.label(i, &text);
+    };
+
+    // A freehand stroke: a wave sampled every pixel with some jitter
+    let freehand = |center: (f64, f64)| {
+        let mut stroke = String::new();
+        let mut seed = 7u64;
+        for k in 0..=120 {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            let jitter = ((seed >> 33) as f64 / (1u64 << 31) as f64 - 0.5) * 2.0;
+            let x = f64::from(k) - 60.0;
+            let y = 24.0 * (x / 17.0).sin() + jitter;
+            let command = if k == 0 { "M" } else { "L" };
+            stroke += &format!("{command} {} {} ", center.0 + x, center.1 + y);
+        }
+        stroke
+    };
+    let stroke = freehand(cell_center(canvas.cell(0)));
+    draw_stroke(&mut canvas, &stroke, BROWN, 1.2);
+    label(&mut canvas, 0, &parse(&stroke));
+
+    let stroke = freehand(cell_center(canvas.cell(1)));
+    let simplified = PathMeasure::new(parse(&stroke)).simplify(1.5, 180.0);
+    draw_dashed(&mut canvas, &stroke, GHOST_COLOR, 1.0);
+    let written = write_path(&simplified, &WriteOptions::default());
+    draw_stroke(&mut canvas, &written, BROWN, 2.0);
+    draw_ends(&mut canvas, &simplified);
+    label(&mut canvas, 1, &simplified);
+
+    // Ferris in straight lines, and back in curves
+    let lines = |center: (f64, f64)| {
+        let ferris = fit(&ferris(), (center.0 - 72.0, center.1 - 50.0, 144.0, 100.0));
+        PathMeasure::new(parse(&ferris)).flatten(0.1)
+    };
+    let polygon = lines(cell_center(canvas.cell(2)));
+    let written = write_path(&polygon, &WriteOptions::default());
+    draw_stroke(&mut canvas, &written, BROWN, 1.0);
+    label(&mut canvas, 2, &polygon);
+
+    let polygon = lines(cell_center(canvas.cell(3)));
+    let simplified = PathMeasure::new(&polygon).simplify(0.5, 60.0);
+    let written = write_path(&simplified, &WriteOptions::default());
+    draw_stroke(&mut canvas, &written, BROWN, 1.0);
+    draw_ends(&mut canvas, &simplified);
+    label(&mut canvas, 3, &simplified);
+
+    canvas.save(out_dir, "simplify");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1433,6 +1512,7 @@ fn main() {
     flip_strip(out);
     measure_strip(out);
     curvature_strip(out);
+    simplify_strip(out);
     nearest_strip(out);
     fill_strip(out);
     crop_strip(out);
