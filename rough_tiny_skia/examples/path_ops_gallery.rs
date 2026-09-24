@@ -26,6 +26,8 @@ use svg_path_ops::shapes::Shape;
 use svg_path_ops::svgtypes::PathParser;
 use svg_path_ops::{
     is_closed,
+    join,
+    reorient,
     reverse,
     segments_with_context,
     split_subpaths,
@@ -1374,6 +1376,83 @@ fn smooth_strip(out_dir: &Path) {
     canvas.save(out_dir, "smooth");
 }
 
+fn reorient_join_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "reorient and join",
+        "holes turned against their outlines, and open paths joined end to end",
+        4,
+    );
+    // Three circles inside each other, all drawn clockwise
+    let rings = |(x, y): (f64, f64)| {
+        [48.0, 30.0, 14.0]
+            .iter()
+            .map(|r| {
+                format!(
+                    "M {} {y} A {r} {r} 0 0 1 {} {y} A {r} {r} 0 0 1 {} {y} Z ",
+                    x - r,
+                    x + r,
+                    x - r
+                )
+            })
+            .collect::<String>()
+    };
+    let path = rings(cell_center(canvas.cell(0)));
+    fill_nonzero(&mut canvas, &path);
+    draw_stroke(&mut canvas, &path, BROWN, 1.5);
+    draw_direction(&mut canvas, &path);
+    canvas.label(0, "all clockwise");
+
+    let path = rings(cell_center(canvas.cell(1)));
+    let fixed = write_path(reorient(parse(&path), true), &WriteOptions::default());
+    fill_nonzero(&mut canvas, &fixed);
+    draw_stroke(&mut canvas, &fixed, BROWN, 1.5);
+    draw_direction(&mut canvas, &fixed);
+    canvas.label(1, "reorient");
+
+    // Two strokes whose ends nearly meet, drawn towards each other
+    let strokes = |(x, y): (f64, f64)| {
+        (
+            format!(
+                "M {} {} C {} {} {} {} {x} {y}",
+                x - 62.0,
+                y + 20.0,
+                x - 45.0,
+                y - 45.0,
+                x - 12.0,
+                y - 30.0
+            ),
+            format!(
+                "M {} {} C {} {} {} {} {} {}",
+                x + 62.0,
+                y - 20.0,
+                x + 45.0,
+                y + 45.0,
+                x + 12.0,
+                y + 30.0,
+                x + 1.5,
+                y + 1.5
+            ),
+        )
+    };
+    let (a, b) = strokes(cell_center(canvas.cell(2)));
+    draw_stroke(&mut canvas, &a, BROWN, 2.0);
+    draw_stroke(&mut canvas, &b, GHOST_COLOR, 2.0);
+    draw_direction(&mut canvas, &a);
+    draw_direction(&mut canvas, &b);
+    canvas.label(2, "two open paths");
+
+    let center = cell_center(canvas.cell(3));
+    let (a, b) = strokes(center);
+    let joined = write_path(join(parse(&a), parse(&b), 3.0), &WriteOptions::default());
+    draw_stroke(&mut canvas, &joined, BROWN, 2.0);
+    draw_direction(&mut canvas, &joined);
+    draw_small_dot(&mut canvas, center, true);
+    canvas.label(3, "join, tolerance 3");
+
+    canvas.save(out_dir, "reorient_join");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1583,6 +1662,7 @@ fn main() {
     curvature_strip(out);
     simplify_strip(out);
     smooth_strip(out);
+    reorient_join_strip(out);
     nearest_strip(out);
     fill_strip(out);
     crop_strip(out);

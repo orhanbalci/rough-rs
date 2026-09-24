@@ -75,6 +75,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and closed paths; `Smoothing::CatmullRom { alpha }` the uniform,
   centripetal or chordal Catmull–Rom spline. Both algorithms are described
   in the method's docs.
+- `PathMeasure::is_clockwise()` tells whether a path runs clockwise on
+  screen, by the sign of its area.
+- `reorient()` and `pt::PathTransformer::reorient()` turn outlines one way
+  and the holes in them the other, by how many subpaths each lies inside,
+  so a shape fills the same under the nonzero and even-odd rules. Whether
+  one subpath lies inside another is checked at an interior point, as in
+  Paper.js, which holds where the two touch.
+- `join()` joins the last subpath of one path to the first of another where
+  their ends meet within a tolerance, reversing the second where needed,
+  or with a line when no ends meet, and closes the result when it ends
+  where it starts, as Paper.js's `join` does.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -93,9 +104,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, measure, curvature,
   nearest, contains, crop, simplify, smooth, intersections, reverse,
-  split_subpaths, is_closed, unarc, unshort, to_box, inbox and
-  segments_with_context. They replace the examples that only linked to
-  rough_piet programs.
+  reorient, join, split_subpaths, is_closed, unarc, unshort, to_box,
+  inbox and segments_with_context. They replace the examples that only
+  linked to rough_piet programs.
 
 ### Changed
 

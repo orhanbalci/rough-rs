@@ -320,6 +320,27 @@ impl PathMeasure {
         area
     }
 
+    /// Whether the path is drawn clockwise on screen, where y points down:
+    /// whether its [`area`](Self::area) is positive. A path of several
+    /// subpaths goes the way that encloses more area; one that encloses
+    /// none, as a line, is not clockwise. See [`reorient`](crate::reorient)
+    /// to turn the subpaths of a shape with holes the right ways.
+    ///
+    /// ```
+    /// use svg_path_ops::pt::PathTransformer;
+    ///
+    /// let square = PathTransformer::parse("M 0 0 H 10 V 10 H 0 Z")?;
+    /// assert!(square.measure().is_clockwise());
+    ///
+    /// let mut reversed = square.clone();
+    /// reversed.reverse();
+    /// assert!(!reversed.measure().is_clockwise());
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn is_clockwise(&self) -> bool {
+        self.area() > 0.0
+    }
+
     /// Whether filling the path with `rule` covers `point`. An open subpath
     /// is filled as if closed with a line back to its start. Points right on
     /// the outline may land on either side.

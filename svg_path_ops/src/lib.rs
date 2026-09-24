@@ -203,6 +203,35 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! [`PathMeasure::is_clockwise`] tells which way a path runs, and
+//! [`reorient`] turns every subpath of a shape with holes the right way
+//! round: outlines one way and the holes in them the other, as fonts and
+//! icon sets expect, so the shape fills the same under both fill rules.
+//! [`join`] joins two open paths where their ends meet, reversing one when
+//! it runs the other way:
+//!
+//! ![reorient and join](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/reorient_join.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//! use svg_path_ops::svgtypes::PathParser;
+//! use svg_path_ops::{join, write_path, WriteOptions};
+//!
+//! // Both squares clockwise: the inner one fills instead of cutting a hole
+//! let mut frame = PathTransformer::parse("M 0 0 H 30 V 30 H 0 Z M 10 10 H 20 V 20 H 10 Z")?;
+//! assert_eq!(frame.measure().area(), 1000.0);
+//! frame.reorient(true);
+//! assert_eq!(frame.measure().area(), 800.0);
+//!
+//! let parse = |data| PathParser::from(data).collect::<Result<Vec<_>, _>>();
+//! let joined = join(&parse("M 0 0 L 10 0")?, &parse("M 20 0 L 10 0")?, 0.0);
+//! assert_eq!(
+//!     write_path(&joined, &WriteOptions::default()),
+//!     "M 0 0 L 10 0 L 20 0"
+//! );
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! ### Subpaths
 //!
 //! A path can hold several subpaths, each started by a move.
@@ -507,6 +536,9 @@
 //! [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 //! [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 //! [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+//! [`reorient`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reorient.html
+//! [`join`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.join.html
+//! [`PathMeasure::is_clockwise`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.is_clockwise
 //! [`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
 //! [`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
 //! [`PathMeasure::intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.intersections
@@ -526,8 +558,10 @@ pub mod bbox;
 mod context;
 pub(crate) mod ellipse;
 mod intersect;
+mod join;
 mod measure;
 mod optimize;
+mod orient;
 pub mod pt;
 mod reverse;
 pub mod shapes;
@@ -541,8 +575,10 @@ use std::borrow::Borrow;
 use a2c::a2c;
 pub use context::{segments_with_context, SegmentContext};
 pub use intersect::{Intersection, Location};
+pub use join::join;
 pub use measure::{FillRule, Nearest, PathMeasure, Position};
 pub use optimize::optimize;
+pub use orient::reorient;
 pub use reverse::reverse;
 pub use smooth::Smoothing;
 pub use subpaths::{is_closed, split_subpaths};

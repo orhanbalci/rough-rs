@@ -10,6 +10,7 @@ use crate::a2c::a2c;
 use crate::bbox::{BBox, InboxParameters};
 use crate::measure::PathMeasure;
 use crate::optimize::optimize;
+use crate::orient::reorient;
 use crate::reverse::reverse;
 use crate::write::{write_path, WriteOptions};
 
@@ -736,6 +737,17 @@ impl PathTransformer {
     /// shape.
     pub fn reverse(&mut self) -> &mut Self {
         self.path_segments = reverse(&self.path_segments).into();
+        self
+    }
+
+    /// Turns each subpath so outlines run clockwise on screen when
+    /// `clockwise` is true, counterclockwise otherwise, and the holes in
+    /// them the other way. Pending transforms are applied first, since a
+    /// mirroring one turns the path around. See
+    /// [`reorient`](crate::reorient).
+    pub fn reorient(&mut self, clockwise: bool) -> &mut Self {
+        self.evaluate_stack();
+        self.path_segments = reorient(&self.path_segments, clockwise).into();
         self
     }
 
