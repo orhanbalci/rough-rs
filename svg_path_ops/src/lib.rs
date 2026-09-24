@@ -530,6 +530,43 @@
 //! one crossing it, and a curve crossing a line where it runs along it, at
 //! an inflection, from one touching it.
 //!
+//! ### Boolean operations
+//!
+//! [`boolean`] combines the areas two paths cover: their union,
+//! intersection, difference or exclusive or, drawn with curves within a
+//! tolerance of the exact outline. It needs the `boolean` feature, on by
+//! default, which brings in [i_overlay] for the polygon work:
+//!
+//! ![boolean](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/boolean.png)
+//!
+//! ```
+//! use svg_path_ops::svgtypes::PathParser;
+//! use svg_path_ops::{boolean, BooleanOp, BooleanOptions, PathMeasure};
+//!
+//! let parse = |data| PathParser::from(data).collect::<Result<Vec<_>, _>>();
+//! let square = parse("M 0 0 H 20 V 20 H 0 Z")?;
+//! let hole = parse("M 15 10 A 5 5 0 0 1 5 10 A 5 5 0 0 1 15 10 Z")?;
+//!
+//! let frame = boolean(
+//!     &square,
+//!     &hole,
+//!     BooleanOp::Difference,
+//!     &BooleanOptions::default(),
+//! );
+//! let area = PathMeasure::new(&frame).area();
+//! assert!((area - (400.0 - std::f64::consts::PI * 25.0)).abs() < 0.2);
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
+//! The paths are turned into lines within a quarter of the tolerance and
+//! combined by i_overlay, and curves are fitted to the result with
+//! [`PathMeasure::simplify`], keeping the corners where the outlines meet.
+//! Every point of the result's outline is within the tolerance of the
+//! original outlines, and so is every point it fills differently from the
+//! exact operation.
+//!
+//! [i_overlay]: https://docs.rs/i_overlay
+//!
 //! ### Bounding boxes
 //!
 //! [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -629,6 +666,7 @@
 //! [`normalize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.normalize.html
 //! [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 //! [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
+//! [`boolean`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.boolean.html
 //! [`reorient`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reorient.html
 //! [`join`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.join.html
 //! [`PathMeasure::is_clockwise`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.is_clockwise
@@ -653,6 +691,8 @@
 
 pub(crate) mod a2c;
 pub mod bbox;
+#[cfg(feature = "boolean")]
+mod boolean;
 mod classify;
 mod context;
 mod crossing;
@@ -675,6 +715,8 @@ mod write;
 use std::borrow::Borrow;
 
 use a2c::a2c;
+#[cfg(feature = "boolean")]
+pub use boolean::{boolean, BooleanOp, BooleanOptions};
 pub use classify::CurveKind;
 pub use context::{segments_with_context, SegmentContext};
 pub use intersect::{Intersection, Location};

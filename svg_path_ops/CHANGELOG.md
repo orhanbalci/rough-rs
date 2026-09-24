@@ -106,6 +106,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Stone and DeRose's characterization.
 - `Intersection::crossing` tells whether the paths cross at a point or
   only touch it, including where they run along each other there.
+- `boolean()` with `BooleanOp` (union, intersect, difference, xor) and
+  `BooleanOptions` (fill rule, tolerance, curves) combines the areas two
+  paths cover. The paths are flattened within a quarter of the tolerance,
+  combined by i_overlay, and fitted with curves by `simplify`, keeping
+  corners; the outline stays within the tolerance of the exact one, and
+  specks smaller than the tolerance are left out. Behind the `boolean`
+  feature, on by default, which adds the i_overlay dependency.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -124,10 +131,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, polygons and stars,
   measure, curvature, nearest, contains, interior_point, divide_at, crop,
-  stroke_bounds, classify, simplify, smooth, intersections, reverse,
-  reorient, join, split_subpaths, is_closed, unarc, unshort, to_box, inbox
-  and segments_with_context. They replace the examples that only linked to
-  rough_piet programs.
+  stroke_bounds, classify, boolean, simplify, smooth, intersections,
+  reverse, reorient, join, split_subpaths, is_closed, unarc, unshort,
+  to_box, inbox and segments_with_context. They replace the examples that
+  only linked to rough_piet programs.
 
 ### Changed
 

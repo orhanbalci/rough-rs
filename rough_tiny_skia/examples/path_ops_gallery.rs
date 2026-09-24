@@ -25,6 +25,7 @@ use svg_path_ops::pt::PathTransformer;
 use svg_path_ops::shapes::Shape;
 use svg_path_ops::svgtypes::PathParser;
 use svg_path_ops::{
+    boolean,
     is_closed,
     join,
     reorient,
@@ -32,6 +33,8 @@ use svg_path_ops::{
     segments_with_context,
     split_subpaths,
     write_path,
+    BooleanOp,
+    BooleanOptions,
     CurveKind,
     FillRule,
     LineCap,
@@ -1748,6 +1751,47 @@ fn classify_strip(out_dir: &Path) {
     canvas.save(out_dir, "classify");
 }
 
+fn boolean_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "boolean",
+        "a star and a circle combined, within a tolerance of 0.01",
+        4,
+    );
+    let ops = [
+        (BooleanOp::Union, "union"),
+        (BooleanOp::Intersect, "intersect"),
+        (BooleanOp::Difference, "difference"),
+        (BooleanOp::Xor, "xor"),
+    ];
+    for (i, (op, label)) in ops.into_iter().enumerate() {
+        let (cx, cy) = cell_center(canvas.cell(i));
+        let star = Shape::Star {
+            cx: cx - 14.0,
+            cy,
+            points: 5,
+            outer_radius: 44.0,
+            inner_radius: 20.0,
+        }
+        .to_path();
+        let circle = Shape::Circle { cx: cx + 22.0, cy: cy + 6.0, r: 30.0 }.to_path();
+        let result = boolean(&star, &circle, op, &BooleanOptions::default());
+        let written = write_path(&result, &WriteOptions::default());
+        fill_nonzero(&mut canvas, &written);
+        for original in [&star, &circle] {
+            draw_dashed(
+                &mut canvas,
+                &write_path(original, &WriteOptions::default()),
+                GHOST_COLOR,
+                1.0,
+            );
+        }
+        draw_stroke(&mut canvas, &written, BROWN, 1.8);
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "boolean");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1965,6 +2009,7 @@ fn main() {
     intersections_strip(out);
     stroke_bounds_strip(out);
     classify_strip(out);
+    boolean_strip(out);
     shapes_strip(out);
     polygons_strip(out);
     reverse_strip(out);

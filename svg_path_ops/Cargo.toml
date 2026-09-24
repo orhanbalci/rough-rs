@@ -19,3 +19,9 @@ exclude = ["assets/"]
 svgtypes = "0.16"
 kurbo = { version = "0.13", features = ["euclid"] }
 euclid = "0.22"
+i_overlay = { version = "9", optional = true }
+
+[features]
+default = ["boolean"]
+# Boolean operations on paths, through i_overlay
+boolean = ["dep:i_overlay"]
