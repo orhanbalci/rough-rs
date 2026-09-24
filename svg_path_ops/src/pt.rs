@@ -11,6 +11,7 @@ use crate::bbox::{BBox, InboxParameters};
 #[cfg(feature = "boolean")]
 use crate::boolean::{boolean, BooleanOp, BooleanOptions};
 use crate::measure::PathMeasure;
+use crate::morph::interpolate;
 use crate::optimize::optimize;
 use crate::orient::reorient;
 use crate::reverse::reverse;
@@ -752,6 +753,26 @@ impl PathTransformer {
     pub fn reorient(&mut self, clockwise: bool) -> &mut Self {
         self.evaluate_stack();
         self.path_segments = reorient(&self.path_segments, clockwise).into();
+        self
+    }
+
+    /// Replaces the path with the one `t` of the way from it to `other`,
+    /// both with their pending transforms applied. See
+    /// [`Morph`](crate::Morph), which keeps the matching up for many steps.
+    ///
+    /// ```
+    /// use svg_path_ops::pt::PathTransformer;
+    ///
+    /// let mut small = PathTransformer::parse("M 0 0 H 10 V 10 H 0 Z")?;
+    /// let mut large = small.clone();
+    /// large.scale(3.0, 3.0);
+    /// small.interpolate(&large, 0.5);
+    /// assert!((small.measure().area() - 400.0).abs() < 1e-9);
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn interpolate(&mut self, other: &PathTransformer, t: f64) -> &mut Self {
+        self.path_segments = interpolate(self.evaluated(), other.evaluated(), t).into();
+        self.stack.clear();
         self
     }
 

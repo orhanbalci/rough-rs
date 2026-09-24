@@ -122,6 +122,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lines across the path, so tight curves are covered exactly, with joins
   only where segments meet, and united by i_overlay; the outline stays
   within the tolerance. Behind the `boolean` feature.
+- `Morph` brings two paths to the same shape of path data, cubic curves
+  throughout, so `Morph::at(t)` gives the path `t` of the way from one to
+  the other, and `interpolate()` and `pt::PathTransformer::interpolate()`
+  give one such path, as Paper.js's `interpolate` does. Curves are split
+  to match in number, subpaths without a partner grow from a point, and
+  closed subpaths are turned and rotated to line up so shapes do not
+  twist.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -140,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, polygons and stars,
   measure, curvature, nearest, contains, interior_point, divide_at, crop,
-  stroke_bounds, classify, boolean, outline, simplify, smooth,
+  stroke_bounds, classify, boolean, outline, morph, simplify, smooth,
   intersections, reverse, reorient, join, split_subpaths, is_closed, unarc,
   unshort, to_box, inbox and segments_with_context. They replace the
   examples that only linked to rough_piet programs.

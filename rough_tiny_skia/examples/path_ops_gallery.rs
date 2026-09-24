@@ -39,6 +39,7 @@ use svg_path_ops::{
     FillRule,
     LineCap,
     LineJoin,
+    Morph,
     PathMeasure,
     PathSegment,
     Smoothing,
@@ -1871,6 +1872,49 @@ fn outline_strip(out_dir: &Path) {
     canvas.save(out_dir, "outline");
 }
 
+fn morph_strip(out_dir: &Path) {
+    let steps = [0.0, 0.25, 0.5, 0.75, 1.0];
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "morph",
+        "a star becoming a ring, with its hole growing from a point",
+        steps.len(),
+    );
+    let shape = |center: (f64, f64)| {
+        let star = Shape::Star {
+            cx: center.0,
+            cy: center.1,
+            points: 5,
+            outer_radius: 46.0,
+            inner_radius: 20.0,
+        }
+        .to_path();
+        let ring = [40.0, 18.0]
+            .iter()
+            .map(|r| {
+                let (x, y) = center;
+                // The hole runs the other way
+                let sweep = if *r > 20.0 { 1 } else { 0 };
+                format!(
+                    "M {} {y} A {r} {r} 0 0 {sweep} {} {y} A {r} {r} 0 0 {sweep} {} {y} Z ",
+                    x + r,
+                    x - r,
+                    x + r
+                )
+            })
+            .collect::<String>();
+        Morph::new(&star, parse(&ring))
+    };
+    for (i, t) in steps.into_iter().enumerate() {
+        let morph = shape(cell_center(canvas.cell(i)));
+        let written = write_path(morph.at(t), &WriteOptions::default());
+        fill_nonzero(&mut canvas, &written);
+        draw_stroke(&mut canvas, &written, BROWN, 1.5);
+        canvas.label(i, &format!("at {t}"));
+    }
+    canvas.save(out_dir, "morph");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -2090,6 +2134,7 @@ fn main() {
     classify_strip(out);
     boolean_strip(out);
     outline_strip(out);
+    morph_strip(out);
     shapes_strip(out);
     polygons_strip(out);
     reverse_strip(out);

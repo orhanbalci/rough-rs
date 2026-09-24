@@ -476,6 +476,32 @@ assert!(matches!(
 ));
 ```
 
+### Morphing
+
+[`Morph`] brings two paths to the same shape of path data, so a path
+part of the way from one to the other is a matter of mixing their
+numbers, for animations; [`interpolate`] gives one such path. Subpaths
+without a partner grow from a point, and closed ones are lined up so
+the shape does not twist on its way:
+
+![morph](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/morph.png)
+
+```rust
+use svg_path_ops::svgtypes::PathParser;
+use svg_path_ops::{Morph, PathMeasure};
+
+let parse = |data| PathParser::from(data).collect::<Result<Vec<_>, _>>();
+let square = parse("M 0 0 H 20 V 20 H 0 Z")?;
+let circle = parse("M 20 10 A 10 10 0 0 1 0 10 A 10 10 0 0 1 20 10 Z")?;
+let morph = Morph::new(&square, &circle);
+let frames: Vec<f64> = (0..=10)
+    .map(|i| PathMeasure::new(morph.at(f64::from(i) / 10.0)).area())
+    .collect();
+// From the square's area down to the circle's
+assert!((frames[0] - 400.0).abs() < 1e-6);
+assert!(frames.windows(2).all(|pair| pair[1] < pair[0]));
+```
+
 ### Intersections
 
 [`PathMeasure::intersections`] finds the points where two paths meet,
@@ -701,6 +727,8 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`PathMeasure::stroke_bounds`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.stroke_bounds
 [`PathMeasure::stroke_to_path`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.stroke_to_path
 [`PathMeasure::offset`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.offset
+[`Morph`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.Morph.html
+[`interpolate`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.interpolate.html
 [`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
 [`PathMeasure::smooth`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.smooth
 [`Smoothing::Continuous`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.Continuous
