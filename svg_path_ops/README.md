@@ -288,6 +288,28 @@ assert!(measure.contains(Point2D::new(5.0, 5.0), FillRule::NonZero));
 assert!(!measure.contains(Point2D::new(15.0, 15.0), FillRule::NonZero));
 ```
 
+It cuts out the part between two lengths, keeping arcs as arcs, splits
+the path at a length, and turns it into straight lines within a
+tolerance, for pen plotters and anything else that only draws lines:
+
+![crop](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/crop.png)
+
+```rust
+use svg_path_ops::pt::PathTransformer;
+use svg_path_ops::{write_path, PathSegment, WriteOptions};
+
+let measure = PathTransformer::parse("M 0 0 h 10 A 5 5 0 0 1 10 10")?.measure();
+
+let part = measure.crop(5.0, 12.0);
+assert!(matches!(part[2], PathSegment::EllipticalArc { .. }));
+
+let lines = measure.flatten(0.01);
+assert!(lines
+    .iter()
+    .skip(1)
+    .all(|segment| matches!(segment, PathSegment::LineTo { .. })));
+```
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:

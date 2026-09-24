@@ -90,6 +90,8 @@ struct Piece {
     index: usize,
     /// Which subpath the segment belongs to, counting from 0
     subpath: usize,
+    /// Whether the segment is a close path
+    closes: bool,
     shape: PieceShape,
     start: f64,
     length: f64,
@@ -133,6 +135,7 @@ impl PathMeasure {
                 pieces.push(Piece {
                     index: context.index,
                     subpath,
+                    closes: matches!(context.segment, PathSegment::ClosePath { .. }),
                     shape,
                     start: total,
                     length,
@@ -299,6 +302,130 @@ impl PathMeasure {
         self.pieces.chunk_by(|a, b| a.subpath == b.subpath)
     }
 
+    /// The part of the path between lengths `from` and `to`, as a path of
+    /// its own in absolute coordinates, or an empty path when `from` is not
+    /// before `to`. Lengths outside the path are clamped.
+    ///
+    /// Each segment keeps its kind: a cut arc is still an arc, a cut curve
+    /// the same kind of curve. A part that spans subpaths moves to each
+    /// one, and a close path stays one only when the part includes its
+    /// whole subpath up to it; otherwise it becomes the line it draws.
+    ///
+    /// ```
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::{write_path, PathMeasure, WriteOptions};
+    ///
+    /// let segments: Vec<_> = PathParser::from("M 0 0 h 10 v 10").collect::<Result<_, _>>()?;
+    /// let part = PathMeasure::new(&segments).crop(5.0, 15.0);
+    /// assert_eq!(
+    ///     write_path(&part, &WriteOptions::default()),
+    ///     "M 5 0 L 10 0 L 10 5"
+    /// );
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn crop(&self, from: f64, to: f64) -> Vec<PathSegment> {
+        let clamp = |length: f64| {
+            if length.is_nan() {
+                0.0
+            } else {
+                length.clamp(0.0, self.total)
+            }
+        };
+        let (from, to) = (clamp(from), clamp(to));
+        let mut part = Vec::new();
+        if from >= to {
+            return part;
+        }
+
+        // The subpath being written, and whether the part includes it from
+        // its start, which a close path needs to close it
+        let mut current: Option<(usize, bool)> = None;
+        for (i, piece) in self.pieces.iter().enumerate() {
+            let end = piece.start + piece.length;
+            let overlaps = piece.length > 0.0 && end > from && piece.start < to;
+            let closes_in_range =
+                piece.closes && piece.length == 0.0 && piece.start > from && piece.start <= to;
+            if !overlaps && !closes_in_range {
+                continue;
+            }
+            let t0 = if from > piece.start {
+                piece.shape.inv_arclen(from - piece.start, piece.length)
+            } else {
+                0.0
+            };
+            let t1 = if to < end {
+                piece.shape.inv_arclen(to - piece.start, piece.length)
+            } else {
+                1.0
+            };
+
+            if current.is_none_or(|(subpath, _)| subpath != piece.subpath) {
+                let start = piece.shape.eval(t0);
+                part.push(PathSegment::MoveTo { abs: true, x: start.x, y: start.y });
+                let first_of_subpath = i == 0 || self.pieces[i - 1].subpath != piece.subpath;
+                current = Some((piece.subpath, first_of_subpath && t0 == 0.0));
+            }
+            let from_subpath_start = current.is_some_and(|(_, whole)| whole);
+            if piece.closes && t0 == 0.0 && t1 == 1.0 && from_subpath_start {
+                part.push(PathSegment::ClosePath { abs: true });
+            } else {
+                part.push(piece.shape.segment(t0, t1));
+            }
+        }
+        part
+    }
+
+    /// The path split at `length` into the part before it and the part
+    /// after it. See [`crop`](Self::crop).
+    pub fn split_at(&self, length: f64) -> (Vec<PathSegment>, Vec<PathSegment>) {
+        (self.crop(0.0, length), self.crop(length, self.total))
+    }
+
+    /// The path made of straight lines only, none of them further than
+    /// `tolerance` from the curve or arc it replaces. Close paths stay close
+    /// paths.
+    ///
+    /// ```
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::{PathMeasure, PathSegment};
+    ///
+    /// let circle: Vec<_> = PathParser::from("M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0 Z")
+    ///     .collect::<Result<_, _>>()?;
+    /// let polygon = PathMeasure::new(&circle).flatten(0.1);
+    /// assert!(polygon.iter().all(|segment| matches!(
+    ///     segment,
+    ///     PathSegment::MoveTo { .. } | PathSegment::LineTo { .. } | PathSegment::ClosePath { .. }
+    /// )));
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn flatten(&self, tolerance: f64) -> Vec<PathSegment> {
+        let tolerance = tolerance.max(1e-9);
+        let mut polygon = Vec::new();
+        for subpath in self.subpaths() {
+            let (start, _) = subpath_ends(subpath);
+            polygon.push(PathSegment::MoveTo { abs: true, x: start.x, y: start.y });
+            for piece in subpath {
+                match piece.shape {
+                    _ if piece.closes => polygon.push(PathSegment::ClosePath { abs: true }),
+                    PieceShape::Line(line) => polygon.push(line_to(line.p1)),
+                    PieceShape::Quadratic(quad) => {
+                        flatten_bezier(&[quad.p0, quad.p1, quad.p2], tolerance, 0, &mut polygon)
+                    }
+                    PieceShape::Cubic(cubic) => flatten_bezier(
+                        &[cubic.p0, cubic.p1, cubic.p2, cubic.p3],
+                        tolerance,
+                        0,
+                        &mut polygon,
+                    ),
+                    PieceShape::Arc(arc) => {
+                        polygon.extend(arc_polyline(&arc, tolerance).map(line_to))
+                    }
+                }
+            }
+        }
+        polygon
+    }
+
     /// The index of the piece at `length` and the parameter within it.
     fn locate(&self, length: f64) -> Option<(usize, f64)> {
         let last = self.pieces.len().checked_sub(1)?;
@@ -445,6 +572,53 @@ impl PieceShape {
         }
     }
 
+    /// The part of the piece between parameters `t0` and `t1` as an absolute
+    /// segment of the same kind, starting at the point at `t0`.
+    fn segment(&self, t0: f64, t1: f64) -> PathSegment {
+        match self {
+            PieceShape::Line(line) => {
+                let end = line.eval(t1);
+                PathSegment::LineTo { abs: true, x: end.x, y: end.y }
+            }
+            PieceShape::Quadratic(quad) => {
+                let part = quad.subsegment(t0..t1);
+                PathSegment::Quadratic {
+                    abs: true,
+                    x1: part.p1.x,
+                    y1: part.p1.y,
+                    x: part.p2.x,
+                    y: part.p2.y,
+                }
+            }
+            PieceShape::Cubic(cubic) => {
+                let part = cubic.subsegment(t0..t1);
+                PathSegment::CurveTo {
+                    abs: true,
+                    x1: part.p1.x,
+                    y1: part.p1.y,
+                    x2: part.p2.x,
+                    y2: part.p2.y,
+                    x: part.p3.x,
+                    y: part.p3.y,
+                }
+            }
+            PieceShape::Arc(arc) => {
+                let part = arc.subsegment(t0..t1);
+                let end = part.eval(1.0);
+                PathSegment::EllipticalArc {
+                    abs: true,
+                    rx: part.radii.x,
+                    ry: part.radii.y,
+                    x_axis_rotation: part.x_rotation.to_degrees(),
+                    large_arc: part.sweep_angle.abs() > std::f64::consts::PI,
+                    sweep: part.sweep_angle > 0.0,
+                    x: end.x,
+                    y: end.y,
+                }
+            }
+        }
+    }
+
     /// The length from the piece's start to parameter `t`.
     fn length_to(&self, t: f64) -> f64 {
         match self {
@@ -506,6 +680,91 @@ fn center_arc(arc: &SvgArc) -> Option<Arc> {
         sweep_angle,
         x_rotation: arc.x_rotation,
     })
+}
+
+/// How far the Bézier curve with `controls` can stray from its chord.
+///
+/// The curve stays inside the convex hull of its control points, and the
+/// distance to the chord is convex, so it strays no more than the furthest
+/// control point. When every control point lies alongside the chord, so
+/// does the curve, and its distance to the chord's line is the weighted sum
+/// of the controls' distances with Bernstein weights. The end points weigh
+/// nothing there, and the inner weights add up to at most 1/2 for a
+/// quadratic curve and 3/4 for a cubic one, both at t = 1/2.
+fn chord_distance_bound(controls: &[kurbo::Point]) -> f64 {
+    let (first, last) = (controls[0], controls[controls.len() - 1]);
+    let inner = &controls[1..controls.len() - 1];
+    let chord = last - first;
+    let length_sq = chord.hypot2();
+    let alongside = length_sq > 0.0
+        && inner.iter().all(|control| {
+            let along = chord.dot(*control - first) / length_sq;
+            (0.0..=1.0).contains(&along)
+        });
+    if alongside {
+        let furthest = inner
+            .iter()
+            .map(|control| chord.cross(*control - first).abs())
+            .fold(0.0, f64::max)
+            / length_sq.sqrt();
+        let weight = if inner.len() == 1 { 0.5 } else { 0.75 };
+        weight * furthest
+    } else {
+        let segment = Line::new(first, last);
+        inner
+            .iter()
+            .map(|control| segment.nearest(*control, ACCURACY).distance_sq.sqrt())
+            .fold(0.0, f64::max)
+    }
+}
+
+fn line_to(p: kurbo::Point) -> PathSegment {
+    PathSegment::LineTo { abs: true, x: p.x, y: p.y }
+}
+
+/// Appends lines to `out` that follow the Bézier curve with `controls`,
+/// none further than `tolerance` from it, splitting the curve in half until
+/// its chord is close enough.
+fn flatten_bezier(
+    controls: &[kurbo::Point],
+    tolerance: f64,
+    depth: u32,
+    out: &mut Vec<PathSegment>,
+) {
+    let last = controls[controls.len() - 1];
+    if chord_distance_bound(controls) <= tolerance || depth >= 32 {
+        out.push(line_to(last));
+        return;
+    }
+    // De Casteljau's split at t = 0.5
+    let (mut left, mut right) = (vec![controls[0]], vec![last]);
+    let mut level = controls.to_vec();
+    while level.len() > 1 {
+        level = level
+            .windows(2)
+            .map(|pair| pair[0].midpoint(pair[1]))
+            .collect();
+        left.push(level[0]);
+        right.push(level[level.len() - 1]);
+    }
+    right.reverse();
+    flatten_bezier(&left, tolerance, depth + 1, out);
+    flatten_bezier(&right, tolerance, depth + 1, out);
+}
+
+/// Points along the arc after its start, ending at its end, close enough
+/// that the lines between them stay within `tolerance` of it. A chord over
+/// an angle `a` of a circle with radius `r` strays `r(1 − cos(a / 2))` from
+/// it; the larger radius of the ellipse bounds that.
+fn arc_polyline(arc: &Arc, tolerance: f64) -> impl Iterator<Item = kurbo::Point> + '_ {
+    let radius = arc.radii.x.abs().max(arc.radii.y.abs());
+    let step = if tolerance >= radius {
+        std::f64::consts::FRAC_PI_2
+    } else {
+        2.0 * (1.0 - tolerance / radius).acos()
+    };
+    let count = (arc.sweep_angle.abs() / step).ceil().max(1.0) as u32;
+    (1..=count).map(move |k| arc.eval(f64::from(k) / f64::from(count)))
 }
 
 /// Where a subpath's first piece starts and its last piece ends.
@@ -629,7 +888,7 @@ mod test {
 
     use super::{FillRule, PathMeasure, Position};
     use crate::shapes::Shape;
-    use crate::PathSegment;
+    use crate::{write_path, PathSegment, WriteOptions};
 
     fn measure(path: &str) -> PathMeasure {
         let segments: Vec<PathSegment> = PathParser::from(path).map(Result::unwrap).collect();
@@ -965,6 +1224,154 @@ mod test {
         assert!(!circle.contains(Point2D::new(0.0, 10.01), FillRule::NonZero));
         assert!(circle.contains(Point2D::new(7.06, 7.06), FillRule::NonZero));
         assert!(!circle.contains(Point2D::new(7.08, 7.08), FillRule::NonZero));
+    }
+
+    fn written(segments: &[PathSegment]) -> String {
+        write_path(segments, &WriteOptions::default())
+    }
+
+    /// Checks that cropping `path` between `from` and `to` gives a path of
+    /// that length, running between the original's points at both lengths.
+    fn check_crop(path: &str, from: f64, to: f64) -> Vec<PathSegment> {
+        let m = measure(path);
+        let part = m.crop(from, to);
+        let cropped = PathMeasure::new(&part);
+        assert!(
+            close(cropped.total_length(), to - from),
+            "{} != {}",
+            cropped.total_length(),
+            to - from
+        );
+        assert!(close_point(
+            cropped.point_at(0.0).unwrap(),
+            m.point_at(from).unwrap()
+        ));
+        assert!(close_point(
+            cropped.point_at(to - from).unwrap(),
+            m.point_at(to).unwrap()
+        ));
+        part
+    }
+
+    #[test]
+    fn crops_lines() {
+        assert_eq!(
+            written(&measure("M 0 0 L 10 0").crop(2.0, 5.0)),
+            "M 2 0 L 5 0"
+        );
+        assert_eq!(
+            written(&measure("M 0 0 h 10 v 10").crop(5.0, 15.0)),
+            "M 5 0 L 10 0 L 10 5"
+        );
+    }
+
+    #[test]
+    fn crops_curves_into_curves() {
+        let part = check_crop("M 0 0 C 30 80 60 -40 100 20 Q 120 60 140 20", 20.0, 150.0);
+        assert!(matches!(part[1], PathSegment::CurveTo { .. }));
+        assert!(matches!(part[2], PathSegment::Quadratic { .. }));
+    }
+
+    #[test]
+    fn crops_arcs_into_arcs() {
+        // Three quarters of a circle of radius 10, cropped to more than half
+        // of it: 39 long is about 223 degrees
+        let path = "M 10 0 A 10 10 0 1 1 0 -10";
+        let part = check_crop(path, 1.0, 40.0);
+        let PathSegment::EllipticalArc { rx, ry, large_arc, sweep, .. } = part[1] else {
+            panic!("{:?} is not an arc", part[1]);
+        };
+        assert!(close(rx, 10.0) && close(ry, 10.0) && large_arc && sweep);
+        // A short piece of it is a small arc
+        let part = check_crop(path, 2.0, 5.0);
+        assert!(matches!(
+            part[1],
+            PathSegment::EllipticalArc { large_arc: false, .. }
+        ));
+        // So is a piece of a rotated ellipse
+        check_crop("M 20 0 A 20 10 30 0 1 -20 0", 3.0, 40.0);
+    }
+
+    #[test]
+    fn crops_across_subpaths() {
+        let part = measure("M 0 0 L 10 0 M 100 0 L 110 0").crop(5.0, 15.0);
+        assert_eq!(written(&part), "M 5 0 L 10 0 M 100 0 L 105 0");
+    }
+
+    #[test]
+    fn keeps_close_paths_only_for_whole_subpaths() {
+        let square = "M 0 0 h 10 v 10 h -10 z";
+        let m = measure(square);
+        assert_eq!(
+            written(&m.crop(0.0, m.total_length())),
+            "M 0 0 L 10 0 L 10 10 L 0 10 Z"
+        );
+        // Starting inside it, the close path would go back to the wrong place
+        assert_eq!(
+            written(&m.crop(5.0, m.total_length())),
+            "M 5 0 L 10 0 L 10 10 L 0 10 L 0 0"
+        );
+        // An explicit close path of zero length is kept too
+        let closed = measure("M 0 0 h 10 v 10 L 0 0 z");
+        assert!(written(&closed.crop(0.0, closed.total_length())).ends_with('Z'));
+    }
+
+    #[test]
+    fn crop_clamps_and_rejects_empty_ranges() {
+        let m = measure("M 0 0 L 10 0");
+        assert_eq!(written(&m.crop(-5.0, 50.0)), "M 0 0 L 10 0");
+        assert!(m.crop(5.0, 5.0).is_empty());
+        assert!(m.crop(6.0, 2.0).is_empty());
+        assert!(measure("M 5 5").crop(0.0, 1.0).is_empty());
+    }
+
+    #[test]
+    fn split_at_gives_both_parts() {
+        let path = "M 0 0 C 30 80 60 -40 100 20 A 20 20 0 0 1 140 20";
+        let m = measure(path);
+        let (before, after) = m.split_at(70.0);
+        assert!(close(PathMeasure::new(&before).total_length(), 70.0));
+        assert!(close(
+            PathMeasure::new(&after).total_length(),
+            m.total_length() - 70.0
+        ));
+    }
+
+    #[test]
+    fn flatten_keeps_lines_and_close_paths() {
+        assert_eq!(
+            written(&measure("M 0 0 h 10 v 10 z").flatten(0.1)),
+            "M 0 0 L 10 0 L 10 10 Z"
+        );
+    }
+
+    #[test]
+    fn flatten_stays_within_the_tolerance() {
+        for path in [
+            "M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0 Z",
+            "M 0 0 C 30 80 60 -40 100 20 Q 120 60 140 20",
+            "M 20 0 A 20 10 30 0 1 -20 0",
+        ] {
+            let m = measure(path);
+            for tolerance in [1.0, 0.1, 0.01] {
+                let polygon = PathMeasure::new(m.flatten(tolerance));
+                // Every point of the polygon is near the path, and every
+                // point of the path near the polygon
+                for k in 0..=400 {
+                    let at = f64::from(k) / 400.0;
+                    let on_polygon = polygon.point_at(polygon.total_length() * at).unwrap();
+                    assert!(m.nearest(on_polygon).unwrap().distance <= tolerance + 1e-9);
+                    let on_path = m.point_at(m.total_length() * at).unwrap();
+                    assert!(polygon.nearest(on_path).unwrap().distance <= tolerance + 1e-9);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn flatten_uses_fewer_lines_for_a_looser_tolerance() {
+        let m = measure("M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0");
+        assert!(m.flatten(1.0).len() < m.flatten(0.01).len());
     }
 
     #[test]

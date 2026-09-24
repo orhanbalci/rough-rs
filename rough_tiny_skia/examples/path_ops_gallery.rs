@@ -1047,6 +1047,81 @@ fn draw_point_grid(canvas: &mut Canvas, center: (f64, f64), inside: impl Fn(Poin
     }
 }
 
+/// Strokes `path` exactly, `width` wide, with round ends.
+fn draw_stroke(canvas: &mut Canvas, path: &str, color: (u8, u8, u8), width: f32) {
+    let Some(tiny_path) = tiny_path(path) else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(color.0, color.1, color.2, 255);
+    let stroke = Stroke {
+        width,
+        line_cap: tiny_skia::LineCap::Round,
+        line_join: tiny_skia::LineJoin::Round,
+        ..Stroke::default()
+    };
+    canvas
+        .pixmap
+        .stroke_path(&tiny_path, &paint, &stroke, Transform::identity(), None);
+}
+
+fn crop_strip(out_dir: &Path) {
+    let curve = "M 0 40 C 0 0 40 0 40 40 A 20 20 0 0 0 80 40 Q 100 0 120 40";
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "crop",
+        "parts by fraction of the length, and the path in straight lines",
+        4,
+    );
+    let cell = |canvas: &mut Canvas, i: usize| {
+        let center = cell_center(canvas.cell(i));
+        fit(curve, (center.0 - 60.0, center.1 - 25.0, 120.0, 50.0))
+    };
+
+    let path = cell(&mut canvas, 0);
+    let measure = PathMeasure::new(parse(&path));
+    let part = measure.crop(measure.total_length() * 0.25, measure.total_length() * 0.7);
+    draw_dashed(&mut canvas, &path, BROWN, 1.0);
+    draw_stroke(
+        &mut canvas,
+        &write_path(&part, &WriteOptions::default()),
+        BROWN,
+        3.0,
+    );
+    canvas.label(0, "crop 0.25 to 0.7");
+
+    let path = cell(&mut canvas, 1);
+    let measure = PathMeasure::new(parse(&path));
+    let (before, after) = measure.split_at(measure.total_length() * 0.4);
+    draw_stroke(
+        &mut canvas,
+        &write_path(&before, &WriteOptions::default()),
+        BROWN,
+        3.0,
+    );
+    draw_stroke(
+        &mut canvas,
+        &write_path(&after, &WriteOptions::default()),
+        GHOST_COLOR,
+        3.0,
+    );
+    canvas.label(1, "split_at 0.4");
+
+    for (i, tolerance) in [(2, 2.0), (3, 0.3)] {
+        let path = cell(&mut canvas, i);
+        let polygon = PathMeasure::new(parse(&path)).flatten(tolerance);
+        draw_dashed(&mut canvas, &path, BROWN, 1.0);
+        let written = write_path(&polygon, &WriteOptions::default());
+        draw_stroke(&mut canvas, &written, BROWN, 1.5);
+        for context in segments_with_context(&polygon) {
+            draw_small_dot(&mut canvas, (context.end.x, context.end.y), true);
+        }
+        canvas.label(i, &format!("flatten {tolerance}"));
+    }
+
+    canvas.save(out_dir, "crop");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1255,6 +1330,7 @@ fn main() {
     measure_strip(out);
     nearest_strip(out);
     fill_strip(out);
+    crop_strip(out);
     shapes_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);

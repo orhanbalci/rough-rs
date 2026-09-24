@@ -52,7 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `PathMeasure::area()` gives the enclosed area, signed by drawing direction
   and exact for arcs, and `PathMeasure::contains()` tells whether a point is
   inside under a `FillRule` (nonzero or evenodd), closing open subpaths as
-  filling does.
+  filling does. `PathMeasure::crop()` and `split_at()` cut a path by length
+  into paths that keep each segment's kind, arcs included, and
+  `PathMeasure::flatten()` turns it into lines guaranteed to stay within a
+  tolerance of it.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -70,8 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, measure, nearest,
-  contains, reverse, split_subpaths, is_closed, unarc, unshort, to_box, inbox
-  and segments_with_context. They replace the examples that only linked to
+  contains, crop, reverse, split_subpaths, is_closed, unarc, unshort, to_box,
+  inbox and segments_with_context. They replace the examples that only linked to
   rough_piet programs.
 
 ### Changed
