@@ -557,6 +557,22 @@
 //! one crossing it, and a curve crossing a line where it runs along it, at
 //! an inflection, from one touching it.
 //!
+//! [`PathMeasure::self_intersections`] finds where a path meets itself:
+//! one part crossing or touching another, or a cubic curve looping across
+//! itself, each point once, with its two places along the path:
+//!
+//! ![self_intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/self_intersections.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//!
+//! let bow = PathTransformer::parse("M 0 0 L 20 20 L 20 0 L 0 20 Z")?.measure();
+//! let meets = bow.self_intersections();
+//! assert_eq!(meets.len(), 1);
+//! assert!((meets[0].point.x - 10.0).abs() < 1e-9 && meets[0].crossing);
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! ### Boolean operations
 //!
 //! [`boolean`] combines the areas two paths cover: their union,
@@ -756,6 +772,7 @@
 //! [`PathMeasure::offset`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.offset
 //! [`Morph`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.Morph.html
 //! [`interpolate`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.interpolate.html
+//! [`PathMeasure::self_intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.self_intersections
 //! [`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
 //! [`PathMeasure::smooth`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.smooth
 //! [`Smoothing::Continuous`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.Continuous

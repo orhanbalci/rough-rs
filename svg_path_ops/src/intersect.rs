@@ -22,6 +22,7 @@ use kurbo::{Arc, Line, ParamCurve, PathSeg, Rect, Vec2};
 
 use crate::crossing::is_crossing;
 use crate::measure::{PathMeasure, Piece, PieceShape, Position};
+use crate::CurveKind;
 
 /// Where a point lies on one path: its length along the path, and the
 /// segment and parameter it falls on.
@@ -131,57 +132,172 @@ impl PathMeasure {
             }
         }
 
-        let size = match (self.bounds(), other.bounds()) {
-            (Some(a), Some(b)) => (a.union(&b).max - a.union(&b).min).length(),
-            _ => 0.0,
-        };
+        settle(self, other, found, false)
+    }
+
+    /// The points where the path meets itself: where one part of it
+    /// crosses or touches another, and where a cubic curve loops across
+    /// itself. Each point is given once, with [`Intersection::this`] the
+    /// place along the path met first and [`Intersection::other`] the
+    /// place met second, in order along the path.
+    ///
+    /// Segments meeting end to end, and a closed subpath's end meeting its
+    /// start, are the path going on, not meeting itself, and are not
+    /// reported; neither are stretches where the path runs back along
+    /// itself.
+    ///
+    /// # Algorithm
+    ///
+    /// Every pair of segments is intersected as in
+    /// [`intersections`](Self::intersections), leaving out the point
+    /// where neighbouring segments join. A single cubic curve crosses
+    /// itself where [`CurveKind::of_cubic`](crate::CurveKind::of_cubic)
+    /// finds its loop.
+    ///
+    /// ```
+    /// use svg_path_ops::pt::PathTransformer;
+    ///
+    /// // A figure of eight, crossing itself in the middle
+    /// let eight = PathTransformer::parse("M 0 0 L 20 20 L 20 0 L 0 20 Z")?.measure();
+    /// let crossings = eight.self_intersections();
+    /// assert_eq!(crossings.len(), 1);
+    /// assert!((crossings[0].point.x - 10.0).abs() < 1e-9);
+    /// assert!(crossings[0].crossing);
+    /// assert!(crossings[0].this.length < crossings[0].other.length);
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn self_intersections(&self) -> Vec<Intersection> {
+        let drawing: Vec<&Piece> = self.pieces.iter().filter(|p| p.length > 0.0).collect();
+        let size = self
+            .bounds()
+            .map(|b| (b.max - b.min).length())
+            .unwrap_or(0.0);
         let same = SAME_POINT.max(SAME_POINT * size);
-        found.sort_by(|p, q| {
-            p.this
-                .length
-                .total_cmp(&q.this.length)
-                .then(p.other.length.total_cmp(&q.other.length))
-        });
-        let mut merged: Vec<Intersection> = Vec::with_capacity(found.len());
-        for intersection in found {
-            let seen = merged
-                .iter()
-                .any(|kept| (kept.point - intersection.point).length() <= same);
-            if !seen {
-                merged.push(intersection);
+        let near = |p: kurbo::Point, q: kurbo::Point| (p - q).hypot() <= same;
+
+        let mut found: Vec<Intersection> = Vec::new();
+        let point = |p: kurbo::Point| Point2D::new(p.x, p.y);
+        for (i, a) in drawing.iter().enumerate() {
+            // A cubic curve looping across itself
+            if let PieceShape::Cubic(c) = a.shape {
+                let points = [c.p0, c.p1, c.p2, c.p3].map(point);
+                if let CurveKind::Loop { first, second } = CurveKind::of_cubic(points) {
+                    found.push(Intersection {
+                        point: point(a.shape.eval(first)),
+                        this: location(a, first),
+                        other: location(a, second),
+                        crossing: false,
+                    });
+                }
+            }
+            let a_bounds = a.shape.bounds(0.0, 1.0);
+            for (j, b) in drawing.iter().enumerate().skip(i + 1) {
+                if !overlap(a_bounds, b.shape.bounds(0.0, 1.0)) {
+                    continue;
+                }
+                // Where the path goes on from one segment to the next, or
+                // round from a closed subpath's end to its start
+                let same_subpath = a.subpath == b.subpath;
+                let next = same_subpath && j == i + 1;
+                let first = drawing.iter().position(|p| p.subpath == a.subpath) == Some(i);
+                let last = drawing.iter().rposition(|p| p.subpath == b.subpath) == Some(j);
+                let closed = self
+                    .pieces
+                    .iter()
+                    .rev()
+                    .find(|p| p.subpath == a.subpath)
+                    .is_some_and(|p| p.closes);
+                let round = same_subpath && first && last && closed;
+                for (t, s) in intersect_pieces(&a.shape, &b.shape) {
+                    let at = a.shape.eval(t);
+                    if (next && near(at, a.to)) || (round && near(at, a.from)) {
+                        continue;
+                    }
+                    found.push(Intersection {
+                        point: point(at),
+                        this: location(a, t),
+                        other: location(b, s),
+                        crossing: false,
+                    });
+                }
             }
         }
-
-        // Crossing or touching, probing no further along either path than
-        // a third of the way to the nearest other intersection
-        let gap = |i: usize, length: fn(&Intersection) -> f64| {
-            merged
-                .iter()
-                .enumerate()
-                .filter(|(j, _)| *j != i)
-                .map(|(_, x)| (length(x) - length(&merged[i])).abs())
-                .fold(f64::INFINITY, f64::min)
-        };
-        let crossings: Vec<bool> = (0..merged.len())
-            .map(|i| {
-                let x = &merged[i];
-                is_crossing(
-                    self,
-                    other,
-                    kurbo::Point::new(x.point.x, x.point.y),
-                    &x.this,
-                    &x.other,
-                    gap(i, |x| x.this.length),
-                    gap(i, |x| x.other.length),
-                    size,
-                )
-            })
-            .collect();
-        for (x, crossing) in merged.iter_mut().zip(crossings) {
-            x.crossing = crossing;
-        }
-        merged
+        settle(self, self, found, true)
     }
+}
+
+/// Sorts the points found where `this` meets `other`, merges those found
+/// twice, where a path crosses the joint of two segments, and tells which
+/// cross. With `same_path`, `this` and `other` are the same path, and each
+/// point's two places along it are put in order.
+fn settle(
+    this: &PathMeasure,
+    other: &PathMeasure,
+    mut found: Vec<Intersection>,
+    same_path: bool,
+) -> Vec<Intersection> {
+    let size = match (this.bounds(), other.bounds()) {
+        (Some(a), Some(b)) => (a.union(&b).max - a.union(&b).min).length(),
+        _ => 0.0,
+    };
+    let same = SAME_POINT.max(SAME_POINT * size);
+    if same_path {
+        for x in &mut found {
+            if x.other.length < x.this.length {
+                std::mem::swap(&mut x.this, &mut x.other);
+            }
+        }
+    }
+    found.sort_by(|p, q| {
+        p.this
+            .length
+            .total_cmp(&q.this.length)
+            .then(p.other.length.total_cmp(&q.other.length))
+    });
+    let mut merged: Vec<Intersection> = Vec::with_capacity(found.len());
+    for intersection in found {
+        let seen = merged
+            .iter()
+            .any(|kept| (kept.point - intersection.point).length() <= same);
+        if !seen {
+            merged.push(intersection);
+        }
+    }
+
+    // Crossing or touching, probing no further along either path than a
+    // third of the way to the nearest other intersection on it; on one
+    // path, that includes the other place of the same point
+    let places = |x: &Intersection| [(0, x.this.length), (1, x.other.length)];
+    let gap = |i: usize, side: usize| {
+        let length = places(&merged[i])[side].1;
+        merged
+            .iter()
+            .enumerate()
+            .flat_map(|(j, x)| places(x).map(|(k, l)| (j, k, l)))
+            .filter(|&(j, k, _)| !(j == i && k == side))
+            .filter(|&(_, k, _)| same_path || k == side)
+            .map(|(_, _, l)| (l - length).abs())
+            .fold(f64::INFINITY, f64::min)
+    };
+    let crossings: Vec<bool> = (0..merged.len())
+        .map(|i| {
+            let x = &merged[i];
+            is_crossing(
+                this,
+                other,
+                kurbo::Point::new(x.point.x, x.point.y),
+                &x.this,
+                &x.other,
+                gap(i, 0),
+                gap(i, 1),
+                size,
+            )
+        })
+        .collect();
+    for (x, crossing) in merged.iter_mut().zip(crossings) {
+        x.crossing = crossing;
+    }
+    merged
 }
 
 fn location(piece: &Piece, t: f64) -> Location {
@@ -667,5 +783,71 @@ mod test {
     fn an_open_end_does_not_cross() {
         assert_eq!(crossings("M 0 0 L 10 0", "M 5 0 L 5 10"), [false]);
         assert_eq!(crossings("M 5 0 L 5 10", "M 0 0 L 10 0"), [false]);
+    }
+
+    fn self_crossings(path: &str) -> Vec<bool> {
+        measure(path)
+            .self_intersections()
+            .iter()
+            .map(|x| x.crossing)
+            .collect()
+    }
+
+    #[test]
+    fn simple_paths_do_not_meet_themselves() {
+        for path in [
+            "M 0 0 H 20 V 20 H 0 Z",
+            CLOSED_CIRCLE,
+            "M 0 0 C 10 -20 30 20 40 0 S 70 -20 80 0",
+            // Running back along itself is not meeting at a point
+            "M 0 0 L 10 0 L 5 0",
+        ] {
+            assert!(measure(path).self_intersections().is_empty(), "{path}");
+        }
+    }
+
+    #[test]
+    fn a_star_crosses_itself_five_times() {
+        let mut path = String::new();
+        for k in 0..5 {
+            let angle = (f64::from(k) * 144.0 - 90.0).to_radians();
+            let command = if k == 0 { "M" } else { "L" };
+            path += &format!("{command} {} {} ", 50.0 * angle.cos(), 50.0 * angle.sin());
+        }
+        path += "Z";
+        let meets = measure(&path).self_intersections();
+        assert_eq!(meets.len(), 5);
+        // The inner pentagon's corners, all at one distance from the middle
+        let radius = meets[0].point.to_vector().length();
+        assert!(meets
+            .iter()
+            .all(|x| (x.point.to_vector().length() - radius).abs() < 1e-9 && x.crossing));
+    }
+
+    #[test]
+    fn a_cubic_loop_crosses_itself() {
+        let path = "M 0 0 C 40 30 -10 30 30 0";
+        let meets = measure(path).self_intersections();
+        assert_eq!(meets.len(), 1);
+        let x = &meets[0];
+        assert_eq!((x.this.position.index, x.other.position.index), (1, 1));
+        assert!(x.this.position.t < x.other.position.t);
+        assert!(x.crossing);
+    }
+
+    #[test]
+    fn subpaths_meet_each_other() {
+        // Two circles crossing, and two touching
+        let crossing = format!("{CLOSED_CIRCLE} M 25 0 A 10 10 0 0 1 5 0 A 10 10 0 0 1 25 0 Z");
+        assert_eq!(self_crossings(&crossing), [true, true]);
+        let touching = format!("{CLOSED_CIRCLE} M 30 0 A 10 10 0 0 1 10 0 A 10 10 0 0 1 30 0 Z");
+        assert_eq!(self_crossings(&touching), [false]);
+    }
+
+    #[test]
+    fn an_open_path_back_at_its_start_touches_itself() {
+        // Closed, it goes on round; open, its ends meet
+        assert!(self_crossings("M 0 0 L 10 0 L 10 10 Z").is_empty());
+        assert_eq!(self_crossings("M 0 0 L 10 0 L 10 10 L 0 0"), [false]);
     }
 }

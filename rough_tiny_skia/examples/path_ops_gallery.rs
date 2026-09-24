@@ -1915,6 +1915,50 @@ fn morph_strip(out_dir: &Path) {
     canvas.save(out_dir, "morph");
 }
 
+fn self_intersections_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "self_intersections",
+        "where a path meets itself: hollow where it crosses, filled where it touches",
+        4,
+    );
+    let mut star = String::new();
+    for k in 0..5 {
+        let angle = (f64::from(k) * 144.0 - 90.0).to_radians();
+        let command = if k == 0 { "M" } else { "L" };
+        star += &format!(
+            "{command} {} {} ",
+            44.0 * angle.cos(),
+            44.0 * angle.sin() + 4.0
+        );
+    }
+    star += "Z";
+    let cells = [
+        (star.as_str(), "a star"),
+        ("M -40 30 C 90 -70 -90 -70 40 30", "a looping curve"),
+        (
+            "M 0 0 C 20 -35 65 -35 65 0 C 65 35 20 35 0 0 C -20 -35 -65 -35 -65 0 C -65 35 -20 35 0 0 Z",
+            "a figure of eight",
+        ),
+        (
+            "M 0 0 A 25 25 0 0 1 -50 0 A 25 25 0 0 1 0 0 Z M 50 0 A 25 25 0 0 1 0 0 A 25 25 0 0 1 50 0 Z",
+            "touching",
+        ),
+    ];
+    for (i, (path, label)) in cells.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let mut transformer = PathTransformer::new((*path).into());
+        transformer.translate(center.0, center.1);
+        let path = transformer.to_string();
+        draw_stroke(&mut canvas, &path, BROWN, 1.8);
+        for meet in PathMeasure::new(parse(&path)).self_intersections() {
+            draw_dot(&mut canvas, (meet.point.x, meet.point.y), meet.crossing);
+        }
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "self_intersections");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -2130,6 +2174,7 @@ fn main() {
     fill_strip(out);
     crop_strip(out);
     intersections_strip(out);
+    self_intersections_strip(out);
     stroke_bounds_strip(out);
     classify_strip(out);
     boolean_strip(out);

@@ -129,6 +129,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to match in number, subpaths without a partner grow from a point, and
   closed subpaths are turned and rotated to line up so shapes do not
   twist.
+- `PathMeasure::self_intersections()` finds where a path meets itself,
+  between any two of its segments or where a cubic curve loops across
+  itself, each point once with its two places along the path in order and
+  whether it crosses there. Neighbouring segments' joints and a closed
+  subpath's start are left out.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -148,9 +153,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for translate, rotate, scale, skew, flip, shapes, polygons and stars,
   measure, curvature, nearest, contains, interior_point, divide_at, crop,
   stroke_bounds, classify, boolean, outline, morph, simplify, smooth,
-  intersections, reverse, reorient, join, split_subpaths, is_closed, unarc,
-  unshort, to_box, inbox and segments_with_context. They replace the
-  examples that only linked to rough_piet programs.
+  intersections, self_intersections, reverse, reorient, join,
+  split_subpaths, is_closed, unarc, unshort, to_box, inbox and
+  segments_with_context. They replace the examples that only linked to
+  rough_piet programs.
 
 ### Changed
 
