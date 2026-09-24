@@ -181,6 +181,28 @@
 //! );
 //! ```
 //!
+//! It also draws regular polygons and stars, laid out as Paper.js lays
+//! them out:
+//!
+//! ![polygons and stars](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/polygons.png)
+//!
+//! ```
+//! use svg_path_ops::shapes::Shape;
+//! use svg_path_ops::PathMeasure;
+//!
+//! let star = Shape::Star {
+//!     cx: 0.0,
+//!     cy: 0.0,
+//!     points: 5,
+//!     outer_radius: 10.0,
+//!     inner_radius: 4.0,
+//! };
+//! let path = star.to_path();
+//! // A move to the first point, lines to the other nine and a close path
+//! assert_eq!(path.len(), 11);
+//! assert!(PathMeasure::new(&path).is_clockwise());
+//! ```
+//!
 //! ### Reversing a path
 //!
 //! [`reverse`] draws every subpath in the opposite direction, keeping
@@ -366,6 +388,29 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! [`PathMeasure::interior_point`] finds a point inside a shape, away from
+//! its outline, for a label or to tell which shape lies inside which, and
+//! [`PathMeasure::divide_at`] divides the segment at a length in two of the
+//! same kind, leaving the rest of the path as it is:
+//!
+//! ![interior_point and divide_at](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/interior_divide.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//! use svg_path_ops::{write_path, FillRule, WriteOptions};
+//!
+//! let measure = PathTransformer::parse("M 0 0 h 10 v 10 h -10 z")?.measure();
+//! let inside = measure.interior_point(FillRule::NonZero).unwrap();
+//! assert!(measure.contains(inside, FillRule::NonZero));
+//!
+//! let divided = measure.divide_at(15.0);
+//! assert_eq!(
+//!     write_path(&divided, &WriteOptions::default()),
+//!     "M 0 0 h 10 v 5 v 5 h -10 z"
+//! );
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! ### Simplifying
 //!
 //! [`PathMeasure::simplify`] redraws a path of many short segments, as a
@@ -542,6 +587,8 @@
 //! [`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
 //! [`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
 //! [`PathMeasure::intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.intersections
+//! [`PathMeasure::interior_point`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.interior_point
+//! [`PathMeasure::divide_at`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.divide_at
 //! [`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
 //! [`PathMeasure::smooth`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.smooth
 //! [`Smoothing::Continuous`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.Continuous
@@ -556,6 +603,7 @@
 pub(crate) mod a2c;
 pub mod bbox;
 mod context;
+mod divide;
 pub(crate) mod ellipse;
 mod intersect;
 mod join;

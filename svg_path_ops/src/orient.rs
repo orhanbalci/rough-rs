@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use euclid::default::Point2D;
 use svgtypes::PathSegment;
 
-use crate::{reverse, segments_with_context, split_subpaths, FillRule, PathMeasure};
+use crate::{reverse, split_subpaths, FillRule, PathMeasure};
 
 /// Turns each subpath so that outlines run one way and the holes in them
 /// the other, as fonts and icon sets expect: outlines clockwise on screen
@@ -26,10 +26,8 @@ use crate::{reverse, segments_with_context, split_subpaths, FillRule, PathMeasur
 /// Each subpath's direction is the sign of its [`PathMeasure::area`]. To
 /// tell whether it lies inside another, a point inside it and away from its
 /// outline is checked against the other with [`PathMeasure::contains`]. As
-/// Paper.js does, the point is found on the horizontal line through the
-/// middle of the subpath's bounds: the line crosses the subpath, flattened
-/// into lines, at points that cut it into stretches, and the middle of the
-/// widest stretch inside the subpath is taken. Two subpaths that do not
+/// Paper.js does, it is found with [`PathMeasure::interior_point`]. Two
+/// subpaths that do not
 /// cross lie one inside the other or apart, so that point is inside
 /// another exactly when the whole subpath is, even where the two touch. Only a subpath with a larger area
 /// can contain another, which keeps two copies of one outline from both
@@ -62,7 +60,10 @@ pub fn reorient(
     let measures: Vec<PathMeasure> = subpaths.iter().map(PathMeasure::new).collect();
     let areas: Vec<f64> = measures.iter().map(PathMeasure::area).collect();
 
-    let interior: Vec<Option<Point2D<f64>>> = measures.iter().map(interior_point).collect();
+    let interior: Vec<Option<Point2D<f64>>> = measures
+        .iter()
+        .map(|measure| measure.interior_point(FillRule::NonZero))
+        .collect();
     let inside = |i: usize, j: usize| {
         interior[i].is_some_and(|point| measures[j].contains(point, FillRule::NonZero))
     };
@@ -85,50 +86,6 @@ pub fn reorient(
             }
         })
         .collect()
-}
-
-/// A point inside the path, away from its outline, or `None` when it
-/// encloses nothing.
-fn interior_point(measure: &PathMeasure) -> Option<Point2D<f64>> {
-    // The path as closed polygons
-    let lines = measure.flatten(measure.total_length() * 1e-4);
-    let mut polygons: Vec<Vec<Point2D<f64>>> = Vec::new();
-    for context in segments_with_context(&lines) {
-        match context.segment {
-            PathSegment::MoveTo { .. } => polygons.push(vec![context.end]),
-            _ => polygons.last_mut()?.push(context.end),
-        }
-    }
-    let ys = polygons.iter().flatten().map(|point| point.y);
-    let (low, high) = ys.fold((f64::INFINITY, f64::NEG_INFINITY), |(low, high), y| {
-        (low.min(y), high.max(y))
-    });
-    let y = (low + high) / 2.0;
-
-    // Where the line through the middle crosses the polygons' edges,
-    // counting an edge that ends on the line on one side only
-    let mut crossings: Vec<f64> = Vec::new();
-    for polygon in &polygons {
-        let closing = [polygon[polygon.len() - 1], polygon[0]];
-        for edge in polygon.windows(2).chain(std::iter::once(&closing[..])) {
-            let (p, q) = (edge[0], edge[1]);
-            if (p.y <= y) != (q.y <= y) {
-                crossings.push(p.x + (y - p.y) * (q.x - p.x) / (q.y - p.y));
-            }
-        }
-    }
-    crossings.sort_by(f64::total_cmp);
-    crossings
-        .windows(2)
-        .map(|pair| {
-            (
-                pair[1] - pair[0],
-                Point2D::new((pair[0] + pair[1]) / 2.0, y),
-            )
-        })
-        .filter(|&(width, point)| width > 0.0 && measure.contains(point, FillRule::NonZero))
-        .max_by(|a, b| a.0.total_cmp(&b.0))
-        .map(|(_, point)| point)
 }
 
 #[cfg(test)]

@@ -1,11 +1,13 @@
 use euclid::default::Point2D;
 use svgtypes::PathSegment;
 
-/// An SVG basic shape, with the attributes of its element.
+/// An SVG basic shape, with the attributes of its element, or a regular
+/// polygon or star.
 ///
-/// [`Shape::to_path`] returns the equivalent path that SVG 2 defines for it:
-/// the same start point, direction and arcs a browser uses, so markers and
-/// dashes land in the same places.
+/// [`Shape::to_path`] returns the equivalent path that SVG 2 defines for a
+/// basic shape: the same start point, direction and arcs a browser uses, so
+/// markers and dashes land in the same places. Regular polygons and stars
+/// are laid out as Paper.js lays them out.
 ///
 /// ```
 /// use svg_path_ops::shapes::Shape;
@@ -57,6 +59,24 @@ pub enum Shape {
     Polyline(Vec<Point2D<f64>>),
     /// A `<polygon>`: its points joined by lines and closed.
     Polygon(Vec<Point2D<f64>>),
+    /// A polygon with `sides` equal sides and corners on the circle of
+    /// `radius` about `cx`, `cy`, with its bottom side level, so a triangle
+    /// or a pentagon points up. It is drawn clockwise on screen from the
+    /// corner left of the bottom side's middle. Fewer than three sides or no
+    /// radius draw nothing.
+    RegularPolygon { cx: f64, cy: f64, radius: f64, sides: u32 },
+    /// A star with `points` points on the circle of `outer_radius` about
+    /// `cx`, `cy` and the corners between them on the circle of
+    /// `inner_radius`. It is drawn clockwise on screen from the point
+    /// straight above the center. Fewer than two points or no outer radius
+    /// draw nothing.
+    Star {
+        cx: f64,
+        cy: f64,
+        points: u32,
+        outer_radius: f64,
+        inner_radius: f64,
+    },
 }
 
 impl Shape {
@@ -77,6 +97,35 @@ impl Shape {
             ],
             Shape::Polyline(ref points) => poly(points, false),
             Shape::Polygon(ref points) => poly(points, true),
+            Shape::RegularPolygon { cx, cy, radius, sides } => {
+                if sides < 3 || radius <= 0.0 {
+                    return Vec::new();
+                }
+                // From straight down, a half step round to the first corner
+                let step = std::f64::consts::TAU / f64::from(sides);
+                let corners = (0..sides).map(|i| {
+                    let (sin, cos) = ((f64::from(i) + 0.5) * step).sin_cos();
+                    Point2D::new(cx - radius * sin, cy + radius * cos)
+                });
+                poly(&corners.collect::<Vec<_>>(), true)
+            }
+            Shape::Star { cx, cy, points, outer_radius, inner_radius } => {
+                if points < 2 || outer_radius <= 0.0 {
+                    return Vec::new();
+                }
+                // From straight up, alternating between the two circles
+                let step = std::f64::consts::PI / f64::from(points);
+                let corners = (0..2 * points).map(|i| {
+                    let radius = if i % 2 == 0 {
+                        outer_radius
+                    } else {
+                        inner_radius
+                    };
+                    let (sin, cos) = (f64::from(i) * step).sin_cos();
+                    Point2D::new(cx + radius * sin, cy - radius * cos)
+                });
+                poly(&corners.collect::<Vec<_>>(), true)
+            }
         }
     }
 }
@@ -303,5 +352,92 @@ mod test {
         assert_eq!(path(Shape::Polyline(points.clone())), "M 0 0 L 10 0 L 5 8");
         assert_eq!(path(Shape::Polygon(points)), "M 0 0 L 10 0 L 5 8 Z");
         assert_eq!(path(Shape::Polygon(Vec::new())), "");
+    }
+
+    /// The corners of `shape`, which is closed and drawn with lines.
+    fn corners(shape: Shape) -> Vec<Point2D<f64>> {
+        crate::segments_with_context(&shape.to_path())
+            .filter(|context| !matches!(context.segment, svgtypes::PathSegment::ClosePath { .. }))
+            .map(|context| context.end)
+            .collect()
+    }
+
+    fn close(a: Point2D<f64>, b: Point2D<f64>) -> bool {
+        (a - b).length() < 1e-9
+    }
+
+    #[test]
+    fn regular_polygons_stand_on_a_level_side() {
+        let square =
+            corners(Shape::RegularPolygon { cx: 0.0, cy: 0.0, radius: 2f64.sqrt(), sides: 4 });
+        let expected = [(-1.0, 1.0), (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0)];
+        assert_eq!(square.len(), 4);
+        for (corner, (x, y)) in square.iter().zip(expected) {
+            assert!(close(*corner, Point2D::new(x, y)), "{corner:?}");
+        }
+
+        let triangle = corners(Shape::RegularPolygon { cx: 5.0, cy: 5.0, radius: 2.0, sides: 3 });
+        assert!(close(triangle[1], Point2D::new(5.0, 3.0)), "points up");
+        assert!(
+            (triangle[0].y - triangle[2].y).abs() < 1e-12,
+            "level bottom"
+        );
+    }
+
+    #[test]
+    fn regular_polygons_and_stars_run_clockwise() {
+        for shape in [
+            Shape::RegularPolygon { cx: 0.0, cy: 0.0, radius: 10.0, sides: 7 },
+            Shape::Star {
+                cx: 0.0,
+                cy: 0.0,
+                points: 5,
+                outer_radius: 10.0,
+                inner_radius: 4.0,
+            },
+        ] {
+            assert!(crate::PathMeasure::new(shape.to_path()).is_clockwise());
+        }
+    }
+
+    #[test]
+    fn stars_alternate_between_the_radii_from_the_top() {
+        let star = corners(Shape::Star {
+            cx: 1.0,
+            cy: 2.0,
+            points: 5,
+            outer_radius: 10.0,
+            inner_radius: 4.0,
+        });
+        assert_eq!(star.len(), 10);
+        assert!(close(star[0], Point2D::new(1.0, -8.0)));
+        for (i, corner) in star.iter().enumerate() {
+            let radius = (*corner - Point2D::new(1.0, 2.0)).length();
+            let expected = if i % 2 == 0 { 10.0 } else { 4.0 };
+            assert!((radius - expected).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn degenerate_polygons_and_stars_draw_nothing() {
+        assert!(
+            Shape::RegularPolygon { cx: 0.0, cy: 0.0, radius: 1.0, sides: 2 }
+                .to_path()
+                .is_empty()
+        );
+        assert!(
+            Shape::RegularPolygon { cx: 0.0, cy: 0.0, radius: 0.0, sides: 5 }
+                .to_path()
+                .is_empty()
+        );
+        assert!(Shape::Star {
+            cx: 0.0,
+            cy: 0.0,
+            points: 1,
+            outer_radius: 1.0,
+            inner_radius: 0.5
+        }
+        .to_path()
+        .is_empty());
     }
 }

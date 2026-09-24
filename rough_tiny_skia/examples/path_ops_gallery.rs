@@ -1453,6 +1453,140 @@ fn reorient_join_strip(out_dir: &Path) {
     canvas.save(out_dir, "reorient_join");
 }
 
+fn polygons_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "polygons and stars",
+        "regular polygons and stars, laid out as paper.js lays them out",
+        4,
+    );
+    for i in 0..4 {
+        let (cx, cy) = cell_center(canvas.cell(i));
+        let (shape, label) = match i {
+            0 => (
+                Shape::RegularPolygon { cx, cy, radius: 44.0, sides: 3 },
+                "3 sides",
+            ),
+            1 => (
+                Shape::RegularPolygon { cx, cy, radius: 44.0, sides: 6 },
+                "6 sides",
+            ),
+            2 => (
+                Shape::Star {
+                    cx,
+                    cy,
+                    points: 5,
+                    outer_radius: 46.0,
+                    inner_radius: 19.0,
+                },
+                "star 5, 46 / 19",
+            ),
+            _ => (
+                Shape::Star {
+                    cx,
+                    cy,
+                    points: 8,
+                    outer_radius: 46.0,
+                    inner_radius: 30.0,
+                },
+                "star 8, 46 / 30",
+            ),
+        };
+        let path = write_path(shape.to_path(), &WriteOptions::default());
+        draw_filled(&mut canvas, &path);
+        draw_direction(&mut canvas, &path);
+        let start = segments_with_context(&parse(&path)).next().unwrap().end;
+        draw_dot(&mut canvas, (start.x, start.y), true);
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "polygons");
+}
+
+fn interior_divide_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "interior_point and divide_at",
+        "a point inside a shape, and a segment divided in two where a length falls",
+        4,
+    );
+    // A ring and a crescent, each with the point found inside it
+    let center = cell_center(canvas.cell(0));
+    let ring = format!(
+        "M {x0} {y} A 45 45 0 0 1 {x1} {y} A 45 45 0 0 1 {x0} {y} Z \
+         M {i0} {y} A 22 22 0 0 0 {i1} {y} A 22 22 0 0 0 {i0} {y} Z",
+        x0 = center.0 - 45.0,
+        x1 = center.0 + 45.0,
+        i0 = center.0 - 22.0,
+        i1 = center.0 + 22.0,
+        y = center.1,
+    );
+    let center = cell_center(canvas.cell(1));
+    let crescent = format!(
+        "M {} {} A 45 45 0 1 0 {} {} A 34 34 0 1 1 {} {} Z",
+        center.0 + 10.0,
+        center.1 - 44.0,
+        center.0 + 10.0,
+        center.1 + 44.0,
+        center.0 + 10.0,
+        center.1 - 44.0,
+    );
+    for (i, path) in [(0, ring), (1, crescent)] {
+        fill_nonzero(&mut canvas, &path);
+        draw_stroke(&mut canvas, &path, BROWN, 1.5);
+        let measure = PathMeasure::new(parse(&path));
+        if let Some(point) = measure.interior_point(FillRule::NonZero) {
+            draw_dot(&mut canvas, (point.x, point.y), false);
+        }
+        canvas.label(i, "interior_point");
+    }
+
+    // A curve and an arc, with dots where segments meet
+    let path = |center: (f64, f64)| {
+        format!(
+            "M {} {} C {} {} {} {} {} {} A 30 30 0 0 0 {} {}",
+            center.0 - 60.0,
+            center.1 + 20.0,
+            center.0 - 50.0,
+            center.1 - 40.0,
+            center.0 - 5.0,
+            center.1 - 40.0,
+            center.0,
+            center.1 + 10.0,
+            center.0 + 60.0,
+            center.1 + 10.0,
+        )
+    };
+    let draw_joins = |canvas: &mut Canvas, segments: &[PathSegment]| {
+        for context in segments_with_context(segments) {
+            draw_small_dot(canvas, (context.end.x, context.end.y), true);
+        }
+    };
+    let before = parse(&path(cell_center(canvas.cell(2))));
+    draw_stroke(
+        &mut canvas,
+        &write_path(&before, &WriteOptions::default()),
+        BROWN,
+        2.0,
+    );
+    draw_joins(&mut canvas, &before);
+    canvas.label(2, "2 segments");
+
+    let before = parse(&path(cell_center(canvas.cell(3))));
+    let measure = PathMeasure::new(&before);
+    let length = measure.total_length();
+    let divided = PathMeasure::new(measure.divide_at(length * 0.25)).divide_at(length * 0.8);
+    draw_stroke(
+        &mut canvas,
+        &write_path(&divided, &WriteOptions::default()),
+        BROWN,
+        2.0,
+    );
+    draw_joins(&mut canvas, &divided);
+    canvas.label(3, "divide_at 0.25, 0.8");
+
+    canvas.save(out_dir, "interior_divide");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1663,11 +1797,13 @@ fn main() {
     simplify_strip(out);
     smooth_strip(out);
     reorient_join_strip(out);
+    interior_divide_strip(out);
     nearest_strip(out);
     fill_strip(out);
     crop_strip(out);
     intersections_strip(out);
     shapes_strip(out);
+    polygons_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);
     is_closed_strip(out);

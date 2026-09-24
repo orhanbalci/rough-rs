@@ -86,6 +86,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their ends meet within a tolerance, reversing the second where needed,
   or with a line when no ends meet, and closes the result when it ends
   where it starts, as Paper.js's `join` does.
+- `PathMeasure::interior_point()` finds a point inside a path under a fill
+  rule, away from its outline, as Paper.js's `getInteriorPoint` does: the
+  middle of the widest stretch inside the path on the line through the
+  middle of its bounds, trying other lines where that one only touches it.
+- `PathMeasure::divide_at()` divides the segment at a length into two of
+  the same kind, absolute or relative as it was, leaving the rest of the
+  path as it is, as Paper.js's `divideAt` does.
+- `shapes::Shape::RegularPolygon` and `shapes::Shape::Star`, laid out as
+  Paper.js lays them out and drawn clockwise.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -102,11 +111,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Crate documentation and README with a runnable example for each feature:
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
-  for translate, rotate, scale, skew, flip, shapes, measure, curvature,
-  nearest, contains, crop, simplify, smooth, intersections, reverse,
-  reorient, join, split_subpaths, is_closed, unarc, unshort, to_box,
-  inbox and segments_with_context. They replace the examples that only
-  linked to rough_piet programs.
+  for translate, rotate, scale, skew, flip, shapes, polygons and stars,
+  measure, curvature, nearest, contains, interior_point, divide_at, crop,
+  simplify, smooth, intersections, reverse, reorient, join, split_subpaths,
+  is_closed, unarc, unshort, to_box, inbox and segments_with_context. They
+  replace the examples that only linked to rough_piet programs.
 
 ### Changed
 

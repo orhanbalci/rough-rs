@@ -80,6 +80,8 @@ pub struct Nearest {
 /// ```
 #[derive(Clone, Debug)]
 pub struct PathMeasure {
+    /// The segments measured, as given
+    pub(crate) segments: Vec<PathSegment>,
     pub(crate) pieces: Vec<Piece>,
     total: f64,
 }
@@ -149,7 +151,7 @@ impl PathMeasure {
                 total += length;
             }
         }
-        PathMeasure { pieces, total }
+        PathMeasure { segments, pieces, total }
     }
 
     /// The length of the whole path.
@@ -382,6 +384,92 @@ impl PathMeasure {
         self.pieces.chunk_by(|a, b| a.subpath == b.subpath)
     }
 
+    /// A point inside the path when filled with `rule`, away from its
+    /// outline, or `None` when it encloses nothing. It suits a label or a
+    /// test of which other shapes the path lies inside, and is the one
+    /// Paper.js's `getInteriorPoint` finds.
+    ///
+    /// # Algorithm
+    ///
+    /// The horizontal line through the middle of the path's bounds crosses
+    /// the path, flattened into lines, at points that cut it into
+    /// stretches. The middle of the widest stretch inside the path is taken.
+    /// When the line only touches the path there, lines at a quarter and
+    /// three quarters of the height are tried, then eighths, and so on. The
+    /// point is the middle of the widest stretch on that line, not the point
+    /// furthest from the outline overall.
+    ///
+    /// ```
+    /// use svg_path_ops::euclid::default::Point2D;
+    /// use svg_path_ops::pt::PathTransformer;
+    /// use svg_path_ops::FillRule;
+    ///
+    /// // A ring: the middle of its center line is in the hole
+    /// let ring = PathTransformer::parse("M 0 0 H 30 V 30 H 0 Z M 10 10 V 20 H 20 V 10 Z")?;
+    /// let point = ring.measure().interior_point(FillRule::NonZero);
+    /// assert_eq!(point, Some(Point2D::new(5.0, 15.0)));
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn interior_point(&self, rule: FillRule) -> Option<Point2D<f64>> {
+        // The path as closed polygons
+        let lines = self.flatten(self.total * 1e-4);
+        let mut polygons: Vec<Vec<Point2D<f64>>> = Vec::new();
+        for context in segments_with_context(&lines) {
+            match context.segment {
+                PathSegment::MoveTo { .. } => polygons.push(vec![context.end]),
+                _ => polygons.last_mut()?.push(context.end),
+            }
+        }
+        let ys = polygons.iter().flatten().map(|point| point.y);
+        let (low, high) = ys.fold((f64::INFINITY, f64::NEG_INFINITY), |(low, high), y| {
+            (low.min(y), high.max(y))
+        });
+        if low >= high {
+            return None;
+        }
+
+        // Where the line at `y` crosses the polygons' edges, counting an
+        // edge that ends on the line on one side only
+        let on_line = |y: f64| {
+            let mut crossings: Vec<f64> = Vec::new();
+            for polygon in &polygons {
+                let closing = [polygon[polygon.len() - 1], polygon[0]];
+                for edge in polygon.windows(2).chain(std::iter::once(&closing[..])) {
+                    let (p, q) = (edge[0], edge[1]);
+                    if (p.y <= y) != (q.y <= y) {
+                        crossings.push(p.x + (y - p.y) * (q.x - p.x) / (q.y - p.y));
+                    }
+                }
+            }
+            crossings.sort_by(f64::total_cmp);
+            crossings
+                .windows(2)
+                .map(|pair| {
+                    (
+                        pair[1] - pair[0],
+                        Point2D::new((pair[0] + pair[1]) / 2.0, y),
+                    )
+                })
+                .filter(|&(width, point)| width > 0.0 && self.contains(point, rule))
+                // The widest, the leftmost of equally wide ones
+                .fold(
+                    None,
+                    |best: Option<(f64, Point2D<f64>)>, stretch| match best {
+                        Some(best) if best.0 >= stretch.0 => Some(best),
+                        _ => Some(stretch),
+                    },
+                )
+                .map(|(_, point)| point)
+        };
+        // The middle, then quarters, eighths and so on
+        (1..=10).find_map(|level| {
+            let parts = 1u32 << level;
+            (1..parts)
+                .step_by(2)
+                .find_map(|k| on_line(low + (high - low) * f64::from(k) / f64::from(parts)))
+        })
+    }
+
     /// The part of the path between lengths `from` and `to`, as a path of
     /// its own in absolute coordinates, or an empty path when `from` is not
     /// before `to`. Lengths outside the path are clamped.
@@ -507,7 +595,7 @@ impl PathMeasure {
     }
 
     /// The index of the piece at `length` and the parameter within it.
-    fn locate(&self, length: f64) -> Option<(usize, f64)> {
+    pub(crate) fn locate(&self, length: f64) -> Option<(usize, f64)> {
         let last = self.pieces.len().checked_sub(1)?;
         let length = if length.is_nan() {
             0.0
@@ -1478,6 +1566,38 @@ mod test {
     fn areas_drawn_in_opposite_directions_cancel() {
         let frame = measure("M 0 0 h 30 v 30 h -30 z M 10 10 v 10 h 10 v -10 z");
         assert_eq!(frame.area(), 800.0);
+    }
+
+    #[test]
+    fn interior_point_of_a_circle_is_its_center() {
+        let circle = measure("M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0 Z");
+        let point = circle.interior_point(FillRule::NonZero).unwrap();
+        assert!(point.to_vector().length() < 1e-3, "{point:?}");
+    }
+
+    #[test]
+    fn interior_point_follows_the_fill_rule() {
+        // Two squares drawn the same way overlap between x 5 and 20
+        let squares = measure("M 0 0 H 20 V 20 H 0 Z M 5 0 H 35 V 20 H 5 Z");
+        let at = |rule| squares.interior_point(rule).unwrap();
+        assert_eq!(at(FillRule::NonZero), Point2D::new(12.5, 10.0));
+        assert_eq!(at(FillRule::EvenOdd), Point2D::new(27.5, 10.0));
+    }
+
+    #[test]
+    fn interior_point_off_the_middle_when_the_middle_only_touches() {
+        let hourglass = measure("M 0 0 L 10 10 L 20 0 Z M 0 20 L 10 10 L 20 20 Z");
+        let point = hourglass.interior_point(FillRule::NonZero).unwrap();
+        assert_eq!(point, Point2D::new(10.0, 5.0));
+    }
+
+    #[test]
+    fn no_interior_point_without_area() {
+        assert_eq!(
+            measure("M 0 0 L 10 0").interior_point(FillRule::NonZero),
+            None
+        );
+        assert_eq!(measure("").interior_point(FillRule::NonZero), None);
     }
 
     #[test]
