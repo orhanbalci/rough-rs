@@ -318,6 +318,38 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! ### Intersections
+//!
+//! [`PathMeasure::intersections`] finds the points where two paths meet,
+//! arcs included, and where each point lies on both paths:
+//!
+//! ![intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/intersections.png)
+//!
+//! ```
+//! use svg_path_ops::euclid::default::Point2D;
+//! use svg_path_ops::pt::PathTransformer;
+//!
+//! let circle = PathTransformer::parse("M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0")?;
+//! let line = PathTransformer::parse("M -20 6 H 20")?;
+//!
+//! let meets = circle.measure().intersections(&line.measure());
+//! assert_eq!(meets.len(), 2);
+//! assert!((meets[0].point - Point2D::new(8.0, 6.0)).length() < 1e-9);
+//! // Where the second point lies on the line, by length
+//! assert!((meets[1].other.length - 12.0).abs() < 1e-9);
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
+//! Each pair of segments is solved the way that suits it. Lines meet lines
+//! in a linear system, and lines meet curves and arcs at the roots of a
+//! polynomial. Two curves are cut in half again and again, dropping the
+//! halves whose bounding boxes do not overlap, until the pieces around each
+//! meeting point are a millionth of a unit wide; Newton's method on the
+//! exact curves then makes each point accurate to about 1e-10. Where two
+//! curves cross while running side by side, the pieces around the crossing
+//! are gathered into one point. Segments that overlap along a stretch have
+//! no single meeting point and are not reported.
+//!
 //! ### Bounding boxes
 //!
 //! [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -397,6 +429,7 @@
 //! [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
 //! [`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
 //! [`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
+//! [`PathMeasure::intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.intersections
 //! [`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 //! [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 //! [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x
@@ -408,6 +441,7 @@ pub(crate) mod a2c;
 pub mod bbox;
 mod context;
 pub(crate) mod ellipse;
+mod intersect;
 mod measure;
 mod optimize;
 pub mod pt;
@@ -420,6 +454,7 @@ use std::borrow::Borrow;
 
 use a2c::a2c;
 pub use context::{segments_with_context, SegmentContext};
+pub use intersect::{Intersection, Location};
 pub use measure::{FillRule, Nearest, PathMeasure, Position};
 pub use optimize::optimize;
 pub use reverse::reverse;

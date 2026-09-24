@@ -1122,6 +1122,51 @@ fn crop_strip(out_dir: &Path) {
     canvas.save(out_dir, "crop");
 }
 
+fn intersections_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "intersections",
+        "the points where two paths meet (hollow), arcs and curves included",
+        3,
+    );
+    let cells: [(&str, &str); 3] = [
+        (
+            "M -60 0 C -30 -70 -10 70 0 0 S 30 -70 60 0",
+            "M 38 0 A 38 38 0 0 1 -38 0 A 38 38 0 0 1 38 0",
+        ),
+        (
+            "M 55 0 A 55 25 20 0 1 -55 0 A 55 25 20 0 1 55 0",
+            "M 55 0 A 55 25 -35 0 1 -55 0 A 55 25 -35 0 1 55 0",
+        ),
+        ("", "M -65 30 L 65 -32"),
+    ];
+    let labels = ["curve and circle", "two ellipses", "ferris and a line"];
+    for (i, (first, second)) in cells.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let place = |path: &str| {
+            let mut transformer = PathTransformer::new(path.into());
+            transformer.translate(center.0, center.1);
+            transformer.to_string()
+        };
+        let first = if first.is_empty() {
+            let ferris = fit(&ferris(), (center.0 - 60.0, center.1 - 44.0, 120.0, 88.0));
+            ferris_parts(&ferris)[3].clone()
+        } else {
+            place(first)
+        };
+        let second = place(second);
+        draw_stroke(&mut canvas, &first, BROWN, 1.5);
+        draw_stroke(&mut canvas, &second, GHOST_COLOR, 1.5);
+        let meets =
+            PathMeasure::new(parse(&first)).intersections(&PathMeasure::new(parse(&second)));
+        for meet in meets {
+            draw_dot(&mut canvas, (meet.point.x, meet.point.y), true);
+        }
+        canvas.label(i, labels[i]);
+    }
+    canvas.save(out_dir, "intersections");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1331,6 +1376,7 @@ fn main() {
     nearest_strip(out);
     fill_strip(out);
     crop_strip(out);
+    intersections_strip(out);
     shapes_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);

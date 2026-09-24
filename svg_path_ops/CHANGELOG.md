@@ -56,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   into paths that keep each segment's kind, arcs included, and
   `PathMeasure::flatten()` turns it into lines guaranteed to stay within a
   tolerance of it.
+- `PathMeasure::intersections()` finds the points where two paths meet,
+  arcs included, each with its length and segment on both paths
+  (`Intersection`, `Location`). Lines and curves meet in closed form;
+  two curves are subdivided by bounding boxes and refined by Newton's
+  method to about 1e-10. The algorithm is described in the method's docs.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -73,9 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, measure, nearest,
-  contains, crop, reverse, split_subpaths, is_closed, unarc, unshort, to_box,
-  inbox and segments_with_context. They replace the examples that only linked to
-  rough_piet programs.
+  contains, crop, intersections, reverse, split_subpaths, is_closed, unarc,
+  unshort, to_box, inbox and segments_with_context. They replace the
+  examples that only linked to rough_piet programs.
 
 ### Changed
 

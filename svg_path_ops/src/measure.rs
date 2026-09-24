@@ -80,21 +80,21 @@ pub struct Nearest {
 /// ```
 #[derive(Clone, Debug)]
 pub struct PathMeasure {
-    pieces: Vec<Piece>,
+    pub(crate) pieces: Vec<Piece>,
     total: f64,
 }
 
 /// A drawing segment, and where along the path it starts.
 #[derive(Clone, Copy, Debug)]
-struct Piece {
-    index: usize,
+pub(crate) struct Piece {
+    pub(crate) index: usize,
     /// Which subpath the segment belongs to, counting from 0
     subpath: usize,
     /// Whether the segment is a close path
     closes: bool,
-    shape: PieceShape,
-    start: f64,
-    length: f64,
+    pub(crate) shape: PieceShape,
+    pub(crate) start: f64,
+    pub(crate) length: f64,
 }
 
 /// How [`PathMeasure::contains`] decides what is inside a path, as SVG's
@@ -112,7 +112,7 @@ pub enum FillRule {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum PieceShape {
+pub(crate) enum PieceShape {
     Line(Line),
     Quadratic(QuadBez),
     Cubic(CubicBez),
@@ -506,7 +506,7 @@ impl PieceShape {
         })
     }
 
-    fn eval(&self, t: f64) -> kurbo::Point {
+    pub(crate) fn eval(&self, t: f64) -> kurbo::Point {
         match self {
             PieceShape::Line(line) => line.eval(t),
             PieceShape::Quadratic(quad) => quad.eval(t),
@@ -543,8 +543,14 @@ impl PieceShape {
     fn nearest(&self, target: kurbo::Point) -> (f64, f64) {
         let nearest = match self {
             PieceShape::Line(line) => line.nearest(target, ACCURACY),
-            PieceShape::Quadratic(quad) => quad.nearest(target, ACCURACY),
-            PieceShape::Cubic(cubic) => cubic.nearest(target, ACCURACY),
+            PieceShape::Quadratic(quad) => {
+                let nearest = quad.nearest(target, ACCURACY);
+                return polish_nearest(quad, target, nearest.t);
+            }
+            PieceShape::Cubic(cubic) => {
+                let nearest = cubic.nearest(target, ACCURACY);
+                return polish_nearest(cubic, target, nearest.t);
+            }
             PieceShape::Arc(arc) => return arc_nearest(arc, target),
         };
         (nearest.t, nearest.distance_sq)
@@ -620,7 +626,7 @@ impl PieceShape {
     }
 
     /// The length from the piece's start to parameter `t`.
-    fn length_to(&self, t: f64) -> f64 {
+    pub(crate) fn length_to(&self, t: f64) -> f64 {
         match self {
             PieceShape::Line(line) => line.arclen(ACCURACY) * t,
             PieceShape::Quadratic(quad) => quad.subsegment(0.0..t).arclen(ACCURACY),
@@ -765,6 +771,42 @@ fn arc_polyline(arc: &Arc, tolerance: f64) -> impl Iterator<Item = kurbo::Point>
     };
     let count = (arc.sweep_angle.abs() / step).ceil().max(1.0) as u32;
     (1..=count).map(move |k| arc.eval(f64::from(k) / f64::from(count)))
+}
+
+/// Refines the parameter of the curve's point nearest to `target` from
+/// `t`, and returns it with the squared distance.
+///
+/// kurbo finds the nearest point of a curve through quadratic pieces that
+/// approximate it, which leaves `t` off by up to about 1e-7 of the curve,
+/// too much when the target lies on the curve. At the nearest point the
+/// offset `C(t) − target` is at right angles to the curve, so Newton's
+/// method on `(C(t) − target) · C′(t) = 0` moves `t` onto it; a step is
+/// kept only while it brings the point closer.
+fn polish_nearest<C>(curve: &C, target: kurbo::Point, mut t: f64) -> (f64, f64)
+where
+    C: ParamCurve + ParamCurveDeriv,
+    C::DerivResult: ParamCurve + ParamCurveDeriv,
+    <C::DerivResult as ParamCurveDeriv>::DerivResult: ParamCurve,
+{
+    let (first, second) = (curve.deriv(), curve.deriv().deriv());
+    let distance_sq = |t: f64| (curve.eval(t) - target).hypot2();
+    let mut best = distance_sq(t);
+    for _ in 0..8 {
+        let offset = curve.eval(t) - target;
+        let velocity = first.eval(t).to_vec2();
+        let slope = offset.dot(velocity);
+        let curvature = velocity.hypot2() + offset.dot(second.eval(t).to_vec2());
+        if curvature <= 0.0 {
+            break;
+        }
+        let next = (t - slope / curvature).clamp(0.0, 1.0);
+        let next_distance = distance_sq(next);
+        if next_distance >= best {
+            break;
+        }
+        (t, best) = (next, next_distance);
+    }
+    (t, best)
 }
 
 /// Where a subpath's first piece starts and its last piece ends.
@@ -1118,6 +1160,15 @@ mod test {
                 m.point_at(nearest.length).unwrap(),
                 nearest.point
             ));
+        }
+    }
+
+    #[test]
+    fn nearest_point_on_the_curve_is_at_distance_zero() {
+        let m = measure("M 201.72 78.24 C 197.47 75.69 189.84 60.83 188.14 59.13");
+        for k in 1..10 {
+            let on_curve = m.point_at(m.total_length() * f64::from(k) / 10.0).unwrap();
+            assert!(m.nearest(on_curve).unwrap().distance < 1e-12);
         }
     }
 
