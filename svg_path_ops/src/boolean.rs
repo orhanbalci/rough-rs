@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 
 use i_overlay::core::fill_rule::FillRule as OverlayFill;
 use i_overlay::core::overlay_rule::OverlayRule;
+use i_overlay::float::scale::FixedScaleFloatOverlay;
 use i_overlay::float::single::SingleFloatOverlay;
 use svgtypes::PathSegment;
 
@@ -69,8 +70,8 @@ pub(crate) const CORNER_ANGLE: f64 = 30.0;
 /// Both paths are turned into straight lines with
 /// [`PathMeasure::flatten`], none further than a quarter of the tolerance
 /// from the curve it replaces, and the polygons are combined by
-/// [i_overlay], which snaps them to a fine integer grid and finds the
-/// result exactly on it. Its outline is made of pieces of the two polygons,
+/// [i_overlay], which snaps them to an integer grid a thousandth of the
+/// tolerance fine and finds the result exactly on it. Its outline is made of pieces of the two polygons,
 /// so it is within a quarter of the tolerance of the exact outline.
 ///
 /// With `options.curves`, the outline is then redrawn by
@@ -115,11 +116,7 @@ pub fn boolean(
     options: &BooleanOptions,
 ) -> Vec<PathSegment> {
     let tolerance = options.tolerance.max(1e-9);
-    let flatten = if options.curves {
-        tolerance * FLATTEN_SHARE
-    } else {
-        tolerance
-    };
+    let flatten = flatten_tolerance(options);
     let a = polygons(&PathMeasure::new(a), flatten);
     let b = polygons(&PathMeasure::new(b), flatten);
     let rule = match op {
@@ -132,8 +129,51 @@ pub fn boolean(
         FillRule::NonZero => OverlayFill::NonZero,
         FillRule::EvenOdd => OverlayFill::EvenOdd,
     };
-    let shapes = a.overlay_as::<i64>(&b, rule, fill);
+    let shapes = combine(&a, &b, rule, fill, tolerance);
+    finish(&shapes, tolerance, options.curves)
+}
 
+/// Polygons closer than this share of the tolerance are the same: i_overlay
+/// snaps every point to a grid this fine, so edges that should coincide,
+/// computed two ways, meet instead of leaving a hairline gap.
+const GRID_SHARE: f64 = 1e-3;
+
+/// `a` and `b` combined by i_overlay with `rule`, on a grid a thousandth of
+/// `tolerance` fine, or as fine as i_overlay can go for paths too large
+/// for that: about two billionths of their size.
+///
+/// This uses i_overlay's 32-bit integer engine. Its 64-bit one leaves
+/// polygons that meet along a shared edge, with a vertex of one inside an
+/// edge of the other, apart instead of united.
+pub(crate) fn combine(
+    a: &Vec<Vec<[f64; 2]>>,
+    b: &Vec<Vec<[f64; 2]>>,
+    rule: OverlayRule,
+    fill: OverlayFill,
+    tolerance: f64,
+) -> Vec<Vec<Vec<[f64; 2]>>> {
+    let scale = 1.0 / (tolerance * GRID_SHARE);
+    a.overlay_with_fixed_scale_as::<i32>(b, rule, fill, scale)
+        .unwrap_or_else(|_| a.overlay_as::<i32>(b, rule, fill))
+}
+
+/// The tolerance spent on turning paths into lines, from the whole.
+pub(crate) fn flatten_tolerance(options: &BooleanOptions) -> f64 {
+    let tolerance = options.tolerance.max(1e-9);
+    if options.curves {
+        tolerance * FLATTEN_SHARE
+    } else {
+        tolerance
+    }
+}
+
+/// The shapes i_overlay made as a path, without specks smaller than
+/// `tolerance`, and with curves fitted to it when `curves` is set.
+pub(crate) fn finish(
+    shapes: &[Vec<Vec<[f64; 2]>>],
+    tolerance: f64,
+    curves: bool,
+) -> Vec<PathSegment> {
     let mut path = Vec::new();
     for contour in shapes.iter().flatten() {
         // A speck smaller than the tolerance, left where outlines touch,
@@ -159,7 +199,7 @@ pub fn boolean(
         }
         path.push(PathSegment::ClosePath { abs: true });
     }
-    if options.curves {
+    if curves {
         PathMeasure::new(&path).simplify(tolerance * FIT_SHARE, CORNER_ANGLE)
     } else {
         path
@@ -168,7 +208,7 @@ pub fn boolean(
 
 /// The subpaths of the path measured by `measure` as closed polygons, none
 /// of their lines further than `tolerance` from the path.
-fn polygons(measure: &PathMeasure, tolerance: f64) -> Vec<Vec<[f64; 2]>> {
+pub(crate) fn polygons(measure: &PathMeasure, tolerance: f64) -> Vec<Vec<[f64; 2]>> {
     let lines = measure.flatten(tolerance);
     let mut polygons: Vec<Vec<[f64; 2]>> = Vec::new();
     for context in segments_with_context(&lines) {

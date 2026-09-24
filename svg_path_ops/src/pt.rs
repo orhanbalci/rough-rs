@@ -14,6 +14,8 @@ use crate::measure::PathMeasure;
 use crate::optimize::optimize;
 use crate::orient::reorient;
 use crate::reverse::reverse;
+#[cfg(feature = "boolean")]
+use crate::stroke::{LineJoin, StrokeStyle};
 use crate::write::{write_path, WriteOptions};
 
 #[derive(Clone)]
@@ -797,6 +799,35 @@ impl PathTransformer {
     ) -> &mut Self {
         self.evaluate_stack();
         self.path_segments = boolean(&self.path_segments, other.evaluated(), op, options).into();
+        self
+    }
+
+    /// Replaces the path with the outline of its stroke drawn with `style`,
+    /// pending transforms applied first. See
+    /// [`PathMeasure::stroke_to_path`].
+    #[cfg(feature = "boolean")]
+    pub fn stroke_to_path(&mut self, style: &StrokeStyle, options: &BooleanOptions) -> &mut Self {
+        self.path_segments = self.measure().stroke_to_path(style, options).into();
+        self.stack.clear();
+        self
+    }
+
+    /// Replaces the path with the area it covers grown by `distance`, or
+    /// shrunk when it is negative, pending transforms applied first. See
+    /// [`PathMeasure::offset`].
+    #[cfg(feature = "boolean")]
+    pub fn offset(
+        &mut self,
+        distance: f64,
+        join: LineJoin,
+        miter_limit: f64,
+        options: &BooleanOptions,
+    ) -> &mut Self {
+        self.path_segments = self
+            .measure()
+            .offset(distance, join, miter_limit, options)
+            .into();
+        self.stack.clear();
         self
     }
 
@@ -2350,6 +2381,24 @@ mod test {
             close(square().intersect(&moved, &options), 200.0);
             close(square().difference(&moved, &options), 200.0);
             close(square().xor(&moved, &options), 400.0);
+        }
+
+        #[test]
+        fn stroke_and_offset_apply_pending_transforms() {
+            use crate::{LineJoin, StrokeStyle};
+            let options = BooleanOptions::default();
+            let mut line = PathTransformer::parse("M 0 0 H 10").unwrap();
+            line.scale(2.0, 1.0);
+            line.stroke_to_path(
+                &StrokeStyle { width: 4.0, ..StrokeStyle::default() },
+                &options,
+            );
+            assert!((area(&line) - 80.0).abs() < 1e-9);
+            let mut grown = square();
+            grown
+                .scale(0.5, 0.5)
+                .offset(1.0, LineJoin::Miter, 4.0, &options);
+            assert!((area(&grown) - 144.0).abs() < 1e-9);
         }
 
         #[test]

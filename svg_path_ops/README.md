@@ -557,6 +557,40 @@ exact operation.
 
 [i_overlay]: https://docs.rs/i_overlay
 
+### Stroke to path and offset
+
+[`PathMeasure::stroke_to_path`] turns a stroke into the outline of the
+area it covers, caps, joins and miter limit included, for cutters,
+plotters and "stroke to path" in a drawing program, and
+[`PathMeasure::offset`] grows or shrinks the area a path covers. Both
+use the `boolean` feature and work within a tolerance, as [`boolean`]
+does:
+
+![outline](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/outline.png)
+
+```rust
+use svg_path_ops::pt::PathTransformer;
+use svg_path_ops::{BooleanOptions, LineCap, LineJoin, PathMeasure, StrokeStyle};
+
+let options = BooleanOptions::default();
+let line = PathTransformer::parse("M 0 0 H 20")?.measure();
+let style = StrokeStyle {
+    width: 4.0,
+    cap: LineCap::Square,
+    ..StrokeStyle::default()
+};
+let outline = line.stroke_to_path(&style, &options);
+assert!((PathMeasure::new(&outline).area() - 96.0).abs() < 1e-9);
+
+let square = PathTransformer::parse("M 0 0 H 20 V 20 H 0 Z")?.measure();
+let grown = square.offset(2.0, LineJoin::Miter, 4.0, &options);
+assert!((PathMeasure::new(&grown).area() - 576.0).abs() < 1e-9);
+```
+
+The stroke is built from the lines across the path at each point, half
+the width to each side, so a curve tighter than the stroke is covered
+exactly as SVG defines it; joins are added only where segments meet.
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -665,6 +699,8 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`PathMeasure::classify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.classify
 [`PathMeasure::bounds`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.bounds
 [`PathMeasure::stroke_bounds`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.stroke_bounds
+[`PathMeasure::stroke_to_path`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.stroke_to_path
+[`PathMeasure::offset`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.offset
 [`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
 [`PathMeasure::smooth`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.smooth
 [`Smoothing::Continuous`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.Continuous

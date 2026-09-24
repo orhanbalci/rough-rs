@@ -1792,6 +1792,85 @@ fn boolean_strip(out_dir: &Path) {
     canvas.save(out_dir, "boolean");
 }
 
+fn outline_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "stroke_to_path and offset",
+        "a stroke as an outline to fill, and a shape grown and shrunk (dashed: original)",
+        4,
+    );
+    let options = BooleanOptions::default();
+    let wave = |(cx, cy): (f64, f64)| {
+        format!(
+            "M {} {} C {} {} {} {} {} {} S {} {} {} {}",
+            cx - 55.0,
+            cy + 10.0,
+            cx - 35.0,
+            cy - 45.0,
+            cx - 5.0,
+            cy - 45.0,
+            cx,
+            cy,
+            cx + 35.0,
+            cy + 45.0,
+            cx + 55.0,
+            cy - 10.0
+        )
+    };
+    let strokes = [
+        (
+            StrokeStyle {
+                width: 14.0,
+                cap: LineCap::Round,
+                join: LineJoin::Round,
+                miter_limit: 4.0,
+            },
+            "round stroke",
+        ),
+        (
+            StrokeStyle {
+                width: 14.0,
+                cap: LineCap::Square,
+                join: LineJoin::Miter,
+                miter_limit: 4.0,
+            },
+            "square stroke",
+        ),
+    ];
+    for (i, (style, label)) in strokes.iter().enumerate() {
+        let path = wave(cell_center(canvas.cell(i)));
+        let outline = PathMeasure::new(parse(&path)).stroke_to_path(style, &options);
+        let written = write_path(&outline, &WriteOptions::default());
+        fill_nonzero(&mut canvas, &written);
+        draw_stroke(&mut canvas, &written, BROWN, 1.5);
+        draw_dashed(&mut canvas, &path, GHOST_COLOR, 1.0);
+        canvas.label(i, label);
+    }
+    for (i, (distance, label)) in [(2, (7.0, "offset 7")), (3, (-7.0, "offset -7"))] {
+        let (cx, cy) = cell_center(canvas.cell(i));
+        let star = Shape::Star {
+            cx,
+            cy,
+            points: 5,
+            outer_radius: 42.0,
+            inner_radius: 20.0,
+        }
+        .to_path();
+        let offset = PathMeasure::new(&star).offset(distance, LineJoin::Round, 4.0, &options);
+        let written = write_path(&offset, &WriteOptions::default());
+        fill_nonzero(&mut canvas, &written);
+        draw_stroke(&mut canvas, &written, BROWN, 1.5);
+        draw_dashed(
+            &mut canvas,
+            &write_path(&star, &WriteOptions::default()),
+            GHOST_COLOR,
+            1.0,
+        );
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "outline");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -2010,6 +2089,7 @@ fn main() {
     stroke_bounds_strip(out);
     classify_strip(out);
     boolean_strip(out);
+    outline_strip(out);
     shapes_strip(out);
     polygons_strip(out);
     reverse_strip(out);
