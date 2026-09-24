@@ -42,20 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ellipse`, `line`, `polyline`, `polygon`) to the equivalent paths SVG 2
   defines, including its rules for missing and oversized `rx`/`ry`.
 - `PathMeasure` and `pt::PathTransformer::measure()` measure a path: its
-  total length, and the point, unit tangent and segment with parameter
-  (`Position`) at any length along it. Arcs are measured as ellipse arcs,
-  lengths are accurate to 1e-9, and a close path counts as the line back to
-  its subpath start. `PathMeasure::nearest()` finds the point of the path
-  nearest to another point, with its distance, length and segment
-  (`Nearest`), arcs included, and `PathMeasure::is_point_in_stroke()` tells
-  whether a point is on the path's stroke of a given width.
-  `PathMeasure::area()` gives the enclosed area, signed by drawing direction
-  and exact for arcs, and `PathMeasure::contains()` tells whether a point is
-  inside under a `FillRule` (nonzero or evenodd), closing open subpaths as
-  filling does. `PathMeasure::crop()` and `split_at()` cut a path by length
-  into paths that keep each segment's kind, arcs included, and
-  `PathMeasure::flatten()` turns it into lines guaranteed to stay within a
-  tolerance of it.
+  total length, and the point, unit tangent, unit normal, signed curvature
+  and segment with parameter (`Position`) at any length along it. Arcs are
+  measured as ellipse arcs, lengths are accurate to 1e-9, and a close path
+  counts as the line back to its subpath start. `PathMeasure::nearest()`
+  finds the point of the path nearest to another point, with its distance,
+  length and segment (`Nearest`), arcs included, and
+  `PathMeasure::is_point_in_stroke()` tells whether a point is on the path's
+  stroke of a given width. `PathMeasure::area()` gives the enclosed area,
+  signed by drawing direction and exact for arcs, and
+  `PathMeasure::contains()` tells whether a point is inside under a
+  `FillRule` (nonzero or evenodd), closing open subpaths as filling does.
+  `PathMeasure::crop()` and `split_at()` cut a path by length into paths
+  that keep each segment's kind, arcs included, and `PathMeasure::flatten()`
+  turns it into lines guaranteed to stay within a tolerance of it.
 - `PathMeasure::intersections()` finds the points where two paths meet,
   arcs included, each with its length and segment on both paths
   (`Intersection`, `Location`). Lines and curves meet in closed form;
@@ -77,10 +77,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Crate documentation and README with a runnable example for each feature:
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
-  for translate, rotate, scale, skew, flip, shapes, measure, nearest,
-  contains, crop, intersections, reverse, split_subpaths, is_closed, unarc,
-  unshort, to_box, inbox and segments_with_context. They replace the
-  examples that only linked to rough_piet programs.
+  for translate, rotate, scale, skew, flip, shapes, measure, curvature,
+  nearest, contains, crop, intersections, reverse, split_subpaths,
+  is_closed, unarc, unshort, to_box, inbox and segments_with_context. They
+  replace the examples that only linked to rough_piet programs.
 
 ### Changed
 

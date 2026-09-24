@@ -258,6 +258,25 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! Along with the point, it gives the tangent, the normal and the curvature
+//! at any length. A curvature comb draws normals as long as the curvature,
+//! showing where a path bends hard and where it turns the other way:
+//!
+//! ![curvature](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/curvature.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//!
+//! // Half an ellipse with radii 20 and 10, drawn clockwise on screen
+//! let measure = PathTransformer::parse("M 20 0 A 20 10 0 0 1 -20 0")?.measure();
+//!
+//! // Curvature is a / b² at the end of the long axis, b / a² at the short
+//! assert!((measure.curvature_at(0.0).unwrap() - 0.2).abs() < 1e-9);
+//! let middle = measure.total_length() / 2.0;
+//! assert!((measure.curvature_at(middle).unwrap() - 0.025).abs() < 1e-9);
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! It also finds the point of the path nearest to another point, and
 //! whether a point is on the path's stroke:
 //!

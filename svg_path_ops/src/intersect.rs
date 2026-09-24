@@ -18,7 +18,7 @@
 //! collinear lines, meet at infinitely many points and are left out.
 
 use euclid::default::Point2D;
-use kurbo::{Arc, Line, ParamCurve, ParamCurveDeriv, PathSeg, Rect, Vec2};
+use kurbo::{Arc, Line, ParamCurve, PathSeg, Rect, Vec2};
 
 use crate::measure::{PathMeasure, Piece, PieceShape, Position};
 
@@ -363,25 +363,6 @@ fn newton(a: &PieceShape, b: &PieceShape, mut t: f64, mut s: f64) -> Option<(f64
 }
 
 impl PieceShape {
-    /// The derivative of the piece's point by its parameter.
-    fn derivative(&self, t: f64) -> Vec2 {
-        match self {
-            PieceShape::Line(line) => line.p1 - line.p0,
-            PieceShape::Quadratic(quad) => quad.deriv().eval(t).to_vec2(),
-            PieceShape::Cubic(cubic) => cubic.deriv().eval(t).to_vec2(),
-            PieceShape::Arc(arc) => {
-                let angle = arc.start_angle + arc.sweep_angle * t;
-                let (sin, cos) = angle.sin_cos();
-                let (rsin, rcos) = arc.x_rotation.sin_cos();
-                let local = Vec2::new(-arc.radii.x * sin, arc.radii.y * cos);
-                Vec2::new(
-                    local.x * rcos - local.y * rsin,
-                    local.x * rsin + local.y * rcos,
-                ) * arc.sweep_angle
-            }
-        }
-    }
-
     /// A box around the piece's part between parameters `t0` and `t1`.
     ///
     /// A Bézier curve's part lies inside the convex hull of its control

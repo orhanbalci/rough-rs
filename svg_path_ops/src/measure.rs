@@ -184,6 +184,59 @@ impl PathMeasure {
         Some(Vector2D::new(unit.x, unit.y))
     }
 
+    /// The unit normal at `length`: the tangent turned a quarter turn
+    /// counterclockwise on screen, where y points down, so it points to the
+    /// left of the way the path runs. Paper.js and svgpathtools use the same
+    /// direction. `None` where [`tangent_at`](Self::tangent_at) is.
+    ///
+    /// ```
+    /// use svg_path_ops::euclid::default::Vector2D;
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::PathMeasure;
+    ///
+    /// let segments: Vec<_> = PathParser::from("M 0 0 H 10").collect::<Result<_, _>>()?;
+    /// let normal = PathMeasure::new(&segments).normal_at(5.0);
+    /// // Running right, the left is up the screen
+    /// assert_eq!(normal, Some(Vector2D::new(0.0, -1.0)));
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn normal_at(&self, length: f64) -> Option<Vector2D<f64>> {
+        let tangent = self.tangent_at(length)?;
+        Some(Vector2D::new(tangent.y, -tangent.x))
+    }
+
+    /// The curvature at `length`: one over the radius of the circle that
+    /// best fits the path there, positive where the path turns clockwise on
+    /// screen and negative where it turns counterclockwise. A line has no
+    /// curvature, and a circle of radius r has 1/r all round. `None` where
+    /// the path draws nothing.
+    ///
+    /// At a join, the curvature is the start of the second segment's, as
+    /// for [`position_at`](Self::position_at).
+    ///
+    /// ```
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::PathMeasure;
+    ///
+    /// // Half a circle of radius 10, drawn clockwise on screen
+    /// let segments: Vec<_> =
+    ///     PathParser::from("M 10 0 A 10 10 0 0 1 -10 0").collect::<Result<_, _>>()?;
+    /// let curvature = PathMeasure::new(&segments).curvature_at(3.0).unwrap();
+    /// assert!((curvature - 0.1).abs() < 1e-12);
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn curvature_at(&self, length: f64) -> Option<f64> {
+        let (piece, t) = self.locate(length)?;
+        self.pieces[piece].shape.curvature(t).or_else(|| {
+            // A zero-length piece does not bend; use the nearest piece
+            // before it that moves
+            self.pieces[..=piece]
+                .iter()
+                .rev()
+                .find_map(|piece| piece.shape.curvature(1.0))
+        })
+    }
+
     /// The point of the path nearest to `point`, or `None` when the path
     /// draws nothing. When several are equally near, the first along the
     /// path wins.
@@ -637,21 +690,57 @@ impl PieceShape {
 
     /// The derivative at `t`, or `None` where the piece does not move.
     fn direction(&self, t: f64) -> Option<Vec2> {
-        let derivative = |t: f64| match self {
+        self.moving_at(t).map(|t| self.derivative(t))
+    }
+
+    /// `t`, or a parameter just inside the piece when it does not move at
+    /// `t`: a curve whose control point sits on its end has no derivative
+    /// there, and just inside it the curve already runs along its tangent.
+    /// `None` when it does not move there either.
+    fn moving_at(&self, t: f64) -> Option<f64> {
+        if self.derivative(t).hypot() > 1e-12 {
+            return Some(t);
+        }
+        let inside = if t < 0.5 { t + 1e-6 } else { t - 1e-6 };
+        (self.derivative(inside).hypot() > 1e-12).then_some(inside)
+    }
+
+    /// The derivative of the piece's point by its parameter.
+    pub(crate) fn derivative(&self, t: f64) -> Vec2 {
+        match self {
             PieceShape::Line(line) => line.p1 - line.p0,
             PieceShape::Quadratic(quad) => quad.deriv().eval(t).to_vec2(),
             PieceShape::Cubic(cubic) => cubic.deriv().eval(t).to_vec2(),
             PieceShape::Arc(arc) => arc_derivative(arc, t),
-        };
-        let direction = derivative(t);
-        if direction.hypot() > 1e-12 {
-            return Some(direction);
         }
-        // A curve whose control point sits on its end has no derivative
-        // there; the direction just inside the curve is the tangent
-        let inside = if t < 0.5 { t + 1e-6 } else { t - 1e-6 };
-        let direction = derivative(inside);
-        (direction.hypot() > 1e-12).then_some(direction)
+    }
+
+    /// The second derivative of the piece's point by its parameter.
+    fn second_derivative(&self, t: f64) -> Vec2 {
+        match self {
+            PieceShape::Line(_) => Vec2::ZERO,
+            PieceShape::Quadratic(quad) => quad.deriv().deriv().eval(t).to_vec2(),
+            PieceShape::Cubic(cubic) => cubic.deriv().deriv().eval(t).to_vec2(),
+            PieceShape::Arc(arc) => {
+                // The point is C + R(rx cos θ, ry sin θ) with θ moving by
+                // the sweep angle per unit of t
+                let angle = arc.start_angle + arc.sweep_angle * t;
+                let (sin, cos) = angle.sin_cos();
+                let local = Vec2::new(-arc.radii.x * cos, -arc.radii.y * sin);
+                let (rsin, rcos) = arc.x_rotation.sin_cos();
+                Vec2::new(
+                    local.x * rcos - local.y * rsin,
+                    local.x * rsin + local.y * rcos,
+                ) * (arc.sweep_angle * arc.sweep_angle)
+            }
+        }
+    }
+
+    /// The signed curvature at `t`, or `None` where the piece does not move.
+    fn curvature(&self, t: f64) -> Option<f64> {
+        let t = self.moving_at(t)?;
+        let (velocity, acceleration) = (self.derivative(t), self.second_derivative(t));
+        Some(velocity.cross(acceleration) / velocity.hypot().powi(3))
     }
 }
 
@@ -959,6 +1048,75 @@ mod test {
             Vector2D::new(0.6, 0.8)
         ));
         assert_eq!(m.position_at(2.5), Some(Position { index: 1, t: 0.5 }));
+    }
+
+    #[test]
+    fn normal_points_left_of_the_way_the_path_runs() {
+        let m = measure("M 0 0 H 10 V 10");
+        assert!(close_vector(
+            m.normal_at(5.0).unwrap(),
+            Vector2D::new(0.0, -1.0)
+        ));
+        // Running down the screen, the left is to the right
+        assert!(close_vector(
+            m.normal_at(15.0).unwrap(),
+            Vector2D::new(1.0, 0.0)
+        ));
+        // On a circle drawn clockwise it points to the outside
+        let circle = measure("M 10 0 A 10 10 0 0 1 -10 0");
+        assert!(close_vector(
+            circle.normal_at(5.0 * PI).unwrap(),
+            Vector2D::new(0.0, 1.0)
+        ));
+        assert_eq!(measure("M 5 5").normal_at(0.0), None);
+    }
+
+    #[test]
+    fn curvature_of_lines_and_circles() {
+        assert_eq!(measure("M 0 0 L 30 40").curvature_at(10.0), Some(0.0));
+        let clockwise = measure("M 10 0 A 10 10 0 0 1 -10 0");
+        let counterclockwise = measure("M 10 0 A 10 10 0 0 0 -10 0");
+        for length in [0.0, 5.0, 15.0, 10.0 * PI] {
+            assert!(close(clockwise.curvature_at(length).unwrap(), 0.1));
+            assert!(close(counterclockwise.curvature_at(length).unwrap(), -0.1));
+        }
+    }
+
+    #[test]
+    fn curvature_of_an_ellipse() {
+        // a / b² at the end of the long axis, b / a² at the end of the short
+        let m = measure("M 20 0 A 20 10 0 0 1 -20 0");
+        assert!(close(m.curvature_at(0.0).unwrap(), 20.0 / 100.0));
+        assert!(close(
+            m.curvature_at(m.total_length() / 2.0).unwrap(),
+            10.0 / 400.0
+        ));
+    }
+
+    #[test]
+    fn curvature_matches_the_circle_through_nearby_points() {
+        let m = measure("M 0 0 C 30 80 60 -40 100 20 Q 130 60 150 0");
+        let h = 1e-3;
+        for k in 1..20 {
+            let length = m.total_length() * f64::from(k) / 20.0;
+            let [a, b, c] = [length - h, length, length + h].map(|l| m.point_at(l).unwrap());
+            // The circle through three points has radius |ab| |bc| |ca| / (2 |ab × ac|)
+            let cross = (b - a).cross(c - a);
+            let radius =
+                (b - a).length() * (c - b).length() * (a - c).length() / (2.0 * cross.abs());
+            let expected = cross.signum() / radius;
+            let curvature = m.curvature_at(length).unwrap();
+            assert!(
+                (curvature - expected).abs() < 1e-5 * (1.0 + expected.abs()),
+                "{curvature} vs {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn curvature_where_a_control_point_sits_on_the_end() {
+        let m = measure("M 0 0 C 0 0 10 10 10 0");
+        assert!(m.curvature_at(0.0).unwrap().is_finite());
     }
 
     #[test]

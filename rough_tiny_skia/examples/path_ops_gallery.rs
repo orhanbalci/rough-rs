@@ -1167,6 +1167,65 @@ fn intersections_strip(out_dir: &Path) {
     canvas.save(out_dir, "intersections");
 }
 
+fn curvature_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "curvature",
+        "a curvature comb: normals as long as the curvature, their tips joined",
+        3,
+    );
+    let cells = [
+        (
+            "M 0 40 C 0 0 40 0 40 40 A 20 20 0 0 0 80 40 Q 100 0 120 40",
+            "curves and an arc",
+        ),
+        ("M 0 50 C 20 -10 60 70 80 10 S 110 0 120 30", "an s curve"),
+        (
+            "M 60 0 A 60 30 0 0 1 -60 0 A 60 30 0 0 1 60 0 Z",
+            "an ellipse",
+        ),
+    ];
+    for (i, (path, label)) in cells.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let path = fit(path, (center.0 - 55.0, center.1 - 22.0, 110.0, 44.0));
+        let measure = PathMeasure::new(parse(&path));
+        let teeth = 60;
+        // The longest tooth is 22 pixels
+        let steepest = (0..=teeth)
+            .filter_map(|k| {
+                measure.curvature_at(measure.total_length() * f64::from(k) / f64::from(teeth))
+            })
+            .fold(0.0, |most: f64, curvature| most.max(curvature.abs()));
+        let scale = 22.0 / steepest;
+        let mut tips = String::new();
+        for k in 0..=teeth {
+            let length = measure.total_length() * f64::from(k) / f64::from(teeth);
+            let (Some(point), Some(normal), Some(curvature)) = (
+                measure.point_at(length),
+                measure.normal_at(length),
+                measure.curvature_at(length),
+            ) else {
+                continue;
+            };
+            // Away from the center of curvature, which lies to the right
+            // of a path turning clockwise
+            let tip = point + normal * (curvature * scale);
+            let tooth = format!("M {} {} L {} {}", point.x, point.y, tip.x, tip.y);
+            draw_stroke(&mut canvas, &tooth, GHOST_COLOR, 0.8);
+            tips.push_str(&format!(
+                "{} {} {} ",
+                if k == 0 { "M" } else { "L" },
+                tip.x,
+                tip.y
+            ));
+        }
+        draw_stroke(&mut canvas, &tips, GHOST_COLOR, 1.2);
+        draw_stroke(&mut canvas, &path, BROWN, 1.8);
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "curvature");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1373,6 +1432,7 @@ fn main() {
     segments_with_context_strip(out);
     flip_strip(out);
     measure_strip(out);
+    curvature_strip(out);
     nearest_strip(out);
     fill_strip(out);
     crop_strip(out);
