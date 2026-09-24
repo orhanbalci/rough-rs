@@ -4,19 +4,23 @@ use euclid::default::{Point2D, Vector2D};
 use kurbo::common::GAUSS_LEGENDRE_COEFFS_16;
 use kurbo::{
     Arc,
+    BezPath,
     CubicBez,
     Line,
     ParamCurve,
     ParamCurveArclen,
+    ParamCurveArea,
     ParamCurveDeriv,
     ParamCurveNearest,
     QuadBez,
+    Shape,
     SvgArc,
     Vec2,
 };
 use svgtypes::PathSegment;
 
 use crate::context::{segments_with_context, SegmentContext};
+use crate::subpaths::subpath_ranges;
 
 /// Absolute accuracy of the lengths a [`PathMeasure`] works with.
 const ACCURACY: f64 = 1e-9;
@@ -84,9 +88,25 @@ pub struct PathMeasure {
 #[derive(Clone, Copy, Debug)]
 struct Piece {
     index: usize,
+    /// Which subpath the segment belongs to, counting from 0
+    subpath: usize,
     shape: PieceShape,
     start: f64,
     length: f64,
+}
+
+/// How [`PathMeasure::contains`] decides what is inside a path, as SVG's
+/// `fill-rule` does.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum FillRule {
+    /// Inside when the path winds around the point in total, counting
+    /// clockwise and counterclockwise turns against each other. SVG's
+    /// default.
+    #[default]
+    NonZero,
+    /// Inside when a ray from the point crosses the path an odd number of
+    /// times.
+    EvenOdd,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -101,15 +121,24 @@ impl PathMeasure {
     /// Measures `segments`.
     pub fn new(segments: impl IntoIterator<Item = impl Borrow<PathSegment>>) -> Self {
         let segments: Vec<PathSegment> = segments.into_iter().map(|s| *s.borrow()).collect();
+        let contexts: Vec<SegmentContext<'_>> = segments_with_context(&segments).collect();
         let mut pieces = Vec::new();
         let mut total = 0.0;
-        for context in segments_with_context(&segments) {
-            let Some(shape) = PieceShape::of(&context) else {
-                continue;
-            };
-            let length = shape.length();
-            pieces.push(Piece { index: context.index, shape, start: total, length });
-            total += length;
+        for (subpath, range) in subpath_ranges(&contexts).into_iter().enumerate() {
+            for context in &contexts[range] {
+                let Some(shape) = PieceShape::of(context) else {
+                    continue;
+                };
+                let length = shape.length();
+                pieces.push(Piece {
+                    index: context.index,
+                    subpath,
+                    shape,
+                    start: total,
+                    length,
+                });
+                total += length;
+            }
         }
         PathMeasure { pieces, total }
     }
@@ -200,6 +229,76 @@ impl PathMeasure {
             .is_some_and(|nearest| nearest.distance <= width / 2.0)
     }
 
+    /// The area the path encloses, signed by the direction it is drawn in:
+    /// positive when drawn clockwise on screen, where y points down, and
+    /// negative counterclockwise. Areas of subpaths drawn in opposite
+    /// directions cancel.
+    ///
+    /// An open subpath is closed with a line back to its start, as filling
+    /// it does. Arcs contribute their exact area.
+    ///
+    /// ```
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::PathMeasure;
+    ///
+    /// let square: Vec<_> = PathParser::from("M 0 0 h 10 v 10 h -10 z").collect::<Result<_, _>>()?;
+    /// assert_eq!(PathMeasure::new(&square).area(), 100.0);
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn area(&self) -> f64 {
+        let mut area = 0.0;
+        for subpath in self.subpaths() {
+            area += subpath
+                .iter()
+                .map(|piece| piece.shape.signed_area())
+                .sum::<f64>();
+            let (start, end) = subpath_ends(subpath);
+            area += Line::new(end, start).signed_area();
+        }
+        area
+    }
+
+    /// Whether filling the path with `rule` covers `point`. An open subpath
+    /// is filled as if closed with a line back to its start. Points right on
+    /// the outline may land on either side.
+    ///
+    /// ```
+    /// use svg_path_ops::euclid::default::Point2D;
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::{FillRule, PathMeasure};
+    ///
+    /// // A square with a smaller square inside, drawn the same way round
+    /// let frame: Vec<_> = PathParser::from("M 0 0 h 30 v 30 h -30 z M 10 10 h 10 v 10 h -10 z")
+    ///     .collect::<Result<_, _>>()?;
+    /// let measure = PathMeasure::new(&frame);
+    ///
+    /// let middle = Point2D::new(15.0, 15.0);
+    /// assert!(measure.contains(middle, FillRule::NonZero));
+    /// assert!(!measure.contains(middle, FillRule::EvenOdd));
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn contains(&self, point: Point2D<f64>, rule: FillRule) -> bool {
+        let mut outline = BezPath::new();
+        for subpath in self.subpaths() {
+            let (start, _) = subpath_ends(subpath);
+            outline.move_to(start);
+            for piece in subpath {
+                piece.shape.append_to(&mut outline);
+            }
+            outline.close_path();
+        }
+        let winding = outline.winding(kurbo::Point::new(point.x, point.y));
+        match rule {
+            FillRule::NonZero => winding != 0,
+            FillRule::EvenOdd => winding % 2 != 0,
+        }
+    }
+
+    /// The pieces of each subpath that draws something.
+    fn subpaths(&self) -> impl Iterator<Item = &[Piece]> {
+        self.pieces.chunk_by(|a, b| a.subpath == b.subpath)
+    }
+
     /// The index of the piece at `length` and the parameter within it.
     fn locate(&self, length: f64) -> Option<(usize, f64)> {
         let last = self.pieces.len().checked_sub(1)?;
@@ -272,7 +371,7 @@ impl PieceShape {
                     sweep,
                 };
                 // An arc with a zero radius is drawn as a line
-                match Arc::from_svg_arc(&arc) {
+                match center_arc(&arc) {
                     Some(arc) => PieceShape::Arc(arc),
                     None => PieceShape::Line(Line::new(start, end)),
                 }
@@ -324,6 +423,28 @@ impl PieceShape {
         (nearest.t, nearest.distance_sq)
     }
 
+    /// The piece's part of `½∮(x dy − y dx)`, the signed area a closed path
+    /// made of such pieces encloses.
+    fn signed_area(&self) -> f64 {
+        match self {
+            PieceShape::Line(line) => line.signed_area(),
+            PieceShape::Quadratic(quad) => quad.signed_area(),
+            PieceShape::Cubic(cubic) => cubic.signed_area(),
+            PieceShape::Arc(arc) => arc_signed_area(arc),
+        }
+    }
+
+    /// Appends the piece to `outline`, which must end where the piece
+    /// starts. Arcs become cubic curves within 1e-7 of them.
+    fn append_to(&self, outline: &mut BezPath) {
+        match self {
+            PieceShape::Line(line) => outline.line_to(line.p1),
+            PieceShape::Quadratic(quad) => outline.quad_to(quad.p1, quad.p2),
+            PieceShape::Cubic(cubic) => outline.curve_to(cubic.p1, cubic.p2, cubic.p3),
+            PieceShape::Arc(arc) => outline.extend(arc.append_iter(1e-7)),
+        }
+    }
+
     /// The length from the piece's start to parameter `t`.
     fn length_to(&self, t: f64) -> f64 {
         match self {
@@ -352,6 +473,55 @@ impl PieceShape {
         let direction = derivative(inside);
         (direction.hypot() > 1e-12).then_some(direction)
     }
+}
+
+/// The center form of an SVG arc, or `None` when it has a zero radius.
+///
+/// When the radii are too small to reach from one end to the other, SVG
+/// scales them up until the ends are opposite ends of a diameter, so the
+/// arc is exactly half the ellipse around their midpoint. kurbo finds that
+/// center through a square root of what is then zero plus rounding noise,
+/// which moves it by about 1e-8 of the radius; this case is built directly.
+fn center_arc(arc: &SvgArc) -> Option<Arc> {
+    let exact = Arc::from_svg_arc(arc)?;
+    let (rx, ry) = (arc.radii.x.abs(), arc.radii.y.abs());
+    let (sin, cos) = arc.x_rotation.sin_cos();
+    let half = (arc.from - arc.to) * 0.5;
+    let (px, py) = (cos * half.x + sin * half.y, -sin * half.x + cos * half.y);
+    let reach = (px / rx).powi(2) + (py / ry).powi(2);
+    if reach < 1.0 {
+        return Some(exact);
+    }
+    let scale = reach.sqrt();
+    let (rx, ry) = (rx * scale, ry * scale);
+    let sweep_angle = if arc.sweep {
+        std::f64::consts::PI
+    } else {
+        -std::f64::consts::PI
+    };
+    Some(Arc {
+        center: arc.from.midpoint(arc.to),
+        radii: Vec2::new(rx, ry),
+        start_angle: (py / ry).atan2(px / rx),
+        sweep_angle,
+        x_rotation: arc.x_rotation,
+    })
+}
+
+/// Where a subpath's first piece starts and its last piece ends.
+fn subpath_ends(subpath: &[Piece]) -> (kurbo::Point, kurbo::Point) {
+    let first = subpath.first().expect("a subpath has pieces");
+    let last = subpath.last().expect("a subpath has pieces");
+    (first.shape.eval(0.0), last.shape.eval(1.0))
+}
+
+/// The arc's part of `½∮(x dy − y dx)`. With the ellipse point
+/// `P(θ) = C + R(rx cos θ, ry sin θ)`, the integrand `P × P'` is
+/// `C × P' + rx ry`, so the integral is exact: `½(C × (P₁ − P₀) + rx ry Δθ)`.
+fn arc_signed_area(arc: &Arc) -> f64 {
+    let (start, end) = (arc.eval(0.0), arc.eval(1.0));
+    let center = arc.center.to_vec2();
+    0.5 * (center.cross(end - start) + arc.radii.x * arc.radii.y * arc.sweep_angle)
 }
 
 /// How fast the arc's point moves per radian at angle `theta`.
@@ -457,7 +627,8 @@ mod test {
     use euclid::default::{Point2D, Vector2D};
     use svgtypes::PathParser;
 
-    use super::{PathMeasure, Position};
+    use super::{FillRule, PathMeasure, Position};
+    use crate::shapes::Shape;
     use crate::PathSegment;
 
     fn measure(path: &str) -> PathMeasure {
@@ -711,6 +882,92 @@ mod test {
     }
 
     #[test]
+    fn area_is_signed_by_direction() {
+        // Clockwise on screen, where y points down
+        assert_eq!(measure("M 0 0 h 10 v 10 h -10 z").area(), 100.0);
+        assert_eq!(measure("M 0 0 v 10 h 10 v -10 z").area(), -100.0);
+        // An open subpath is closed with a line back to its start
+        assert_eq!(measure("M 0 0 h 10 v 10 h -10").area(), 100.0);
+        assert_eq!(measure("M 0 0 L 10 0 L 0 10").area(), 50.0);
+    }
+
+    #[test]
+    fn area_of_arcs_is_exact() {
+        let circle = measure("M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0");
+        assert!(close(circle.area(), PI * 100.0));
+        let ellipse = measure("M 20 0 A 20 10 30 0 1 -20 0 A 20 10 30 0 1 20 0");
+        // The ends are not on the rotated ellipse's axis, but it still
+        // closes into a whole ellipse, scaled to reach them
+        let rx = ellipse_radius_through(20.0, 10.0, 30.0, 20.0, 0.0);
+        assert!(close(ellipse.area(), PI * rx * rx / 2.0));
+        let upright = measure("M 20 0 A 20 10 0 0 1 -20 0 A 20 10 0 0 1 20 0");
+        assert!(close(upright.area(), PI * 200.0));
+    }
+
+    /// The x radius of an ellipse with radii in the ratio `rx : ry`, turned
+    /// by `degrees`, scaled so it passes through `(x, y)` from its center.
+    fn ellipse_radius_through(rx: f64, ry: f64, degrees: f64, x: f64, y: f64) -> f64 {
+        let (sin, cos) = degrees.to_radians().sin_cos();
+        let (u, v) = (x * cos + y * sin, -x * sin + y * cos);
+        let scale = ((u / rx).powi(2) + (v / ry).powi(2)).sqrt().max(1.0);
+        rx * scale
+    }
+
+    #[test]
+    fn area_of_a_rounded_rect() {
+        let rect = Shape::Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 60.0,
+            rx: Some(10.0),
+            ry: None,
+        };
+        let m = PathMeasure::new(rect.to_path());
+        assert!(close(m.area(), 100.0 * 60.0 - (4.0 - PI) * 100.0));
+    }
+
+    #[test]
+    fn areas_drawn_in_opposite_directions_cancel() {
+        let frame = measure("M 0 0 h 30 v 30 h -30 z M 10 10 v 10 h 10 v -10 z");
+        assert_eq!(frame.area(), 800.0);
+    }
+
+    #[test]
+    fn contains_follows_the_fill_rule() {
+        let middle = Point2D::new(15.0, 15.0);
+        let ring = Point2D::new(5.0, 5.0);
+        // Inner square drawn the same way round: nonzero fills it, evenodd not
+        let same = measure("M 0 0 h 30 v 30 h -30 z M 10 10 h 10 v 10 h -10 z");
+        assert!(same.contains(middle, FillRule::NonZero));
+        assert!(!same.contains(middle, FillRule::EvenOdd));
+        // Drawn the other way round, both leave a hole
+        let reversed = measure("M 0 0 h 30 v 30 h -30 z M 10 10 v 10 h 10 v -10 z");
+        assert!(!reversed.contains(middle, FillRule::NonZero));
+        assert!(!reversed.contains(middle, FillRule::EvenOdd));
+        for m in [&same, &reversed] {
+            assert!(m.contains(ring, FillRule::NonZero) && m.contains(ring, FillRule::EvenOdd));
+            assert!(!m.contains(Point2D::new(40.0, 5.0), FillRule::NonZero));
+        }
+    }
+
+    #[test]
+    fn contains_closes_open_subpaths() {
+        let triangle = measure("M 0 0 L 10 0 L 0 10");
+        assert!(triangle.contains(Point2D::new(2.0, 2.0), FillRule::NonZero));
+        assert!(!triangle.contains(Point2D::new(8.0, 8.0), FillRule::NonZero));
+    }
+
+    #[test]
+    fn contains_follows_arcs() {
+        let circle = measure("M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0");
+        assert!(circle.contains(Point2D::new(0.0, 9.99), FillRule::NonZero));
+        assert!(!circle.contains(Point2D::new(0.0, 10.01), FillRule::NonZero));
+        assert!(circle.contains(Point2D::new(7.06, 7.06), FillRule::NonZero));
+        assert!(!circle.contains(Point2D::new(7.08, 7.08), FillRule::NonZero));
+    }
+
+    #[test]
     fn a_path_that_draws_nothing_has_no_points() {
         let m = measure("M 5 5");
         assert_eq!(m.total_length(), 0.0);
@@ -719,5 +976,7 @@ mod test {
         assert_eq!(measure("").position_at(0.0), None);
         assert_eq!(m.nearest(Point2D::new(5.0, 5.0)), None);
         assert!(!m.is_point_in_stroke(Point2D::new(5.0, 5.0), 10.0));
+        assert_eq!(m.area(), 0.0);
+        assert!(!m.contains(Point2D::new(5.0, 5.0), FillRule::NonZero));
     }
 }

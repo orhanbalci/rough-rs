@@ -275,6 +275,26 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! And the area a path encloses, signed by the direction it is drawn in,
+//! and whether a point is inside it under either [`FillRule`]:
+//!
+//! ![contains](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/contains.png)
+//!
+//! ```
+//! use svg_path_ops::euclid::default::Point2D;
+//! use svg_path_ops::pt::PathTransformer;
+//! use svg_path_ops::FillRule;
+//!
+//! // A square with a hole: the inner square runs the other way round
+//! let frame = PathTransformer::parse("M 0 0 h 30 v 30 h -30 z M 10 10 v 10 h 10 v -10 z")?;
+//! let measure = frame.measure();
+//!
+//! assert_eq!(measure.area(), 800.0);
+//! assert!(measure.contains(Point2D::new(5.0, 5.0), FillRule::NonZero));
+//! assert!(!measure.contains(Point2D::new(15.0, 15.0), FillRule::NonZero));
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! ### Bounding boxes
 //!
 //! [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -353,6 +373,7 @@
 //! [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 //! [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
 //! [`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
+//! [`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
 //! [`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 //! [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 //! [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x
@@ -376,7 +397,7 @@ use std::borrow::Borrow;
 
 use a2c::a2c;
 pub use context::{segments_with_context, SegmentContext};
-pub use measure::{Nearest, PathMeasure, Position};
+pub use measure::{FillRule, Nearest, PathMeasure, Position};
 pub use optimize::optimize;
 pub use reverse::reverse;
 pub use subpaths::{is_closed, split_subpaths};

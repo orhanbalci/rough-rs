@@ -30,6 +30,7 @@ use svg_path_ops::{
     segments_with_context,
     split_subpaths,
     write_path,
+    FillRule,
     PathMeasure,
     PathSegment,
     WriteOptions,
@@ -987,6 +988,65 @@ fn draw_small_dot(canvas: &mut Canvas, (x, y): (f64, f64), on: bool) {
     }
 }
 
+fn fill_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "contains",
+        "points inside the path by fill rule (filled), and its area",
+        3,
+    );
+
+    // A five-pointed star drawn in one stroke crosses itself, so the fill
+    // rules disagree about the pentagon in its middle
+    for (i, rule, label) in [
+        (0, FillRule::NonZero, "nonzero"),
+        (1, FillRule::EvenOdd, "evenodd"),
+    ] {
+        let center = cell_center(canvas.cell(i));
+        let star: String = (0..5)
+            .map(|k| {
+                let angle = (-90.0 + 144.0 * f64::from(k)).to_radians();
+                let command = if k == 0 { "M" } else { "L" };
+                format!(
+                    "{command} {} {} ",
+                    center.0 + 52.0 * angle.cos(),
+                    center.1 + 4.0 + 52.0 * angle.sin()
+                )
+            })
+            .collect::<String>()
+            + "Z";
+        let measure = PathMeasure::new(parse(&star));
+        draw_point_grid(&mut canvas, center, |point| measure.contains(point, rule));
+        draw_outline(&mut canvas, &star);
+        canvas.label(i, label);
+    }
+
+    let center = cell_center(canvas.cell(2));
+    let circle = write_path(
+        Shape::Circle { cx: center.0, cy: center.1, r: 40.0 }.to_path(),
+        &WriteOptions::default(),
+    );
+    let measure = PathMeasure::new(parse(&circle));
+    draw_point_grid(&mut canvas, center, |point| {
+        measure.contains(point, FillRule::NonZero)
+    });
+    draw_outline(&mut canvas, &circle);
+    canvas.label(2, &format!("r 40, area: {:.2}", measure.area()));
+
+    canvas.save(out_dir, "contains");
+}
+
+/// A grid of small dots around `center`, filled where `inside` holds.
+fn draw_point_grid(canvas: &mut Canvas, center: (f64, f64), inside: impl Fn(Point2D<f64>) -> bool) {
+    for row in 0..12 {
+        for column in 0..16 {
+            let x = center.0 - 75.0 + f64::from(column) * 10.0;
+            let y = center.1 - 55.0 + f64::from(row) * 10.0;
+            draw_small_dot(canvas, (x, y), inside(Point2D::new(x, y)));
+        }
+    }
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1194,6 +1254,7 @@ fn main() {
     flip_strip(out);
     measure_strip(out);
     nearest_strip(out);
+    fill_strip(out);
     shapes_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);

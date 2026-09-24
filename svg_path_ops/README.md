@@ -269,6 +269,25 @@ assert!((nearest.distance - 10.0).abs() < 1e-9);
 assert!(measure.is_point_in_stroke(Point2D::new(0.0, 11.0), 4.0));
 ```
 
+And the area a path encloses, signed by the direction it is drawn in,
+and whether a point is inside it under either [`FillRule`]:
+
+![contains](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/contains.png)
+
+```rust
+use svg_path_ops::euclid::default::Point2D;
+use svg_path_ops::pt::PathTransformer;
+use svg_path_ops::FillRule;
+
+// A square with a hole: the inner square runs the other way round
+let frame = PathTransformer::parse("M 0 0 h 30 v 30 h -30 z M 10 10 v 10 h 10 v -10 z")?;
+let measure = frame.measure();
+
+assert_eq!(measure.area(), 800.0);
+assert!(measure.contains(Point2D::new(5.0, 5.0), FillRule::NonZero));
+assert!(!measure.contains(Point2D::new(15.0, 15.0), FillRule::NonZero));
+```
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
@@ -345,6 +364,7 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`segments_with_context`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.segments_with_context.html
 [`reverse`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.reverse.html
 [`PathMeasure`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html
+[`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
 [`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x

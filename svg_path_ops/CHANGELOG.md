@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nearest to another point, with its distance, length and segment
   (`Nearest`), arcs included, and `PathMeasure::is_point_in_stroke()` tells
   whether a point is on the path's stroke of a given width.
+  `PathMeasure::area()` gives the enclosed area, signed by drawing direction
+  and exact for arcs, and `PathMeasure::contains()` tells whether a point is
+  inside under a `FillRule` (nonzero or evenodd), closing open subpaths as
+  filling does.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -66,8 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, measure, nearest,
-  reverse, split_subpaths, is_closed, unarc, unshort, to_box, inbox and
-  segments_with_context. They replace the examples that only linked to
+  contains, reverse, split_subpaths, is_closed, unarc, unshort, to_box, inbox
+  and segments_with_context. They replace the examples that only linked to
   rough_piet programs.
 
 ### Changed
