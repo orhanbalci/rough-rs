@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rough_iced = "0.14"
+//! rough_iced = "0.15"
 //! ```
 //!
 //! ## 🔧 Configuration Tool

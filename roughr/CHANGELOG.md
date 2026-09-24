@@ -7,15 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-24
+
 ### Changed
 
 - **Breaking:** Upgrade `svgtypes` from 0.11 to 0.16. roughr re-exports
   `svgtypes::*`, so all of those re-exported types (including `PathSegment`
   and `PathParser`) now come from 0.16. Code that mixes them with types from
   its own `svgtypes` 0.11 dependency must upgrade to 0.16.
+- Require `svg_path_ops` 0.12, which roughr uses to read and normalize SVG
+  path data.
 - Arcs in SVG paths are sketched from curves of at most 90 degrees instead
   of 120, as `svg_path_ops::normalize()` now converts them more accurately.
   The same seed sketches paths with arcs slightly differently.
+
+### Removed
+
+- **Breaking:** The unused `core::Config`, `core::DrawingSurface` and
+  `core::Space` types, left over from the rough.js port. Nothing in roughr
+  used them, and `Config` and `DrawingSurface` could not be built outside it.
 
 ## [0.13.1] - 2026-09-23
 
@@ -48,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previous releases; see the
   [git history](https://github.com/orhanbalci/rough-rs/commits/main/roughr) for details.
 
-[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.13.1...HEAD
+[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.14.0...HEAD
+[0.14.0]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.13.1...roughr@0.14.0
 [0.13.1]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.13.0...roughr@0.13.1
 [0.13.0]: https://github.com/orhanbalci/rough-rs/compare/roughr@0.12.0...roughr@0.13.0
 [0.12.0]: https://github.com/orhanbalci/rough-rs/releases/tag/roughr@0.12.0

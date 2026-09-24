@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/svg_path_ops.svg)](https://crates.io/crates/svg_path_ops)
 [![Documentation](https://docs.rs/svg_path_ops/badge.svg)](https://docs.rs/svg_path_ops)
-[![License](https://img.shields.io/github/license/orhanbalci/rough-rs.svg)](https://github.com/orhanbalci/rough-rs/blob/main/svg_path_ops/LICENSE)
+[![License](https://img.shields.io/github/license/orhanbalci/rough-rs.svg)](https://github.com/orhanbalci/rough-rs/blob/svg_path_ops@0.12.0/svg_path_ops/LICENSE)
 
 <!-- cargo-sync-readme start -->
 
@@ -23,7 +23,7 @@ The reference images were drawn with
 
 ```toml
 [dependencies]
-svg_path_ops = "0.11"
+svg_path_ops = "0.12"
 ```
 
 ## 🔧 Usage
@@ -34,15 +34,15 @@ svg_path_ops = "0.11"
 they are added, and writes the result with its `Display` implementation.
 In the images below the original path is dashed in purple.
 
-![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/translate.png)
+![translate](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/translate.png)
 
-![rotate](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/rotate.png)
+![rotate](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/rotate.png)
 
-![scale](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/scale.png)
+![scale](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/scale.png)
 
-![skew_x](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/skew_x.png)
+![skew_x](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/skew_x.png)
 
-![skew_y](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/skew_y.png)
+![skew_y](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/skew_y.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -65,7 +65,7 @@ assert_eq!(path.to_string(), "M 25 25 L 105 25");
 [`flip_x`] and [`flip_y`] mirror a path in place, about the center of its
 bounding box:
 
-![flip](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/flip.png)
+![flip](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/flip.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -123,9 +123,9 @@ assert_eq!(
 relative commands, expands shorthand commands and replaces arcs with cubic
 curves:
 
-![unarc](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/unarc.png)
+![unarc](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/unarc.png)
 
-![unshort](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/unshort.png)
+![unshort](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/unshort.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -165,7 +165,7 @@ assert_eq!(
 them, starting where a browser starts and going the same way, so markers
 and dashes land in the same places:
 
-![shapes](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/shapes.png)
+![shapes](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/shapes.png)
 
 ```rust
 use svg_path_ops::shapes::Shape;
@@ -182,7 +182,7 @@ assert_eq!(
 It also draws regular polygons and stars, laid out as Paper.js lays
 them out:
 
-![polygons and stars](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/polygons.png)
+![polygons and stars](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/polygons.png)
 
 ```rust
 use svg_path_ops::shapes::Shape;
@@ -210,7 +210,7 @@ the order a pen plotter draws in, for stroke animations and for where
 markers and text on a path go. Below, the inner square only cuts a hole
 once it is reversed:
 
-![reverse](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/reverse.png)
+![reverse](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/reverse.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -229,7 +229,7 @@ icon sets expect, so the shape fills the same under both fill rules.
 [`join`] joins two open paths where their ends meet, reversing one when
 it runs the other way:
 
-![reorient and join](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/reorient_join.png)
+![reorient and join](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/reorient_join.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -256,7 +256,7 @@ A path can hold several subpaths, each started by a move.
 [`split_subpaths`] returns them as paths of their own, and [`is_closed`]
 tells whether every subpath ends with a close path:
 
-![split_subpaths](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/split_subpaths.png)
+![split_subpaths](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/split_subpaths.png)
 
 ```rust
 use svg_path_ops::svgtypes::PathParser;
@@ -278,7 +278,7 @@ assert_eq!(
 Returning to the start is not the same as closing: without a close path
 the corner where the path starts gets two line ends instead of a join.
 
-![is_closed](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/is_closed.png)
+![is_closed](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/is_closed.png)
 
 ### Measuring a path
 
@@ -286,7 +286,7 @@ the corner where the path starts gets two line ends instead of a join.
 segment at any length along it. Arcs are measured as arcs, not as the
 curves that approximate them:
 
-![measure](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/measure.png)
+![measure](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/measure.png)
 
 ```rust
 use svg_path_ops::euclid::default::Point2D;
@@ -307,7 +307,7 @@ Along with the point, it gives the tangent, the normal and the curvature
 at any length. A curvature comb draws normals as long as the curvature,
 showing where a path bends hard and where it turns the other way:
 
-![curvature](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/curvature.png)
+![curvature](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/curvature.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -325,7 +325,7 @@ assert!((measure.curvature_at(middle).unwrap() - 0.025).abs() < 1e-9);
 an arch that bends one way, or a cubic curve with inflections, a cusp or
 a loop, and where they are:
 
-![classify](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/classify.png)
+![classify](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/classify.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -341,7 +341,7 @@ assert!(0.0 < first && first < second && second < 1.0);
 It also finds the point of the path nearest to another point, and
 whether a point is on the path's stroke:
 
-![nearest](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/nearest.png)
+![nearest](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/nearest.png)
 
 ```rust
 use svg_path_ops::euclid::default::Point2D;
@@ -357,7 +357,7 @@ assert!(measure.is_point_in_stroke(Point2D::new(0.0, 11.0), 4.0));
 And the area a path encloses, signed by the direction it is drawn in,
 and whether a point is inside it under either [`FillRule`]:
 
-![contains](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/contains.png)
+![contains](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/contains.png)
 
 ```rust
 use svg_path_ops::euclid::default::Point2D;
@@ -377,7 +377,7 @@ It cuts out the part between two lengths, keeping arcs as arcs, splits
 the path at a length, and turns it into straight lines within a
 tolerance, for pen plotters and anything else that only draws lines:
 
-![crop](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/crop.png)
+![crop](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/crop.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -400,7 +400,7 @@ its outline, for a label or to tell which shape lies inside which, and
 [`PathMeasure::divide_at`] divides the segment at a length in two of the
 same kind, leaving the rest of the path as it is:
 
-![interior_point and divide_at](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/interior_divide.png)
+![interior_point and divide_at](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/interior_divide.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -424,7 +424,7 @@ freehand stroke, a traced outline or flattened lines, with a few cubic
 curves that stay within a tolerance of it. Joins that turn more than a
 given angle stay corners, and straight stretches stay lines:
 
-![simplify](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/simplify.png)
+![simplify](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/simplify.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -455,7 +455,7 @@ everywhere; a [`Smoothing::CatmullRom`] spline shapes each curve from
 its neighbouring points only. Joins that turn more than a given angle
 stay corners:
 
-![smooth](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/smooth.png)
+![smooth](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/smooth.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -484,7 +484,7 @@ numbers, for animations; [`interpolate`] gives one such path. Subpaths
 without a partner grow from a point, and closed ones are lined up so
 the shape does not twist on its way:
 
-![morph](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/morph.png)
+![morph](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/morph.png)
 
 ```rust
 use svg_path_ops::svgtypes::PathParser;
@@ -508,7 +508,7 @@ assert!(frames.windows(2).all(|pair| pair[1] < pair[0]));
 arcs included, where each point lies on both paths, and whether the
 paths cross there or only touch:
 
-![intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/intersections.png)
+![intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/intersections.png)
 
 ```rust
 use svg_path_ops::euclid::default::Point2D;
@@ -545,7 +545,7 @@ an inflection, from one touching it.
 one part crossing or touching another, or a cubic curve looping across
 itself, each point once, with its two places along the path:
 
-![self_intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/self_intersections.png)
+![self_intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/self_intersections.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -565,7 +565,7 @@ tolerance of the exact outline. [`PathTransformer`] has them too, as
 pending transforms first. They need the `boolean` feature, on by
 default, which brings in [i_overlay] for the polygon work:
 
-![boolean](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/boolean.png)
+![boolean](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/boolean.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -607,7 +607,7 @@ plotters and "stroke to path" in a drawing program, and
 use the `boolean` feature and work within a tolerance, as [`boolean`]
 does:
 
-![outline](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/outline.png)
+![outline](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/outline.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -636,11 +636,11 @@ exactly as SVG defines it; joins are added only where segments meet.
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
 
-![to_box](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/to_box.png)
+![to_box](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/to_box.png)
 
-![inbox](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/inbox.png)
+![inbox](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/inbox.png)
 
-![inbox_alignment](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/inbox_alignment.png)
+![inbox_alignment](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/inbox_alignment.png)
 
 ```rust
 use svg_path_ops::bbox::{BBox, InboxParameters};
@@ -661,7 +661,7 @@ assert_eq!(path.to_string(), "M 0 12.5 L 100 12.5 L 50 87.5 Z");
 [`PathMeasure::stroke_bounds`] the box around its stroke, caps, joins
 and miter limit included:
 
-![stroke_bounds](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/stroke_bounds.png)
+![stroke_bounds](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/stroke_bounds.png)
 
 ```rust
 use svg_path_ops::pt::PathTransformer;
@@ -684,7 +684,7 @@ assert!((bounds.min.y + 1.0).abs() < 1e-12);
 points, so relative and shorthand segments can be handled without
 tracking the current point:
 
-![segments_with_context](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/segments_with_context.png)
+![segments_with_context](https://raw.githubusercontent.com/orhanbalci/rough-rs/svg_path_ops@0.12.0/svg_path_ops/assets/ops/segments_with_context.png)
 
 ```rust
 use svg_path_ops::euclid::default::Point2D;

@@ -18,7 +18,7 @@ Below examples are output of [rough_vello](https://github.com/orhanbalci/rough-r
 
 ```toml
 [dependencies]
-rough_vello = "0.15"
+rough_vello = "0.16"
 ```
 
 ## 🧩 Vello Compatibility
@@ -61,7 +61,7 @@ rust_logo_drawing.draw(&mut scene);
 ```
 
 ### 🖨️ Output Rust Logo
-![rust_logo](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_vello/assets/rust_logo.png)
+![rust_logo](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_vello@0.16.0/rough_vello/assets/rust_logo.png)
 
 ## Filler Implementation Status
 - [x] Hachure

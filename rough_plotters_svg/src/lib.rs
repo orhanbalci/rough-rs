@@ -18,9 +18,9 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rough_plotters_svg = "0.2"
+//! rough_plotters_svg = "0.3"
 //! plotters = "0.3"
-//! roughr = "0.13"
+//! roughr = "0.14"
 //! ```
 //!
 //! ### Basic Usage
@@ -61,11 +61,11 @@
 //! }
 //! ```
 //!
-//! ![Basic Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/chart.svg)
+//! ![Basic Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/chart.svg)
 //!
 //! ### Fill Styles Showcase
 //!
-//! ![Fill Styles Showcase](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/showcase.svg)
+//! ![Fill Styles Showcase](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/showcase.svg)
 //!
 //! ### Working with Fill Styles
 //!
@@ -107,7 +107,7 @@
 //! }
 //! ```
 //!
-//! ![Fill Style Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/hachure.svg)
+//! ![Fill Style Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/hachure.svg)
 //!
 //! ## Available Fill Styles
 //!
@@ -119,13 +119,13 @@
 //! - `FillStyle::Dashed` - Dashed line pattern
 //! - `FillStyle::ZigZagLine` - Zigzag line pattern
 //!
-//! ![CrossHatch Fill Style](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/crosshatch.svg)
+//! ![CrossHatch Fill Style](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/crosshatch.svg)
 //!
 //! ### Stock Chart Example
 //!
 //! Rough styling works great with financial charts:
 //!
-//! ![Stock Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/stock.svg)
+//! ![Stock Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/stock.svg)
 //!
 //! ## String-based Backend
 //!
@@ -420,7 +420,6 @@ impl<'a> RoughSVGBackend<'a> {
         style: &impl BackendStyle,
     ) -> Result<(), DrawingErrorKind<RoughSVGError>> {
         let mut path_points = Vec::new();
-        let mut current_pos = (0i32, 0i32);
 
         for op in &opset.ops {
             match op.op {
@@ -430,19 +429,15 @@ impl<'a> RoughSVGBackend<'a> {
                         self.draw_path_segment(&path_points, style)?;
                         path_points.clear();
                     }
-                    current_pos = (op.data[0] as i32, op.data[1] as i32);
-                    path_points.push(current_pos);
+                    path_points.push((op.data[0] as i32, op.data[1] as i32));
                 }
                 roughr::core::OpType::LineTo => {
-                    current_pos = (op.data[0] as i32, op.data[1] as i32);
-                    path_points.push(current_pos);
+                    path_points.push((op.data[0] as i32, op.data[1] as i32));
                 }
                 roughr::core::OpType::BCurveTo => {
                     // For Bezier curves, we'll approximate with line segments
                     // In a full implementation, you'd want proper curve support
-                    let end_point = (op.data[4] as i32, op.data[5] as i32);
-                    path_points.push(end_point);
-                    current_pos = end_point;
+                    path_points.push((op.data[4] as i32, op.data[5] as i32));
                 }
             }
         }

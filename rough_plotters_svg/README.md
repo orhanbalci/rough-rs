@@ -26,9 +26,9 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rough_plotters_svg = "0.2"
+rough_plotters_svg = "0.3"
 plotters = "0.3"
-roughr = "0.13"
+roughr = "0.14"
 ```
 
 ### Basic Usage
@@ -69,11 +69,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-![Basic Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/chart.svg)
+![Basic Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/chart.svg)
 
 ### Fill Styles Showcase
 
-![Fill Styles Showcase](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/showcase.svg)
+![Fill Styles Showcase](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/showcase.svg)
 
 ### Working with Fill Styles
 
@@ -115,7 +115,7 @@ fn create_chart_with_fill_style(fill_style: FillStyle, filename: &str) -> Result
 }
 ```
 
-![Fill Style Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/hachure.svg)
+![Fill Style Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/hachure.svg)
 
 ## Available Fill Styles
 
@@ -127,13 +127,13 @@ fn create_chart_with_fill_style(fill_style: FillStyle, filename: &str) -> Result
 - `FillStyle::Dashed` - Dashed line pattern
 - `FillStyle::ZigZagLine` - Zigzag line pattern
 
-![CrossHatch Fill Style](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/crosshatch.svg)
+![CrossHatch Fill Style](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/crosshatch.svg)
 
 ### Stock Chart Example
 
 Rough styling works great with financial charts:
 
-![Stock Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/rough_plotters_svg/assets/stock.svg)
+![Stock Chart Example](https://raw.githubusercontent.com/orhanbalci/rough-rs/rough_plotters_svg@0.3.0/rough_plotters_svg/assets/stock.svg)
 
 ## String-based Backend
 

@@ -32,8 +32,8 @@ drawing to a PNG looks like this:
 
 ```toml
 [dependencies]
-roughr = "0.13"
-rough_tiny_skia = "0.13"
+roughr = "0.14"
+rough_tiny_skia = "0.14"
 palette = "0.7"
 tiny-skia = "0.11"
 ```
@@ -145,13 +145,13 @@ other workspace crates it depends on. A `—` means there is no dependency.
 | Crate | Version | points_on_curve | svg_path_ops | roughr |
 |-------|---------|:---------------:|:------------:|:------:|
 | points_on_curve | 0.7.0 | — | — | — |
-| svg_path_ops | 0.11.2 | — | — | — |
-| roughr | 0.13.1 | 0.7.0 | 0.11.0 | — |
-| rough_piet | 0.14.0 | — | 0.11.0 | 0.13.0 |
-| rough_tiny_skia | 0.13.1 | — | — | 0.13.0 |
-| rough_vello | 0.15.0 | — | 0.11.0 | 0.13.0 |
-| rough_iced | 0.14.0 | — | 0.11.0 | 0.13.0 |
-| rough_plotters_svg | 0.2.0 | — | — | 0.13.0 |
+| svg_path_ops | 0.12.0 | — | — | — |
+| roughr | 0.14.0 | 0.7.0 | 0.12.0 | — |
+| rough_piet | 0.15.0 | — | 0.12.0 | 0.14.0 |
+| rough_tiny_skia | 0.14.0 | — | 0.12.0 | 0.14.0 |
+| rough_vello | 0.16.0 | — | 0.12.0 | 0.14.0 |
+| rough_iced | 0.15.0 | — | 0.12.0 | 0.14.0 |
+| rough_plotters_svg | 0.3.0 | — | — | 0.14.0 |
 
 > Dependency requirements use Cargo's default caret semantics, so a requirement
 > of `0.11.0` resolves to any `0.11.x` — the `svg_path_ops 0.11.1` bug-fix

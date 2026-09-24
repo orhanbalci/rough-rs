@@ -137,6 +137,7 @@ impl BBox {
         self
     }
 
+    #[cfg(test)]
     fn add_point(&mut self, x: f64, y: f64) -> &mut Self {
         self.add_x(x).add_y(y)
     }

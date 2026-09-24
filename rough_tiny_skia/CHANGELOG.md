@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-24
+
+### Changed
+
+- **Breaking:** Require `roughr` 0.14. This crate's public API exposes
+  `roughr` types (`Options`, `Point2D`, `OpSetType`), so they now come from
+  `roughr` 0.14, which uses `svgtypes` 0.16 and `svg_path_ops` 0.12; see the
+  [roughr changelog](../roughr/CHANGELOG.md).
+
 ### Added
 
 - `path_ops_gallery` example: generates the operation reference images used
@@ -41,7 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previous releases; see the
   [git history](https://github.com/orhanbalci/rough-rs/commits/main/rough_tiny_skia) for details.
 
-[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/rough_tiny_skia@0.13.1...HEAD
+[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/rough_tiny_skia@0.14.0...HEAD
+[0.14.0]: https://github.com/orhanbalci/rough-rs/compare/rough_tiny_skia@0.13.1...rough_tiny_skia@0.14.0
 [0.13.1]: https://github.com/orhanbalci/rough-rs/compare/rough_tiny_skia@0.13.0...rough_tiny_skia@0.13.1
 [0.13.0]: https://github.com/orhanbalci/rough-rs/compare/rough_tiny_skia@0.12.0...rough_tiny_skia@0.13.0
 [0.12.0]: https://github.com/orhanbalci/rough-rs/releases/tag/rough_tiny_skia@0.12.0

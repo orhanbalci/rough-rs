@@ -10,8 +10,6 @@ use roughr::core::{LineCap, LineJoin, OptionsBuilder};
 
 const WIDTH: usize = 192;
 const HEIGHT: usize = 108;
-/// For now, assume pixel density (dots per inch)
-const DPI: f32 = 96.;
 
 /// Feature "png" needed for save_to_file() and it's disabled by default for optional dependencies
 /// cargo run --example mondrian --features png

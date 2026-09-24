@@ -19,7 +19,7 @@ Below examples are output of [rough_piet](https://github.com/orhanbalci/rough-rs
 
 ```toml
 [dependencies]
-rough_piet = "0.14"
+rough_piet = "0.15"
 ```
 
 ## 🔧 Example

@@ -16,13 +16,13 @@
 //! On its own this crate can not draw on any context. One needs to use existing drawing libraries such as [piet](https://github.com/linebender/piet),
 //! [raqote](https://github.com/jrmuizel/raqote), [tiny-skia](https://github.com/RazrFalcon/tiny-skia) etc in combination with
 //! roughr. In this workspace an example adapter is implemented for [piet](https://github.com/linebender/piet). Below examples are
-//! output of [rough_piet](https://github.com/orhanbalci/rough-rs/tree/roughr@0.13.1/rough_piet) adapter.
+//! output of [rough_piet](https://github.com/orhanbalci/rough-rs/tree/roughr@0.14.0/rough_piet) adapter.
 //!
 //! ## 📦 Cargo.toml
 //!
 //! ```toml
 //! [dependencies]
-//! roughr = "0.13"
+//! roughr = "0.14"
 //! ```
 //!
 //! ## 🔧 Example
@@ -56,7 +56,7 @@
 //! ```
 //!
 //! ### 🖨️ Output Rectangle
-//! ![rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/rectangle.png)
+//! ![rectangle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/rectangle.png)
 //!
 //! ### Circle
 //!
@@ -84,7 +84,7 @@
 //! ```
 //!
 //! ### 🖨️ Output Circle
-//! ![circle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/circle.png)
+//! ![circle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/circle.png)
 //!
 //!
 //! ### Ellipse
@@ -114,7 +114,7 @@
 //! ```
 //!
 //! ### 🖨️ Output Ellipse
-//! ![ellipse](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/ellipse.png)
+//! ![ellipse](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/ellipse.png)
 //!
 //!
 //! ### Svg Path
@@ -140,7 +140,7 @@
 //! ```
 //!
 //! ### 🖨️ Output Svg Path
-//! ![svgheart](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/heart_svg_path.png)
+//! ![svgheart](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/heart_svg_path.png)
 //!
 //! ## Filler Implementation Status
 //! - [x] Hachure
@@ -159,61 +159,61 @@
 //! Each image below draws the same shape with only one option changed, from left to right.
 //! The field docs of [`Options`](https://docs.rs/roughr/latest/roughr/core/struct.Options.html)
 //! explain every option and its default. To try options interactively, run the
-//! [`drawing_app`](https://github.com/orhanbalci/rough-rs/tree/roughr@0.13.1/rough_iced/examples) example
+//! [`drawing_app`](https://github.com/orhanbalci/rough-rs/tree/roughr@0.14.0/rough_iced/examples) example
 //! of `rough_iced`.
 //!
 //! <details>
 //! <summary><b>Outline</b></summary>
 //!
-//! ![roughness](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/roughness.png)
+//! ![roughness](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/roughness.png)
 //!
-//! ![bowing](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/bowing.png)
+//! ![bowing](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/bowing.png)
 //!
-//! ![max_randomness_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/max_randomness_offset.png)
+//! ![max_randomness_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/max_randomness_offset.png)
 //!
-//! ![stroke_width](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/stroke_width.png)
+//! ![stroke_width](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/stroke_width.png)
 //!
-//! ![disable_multi_stroke](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/disable_multi_stroke.png)
+//! ![disable_multi_stroke](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/disable_multi_stroke.png)
 //!
-//! ![preserve_vertices](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/preserve_vertices.png)
+//! ![preserve_vertices](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/preserve_vertices.png)
 //!
-//! ![stroke_line_dash](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/stroke_line_dash.png)
+//! ![stroke_line_dash](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/stroke_line_dash.png)
 //!
-//! ![seed](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/seed.png)
+//! ![seed](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/seed.png)
 //!
 //! </details>
 //!
 //! <details>
 //! <summary><b>Curves and SVG paths</b></summary>
 //!
-//! ![curve_fitting](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/curve_fitting.png)
+//! ![curve_fitting](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/curve_fitting.png)
 //!
-//! ![curve_step_count](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/curve_step_count.png)
+//! ![curve_step_count](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/curve_step_count.png)
 //!
-//! ![curve_tightness](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/curve_tightness.png)
+//! ![curve_tightness](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/curve_tightness.png)
 //!
-//! ![simplification](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/simplification.png)
+//! ![simplification](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/simplification.png)
 //!
 //! </details>
 //!
 //! <details>
 //! <summary><b>Fill</b></summary>
 //!
-//! ![fill_style](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/fill_style.png)
+//! ![fill_style](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/fill_style.png)
 //!
-//! ![hachure_angle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/hachure_angle.png)
+//! ![hachure_angle](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/hachure_angle.png)
 //!
-//! ![hachure_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/hachure_gap.png)
+//! ![hachure_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/hachure_gap.png)
 //!
-//! ![fill_weight](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/fill_weight.png)
+//! ![fill_weight](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/fill_weight.png)
 //!
-//! ![dash_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/dash_offset.png)
+//! ![dash_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/dash_offset.png)
 //!
-//! ![dash_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/dash_gap.png)
+//! ![dash_gap](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/dash_gap.png)
 //!
-//! ![zigzag_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/zigzag_offset.png)
+//! ![zigzag_offset](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/zigzag_offset.png)
 //!
-//! ![disable_multi_stroke_fill](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/roughr/assets/options/disable_multi_stroke_fill.png)
+//! ![disable_multi_stroke_fill](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/roughr/assets/options/disable_multi_stroke_fill.png)
 //!
 //! </details>
 //!
@@ -237,19 +237,19 @@
 //! ```
 //!
 //! The complete, runnable version is the
-//! [`svg` example](https://github.com/orhanbalci/rough-rs/blob/roughr@0.13.1/rough_tiny_skia/examples/svg.rs)
+//! [`svg` example](https://github.com/orhanbalci/rough-rs/blob/roughr@0.14.0/rough_tiny_skia/examples/svg.rs)
 //! of `rough_tiny_skia`:
 //!
 //! ```sh
 //! cargo run -p rough_tiny_skia --example svg -- input.svg output.png
 //! ```
 //!
-//! ![svg](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.13.1/rough_tiny_skia/assets/house.png)
+//! ![svg](https://raw.githubusercontent.com/orhanbalci/rough-rs/roughr@0.14.0/rough_tiny_skia/assets/house.png)
 //!
 //! ## 🔭 Examples
 //!
 //! For more examples have a look at the
-//! [examples](https://github.com/orhanbalci/rough-rs/tree/roughr@0.13.1/rough_piet/examples) folder.
+//! [examples](https://github.com/orhanbalci/rough-rs/tree/roughr@0.14.0/rough_piet/examples) folder.
 
 #[macro_use]
 extern crate derive_builder;

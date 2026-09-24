@@ -1,6 +1,6 @@
 [package]
 name = "rough_plotters_svg"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["orhanbalci@gmail.com <orhanbalci@gmail.com>"]
 description = "Draw Hand Sketched 2D Charts and Plots Using Plotters"
@@ -16,7 +16,7 @@ readme = "README.md"
 [dependencies]
 plotters-svg = "0.3.7"
 plotters-backend = "0.3.7"
-roughr = { path = "../roughr", version = "0.13.0" }
+roughr = { path = "../roughr", version = "0.14.0" }
 euclid = "0.22"
 num-traits = "0.2"
 palette = "0.7"

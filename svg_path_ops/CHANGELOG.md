@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-24
+
 ### Added
 
 - Re-export the `svgtypes` crate as `svg_path_ops::svgtypes`, so consumers can
@@ -221,7 +223,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Previous releases; see the
   [git history](https://github.com/orhanbalci/rough-rs/commits/main) for details.
 
-[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.2...HEAD
+[Unreleased]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.12.0...HEAD
+[0.12.0]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.2...svg_path_ops@0.12.0
 [0.11.2]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.1...svg_path_ops@0.11.2
 [0.11.1]: https://github.com/orhanbalci/rough-rs/compare/svg_path_ops@0.11.0...svg_path_ops@0.11.1
 [0.11.0]: https://github.com/orhanbalci/rough-rs/releases/tag/svg_path_ops@0.11.0

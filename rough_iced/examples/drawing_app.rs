@@ -307,7 +307,7 @@ impl DrawingApp {
         }
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         // Left panel with buttons for shape selection
         // Shape selection dropdown
         let shape_controls =
