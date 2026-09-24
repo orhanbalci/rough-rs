@@ -45,7 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   total length, and the point, unit tangent and segment with parameter
   (`Position`) at any length along it. Arcs are measured as ellipse arcs,
   lengths are accurate to 1e-9, and a close path counts as the line back to
-  its subpath start.
+  its subpath start. `PathMeasure::nearest()` finds the point of the path
+  nearest to another point, with its distance, length and segment
+  (`Nearest`), arcs included, and `PathMeasure::is_point_in_stroke()` tells
+  whether a point is on the path's stroke of a given width.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -62,10 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Crate documentation and README with a runnable example for each feature:
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
-  for translate, rotate, scale, skew, flip, shapes, measure, reverse,
-  split_subpaths, is_closed, unarc, unshort, to_box, inbox and
-  segments_with_context. They
-  replace the examples that only linked to rough_piet programs.
+  for translate, rotate, scale, skew, flip, shapes, measure, nearest,
+  reverse, split_subpaths, is_closed, unarc, unshort, to_box, inbox and
+  segments_with_context. They replace the examples that only linked to
+  rough_piet programs.
 
 ### Changed
 

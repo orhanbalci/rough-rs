@@ -9,6 +9,7 @@ use kurbo::{
     ParamCurve,
     ParamCurveArclen,
     ParamCurveDeriv,
+    ParamCurveNearest,
     QuadBez,
     SvgArc,
     Vec2,
@@ -29,6 +30,21 @@ const ACCURACY: f64 = 1e-9;
 pub struct Position {
     pub index: usize,
     pub t: f64,
+}
+
+/// The point of a path nearest to another point, as found by
+/// [`PathMeasure::nearest`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Nearest {
+    /// The nearest point on the path.
+    pub point: Point2D<f64>,
+    /// Its distance from the point asked about.
+    pub distance: f64,
+    /// Its length along the path, for [`PathMeasure::point_at`] and the
+    /// other queries.
+    pub length: f64,
+    /// The segment it is on and the parameter within it.
+    pub position: Position,
 }
 
 /// Measures lengths along a path and finds the point at a given length.
@@ -134,6 +150,54 @@ impl PathMeasure {
         })?;
         let unit = direction / direction.hypot();
         Some(Vector2D::new(unit.x, unit.y))
+    }
+
+    /// The point of the path nearest to `point`, or `None` when the path
+    /// draws nothing. When several are equally near, the first along the
+    /// path wins.
+    ///
+    /// ```
+    /// use svg_path_ops::euclid::default::Point2D;
+    /// use svg_path_ops::svgtypes::PathParser;
+    /// use svg_path_ops::PathMeasure;
+    ///
+    /// let segments: Vec<_> = PathParser::from("M 0 0 L 10 0").collect::<Result<_, _>>()?;
+    /// let nearest = PathMeasure::new(&segments)
+    ///     .nearest(Point2D::new(4.0, 3.0))
+    ///     .unwrap();
+    ///
+    /// assert_eq!(nearest.point, Point2D::new(4.0, 0.0));
+    /// assert_eq!(nearest.distance, 3.0);
+    /// assert_eq!(nearest.length, 4.0);
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    pub fn nearest(&self, point: Point2D<f64>) -> Option<Nearest> {
+        let target = kurbo::Point::new(point.x, point.y);
+        let (piece, t, distance_sq) = self
+            .pieces
+            .iter()
+            .map(|piece| {
+                let (t, distance_sq) = piece.shape.nearest(target);
+                (piece, t, distance_sq)
+            })
+            .reduce(|best, next| if next.2 < best.2 { next } else { best })?;
+        let on_path = piece.shape.eval(t);
+        Some(Nearest {
+            point: Point2D::new(on_path.x, on_path.y),
+            distance: distance_sq.sqrt(),
+            length: piece.start + piece.shape.length_to(t),
+            position: Position { index: piece.index, t },
+        })
+    }
+
+    /// Whether `point` is on the path's stroke when it is drawn `width`
+    /// wide: within half the width of the path.
+    ///
+    /// Ends and corners count as round, whatever the stroke's line caps and
+    /// joins; a path that draws nothing has no stroke.
+    pub fn is_point_in_stroke(&self, point: Point2D<f64>, width: f64) -> bool {
+        self.nearest(point)
+            .is_some_and(|nearest| nearest.distance <= width / 2.0)
     }
 
     /// The index of the piece at `length` and the parameter within it.
@@ -248,6 +312,28 @@ impl PieceShape {
         }
     }
 
+    /// The parameter of the piece's point nearest to `target`, and the
+    /// squared distance to it.
+    fn nearest(&self, target: kurbo::Point) -> (f64, f64) {
+        let nearest = match self {
+            PieceShape::Line(line) => line.nearest(target, ACCURACY),
+            PieceShape::Quadratic(quad) => quad.nearest(target, ACCURACY),
+            PieceShape::Cubic(cubic) => cubic.nearest(target, ACCURACY),
+            PieceShape::Arc(arc) => return arc_nearest(arc, target),
+        };
+        (nearest.t, nearest.distance_sq)
+    }
+
+    /// The length from the piece's start to parameter `t`.
+    fn length_to(&self, t: f64) -> f64 {
+        match self {
+            PieceShape::Line(line) => line.arclen(ACCURACY) * t,
+            PieceShape::Quadratic(quad) => quad.subsegment(0.0..t).arclen(ACCURACY),
+            PieceShape::Cubic(cubic) => cubic.subsegment(0.0..t).arclen(ACCURACY),
+            PieceShape::Arc(arc) => arc_length(arc, 0.0, t),
+        }
+    }
+
     /// The derivative at `t`, or `None` where the piece does not move.
     fn direction(&self, t: f64) -> Option<Vec2> {
         let derivative = |t: f64| match self {
@@ -324,6 +410,32 @@ fn arc_inv_length(arc: &Arc, length: f64, whole: f64) -> f64 {
         };
     }
     t
+}
+
+/// The arc's parameter nearest to `target`, and the squared distance to it:
+/// the best of evenly spaced samples, narrowed down by golden-section search
+/// between its neighbours.
+fn arc_nearest(arc: &Arc, target: kurbo::Point) -> (f64, f64) {
+    const SAMPLES: u32 = 64;
+    let distance_sq = |t: f64| (arc.eval(t) - target).hypot2();
+    let best = (0..=SAMPLES)
+        .map(|k| f64::from(k) / f64::from(SAMPLES))
+        .min_by(|a, b| distance_sq(*a).total_cmp(&distance_sq(*b)))
+        .expect("samples");
+
+    let step = 1.0 / f64::from(SAMPLES);
+    let (mut low, mut high) = ((best - step).max(0.0), (best + step).min(1.0));
+    let ratio = (5f64.sqrt() - 1.0) / 2.0;
+    while high - low > 1e-12 {
+        let (a, b) = (high - ratio * (high - low), low + ratio * (high - low));
+        if distance_sq(a) < distance_sq(b) {
+            high = b;
+        } else {
+            low = a;
+        }
+    }
+    let t = (low + high) / 2.0;
+    (t, distance_sq(t))
 }
 
 /// The derivative of the arc's point by its parameter.
@@ -529,11 +641,83 @@ mod test {
     }
 
     #[test]
+    fn nearest_point_on_a_line() {
+        let m = measure("M 0 0 L 10 0");
+        let nearest = m.nearest(Point2D::new(5.0, 5.0)).unwrap();
+        assert_eq!(nearest.point, Point2D::new(5.0, 0.0));
+        assert_eq!(nearest.distance, 5.0);
+        assert_eq!(nearest.length, 5.0);
+        assert_eq!(nearest.position, Position { index: 1, t: 0.5 });
+        // Past the end, the end is nearest
+        let past = m.nearest(Point2D::new(15.0, 0.0)).unwrap();
+        assert_eq!((past.point, past.distance), (Point2D::new(10.0, 0.0), 5.0));
+    }
+
+    #[test]
+    fn nearest_point_on_an_arc() {
+        // A half circle of radius 10 through (0, 10)
+        let m = measure("M 10 0 A 10 10 0 0 1 -10 0");
+        let nearest = m.nearest(Point2D::new(0.0, 20.0)).unwrap();
+        assert!(close_point(nearest.point, Point2D::new(0.0, 10.0)));
+        assert!(close(nearest.distance, 10.0));
+        assert!(close(nearest.length, 5.0 * PI));
+        // Seen from above, the half circle's ends are nearest
+        let above = m.nearest(Point2D::new(3.0, -4.0)).unwrap();
+        assert!(close_point(above.point, Point2D::new(10.0, 0.0)));
+    }
+
+    #[test]
+    fn nearest_point_on_a_curve_beats_every_sample() {
+        let m = measure("M 0 0 C 30 80 60 -40 100 20 S 150 60 170 0");
+        for target in [
+            Point2D::new(40.0, 40.0),
+            Point2D::new(120.0, -10.0),
+            Point2D::new(90.0, 10.0),
+        ] {
+            let nearest = m.nearest(target).unwrap();
+            let sampled = (0..=2000)
+                .map(|k| {
+                    m.point_at(m.total_length() * f64::from(k) / 2000.0)
+                        .unwrap()
+                })
+                .map(|p| (p - target).length())
+                .fold(f64::INFINITY, f64::min);
+            assert!(nearest.distance <= sampled + 1e-9);
+            // Its length leads back to the same point
+            assert!(close_point(
+                m.point_at(nearest.length).unwrap(),
+                nearest.point
+            ));
+        }
+    }
+
+    #[test]
+    fn nearest_point_across_subpaths() {
+        let m = measure("M 0 0 L 10 0 M 0 100 L 10 100");
+        let nearest = m.nearest(Point2D::new(5.0, 90.0)).unwrap();
+        assert_eq!(nearest.point, Point2D::new(5.0, 100.0));
+        assert_eq!(nearest.position.index, 3);
+        assert_eq!(nearest.length, 15.0);
+    }
+
+    #[test]
+    fn point_in_stroke_is_within_half_the_width() {
+        let m = measure("M 0 0 L 10 0");
+        assert!(m.is_point_in_stroke(Point2D::new(5.0, 0.0), 0.0));
+        assert!(m.is_point_in_stroke(Point2D::new(5.0, 1.0), 2.0));
+        assert!(!m.is_point_in_stroke(Point2D::new(5.0, 1.1), 2.0));
+        // Ends count as round
+        assert!(m.is_point_in_stroke(Point2D::new(10.6, 0.6), 2.0));
+    }
+
+    #[test]
     fn a_path_that_draws_nothing_has_no_points() {
         let m = measure("M 5 5");
         assert_eq!(m.total_length(), 0.0);
         assert_eq!(m.point_at(0.0), None);
         assert_eq!(m.tangent_at(0.0), None);
         assert_eq!(measure("").position_at(0.0), None);
+        assert_eq!(m.nearest(Point2D::new(5.0, 5.0)), None);
+        assert!(!m.is_point_in_stroke(Point2D::new(5.0, 5.0), 10.0));
     }
 }

@@ -20,6 +20,7 @@ use palette::Srgba;
 use rough_tiny_skia::SkiaGenerator;
 use roughr::core::{FillStyle, OptionsBuilder};
 use svg_path_ops::bbox::{Alignment, BBox, BoxAlignment, InboxParameters, ScaleType};
+use svg_path_ops::euclid::default::Point2D;
 use svg_path_ops::pt::PathTransformer;
 use svg_path_ops::shapes::Shape;
 use svg_path_ops::svgtypes::PathParser;
@@ -910,6 +911,82 @@ fn measure_strip(out_dir: &Path) {
     canvas.save(out_dir, "measure");
 }
 
+fn nearest_strip(out_dir: &Path) {
+    let curve = "M 0 40 C 0 0 40 0 40 40 A 20 20 0 0 0 80 40 Q 100 0 120 40";
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "nearest",
+        "nearest point on the path, and is_point_in_stroke (filled)",
+        2,
+    );
+
+    // Lines from points around the path to their nearest points on it
+    let center = cell_center(canvas.cell(0));
+    let path = fit(curve, (center.0 - 60.0, center.1 - 25.0, 120.0, 50.0));
+    draw_outline(&mut canvas, &path);
+    let measure = PathMeasure::new(parse(&path));
+    for (dx, dy) in [
+        (-50.0, -45.0),
+        (-15.0, 40.0),
+        (0.0, -40.0),
+        (25.0, 45.0),
+        (55.0, -40.0),
+    ] {
+        let target = Point2D::new(center.0 + dx, center.1 + dy);
+        let nearest = measure.nearest(target).unwrap();
+        let guide = format!(
+            "M {} {} L {} {}",
+            target.x, target.y, nearest.point.x, nearest.point.y
+        );
+        draw_dashed(&mut canvas, &guide, BROWN, 1.2);
+        draw_dot(&mut canvas, (target.x, target.y), true);
+        draw_dot(&mut canvas, (nearest.point.x, nearest.point.y), false);
+    }
+    canvas.label(0, "nearest");
+
+    // A grid of points, filled where a 14 wide stroke covers them
+    let center = cell_center(canvas.cell(1));
+    let path = fit(curve, (center.0 - 60.0, center.1 - 25.0, 120.0, 50.0));
+    let measure = PathMeasure::new(parse(&path));
+    for row in 0..11 {
+        for column in 0..16 {
+            let x = center.0 - 75.0 + f64::from(column) * 10.0;
+            let y = center.1 - 50.0 + f64::from(row) * 10.0;
+            let inside = measure.is_point_in_stroke(Point2D::new(x, y), 14.0);
+            draw_small_dot(&mut canvas, (x, y), inside);
+        }
+    }
+    draw_outline(&mut canvas, &path);
+    canvas.label(1, "stroke width 14");
+
+    canvas.save(out_dir, "nearest");
+}
+
+/// A small grid dot: filled when `on`, a faint ring otherwise.
+fn draw_small_dot(canvas: &mut Canvas, (x, y): (f64, f64), on: bool) {
+    let Some(circle) = PathBuilder::from_circle(x as f32, y as f32, if on { 2.6 } else { 1.8 })
+    else {
+        return;
+    };
+    let mut paint = Paint::default();
+    if on {
+        paint.set_color_rgba8(GHOST_COLOR.0, GHOST_COLOR.1, GHOST_COLOR.2, 255);
+        canvas.pixmap.fill_path(
+            &circle,
+            &paint,
+            tiny_skia::FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
+    } else {
+        paint.set_color_rgba8(CREAM.0, CREAM.1, CREAM.2, 255);
+        let stroke = Stroke { width: 0.8, ..Stroke::default() };
+        canvas
+            .pixmap
+            .stroke_path(&circle, &paint, &stroke, Transform::identity(), None);
+    }
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1116,6 +1193,7 @@ fn main() {
     segments_with_context_strip(out);
     flip_strip(out);
     measure_strip(out);
+    nearest_strip(out);
     shapes_strip(out);
     reverse_strip(out);
     split_subpaths_strip(out);

@@ -253,6 +253,22 @@ let middle = measure.point_at(length / 2.0).unwrap();
 assert!((middle - Point2D::new(0.0, 10.0)).length() < 1e-9);
 ```
 
+It also finds the point of the path nearest to another point, and
+whether a point is on the path's stroke:
+
+![nearest](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/nearest.png)
+
+```rust
+use svg_path_ops::euclid::default::Point2D;
+use svg_path_ops::pt::PathTransformer;
+
+let measure = PathTransformer::parse("M 10 0 A 10 10 0 0 1 -10 0")?.measure();
+
+let nearest = measure.nearest(Point2D::new(0.0, 20.0)).unwrap();
+assert!((nearest.distance - 10.0).abs() < 1e-9);
+assert!(measure.is_point_in_stroke(Point2D::new(0.0, 11.0), 4.0));
+```
+
 ### Bounding boxes
 
 [`to_box`] measures a path, and [`inbox`] fits it into a box:
