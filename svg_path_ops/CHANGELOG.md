@@ -134,6 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   itself, each point once with its two places along the path in order and
   whether it crosses there. Neighbouring segments' joints and a closed
   subpath's start are left out.
+- Benchmarks of the main operations on Ferris the crab, with criterion:
+  `cargo bench -p svg_path_ops`.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points

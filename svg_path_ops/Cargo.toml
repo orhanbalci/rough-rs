@@ -21,6 +21,14 @@ kurbo = { version = "0.13", features = ["euclid"] }
 euclid = "0.22"
 i_overlay = { version = "9", optional = true }
 
+[dev-dependencies]
+criterion = { version = "0.8", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "ops"
+harness = false
+required-features = ["boolean"]
+
 [features]
 default = ["boolean"]
 # Boolean operations on paths, through i_overlay

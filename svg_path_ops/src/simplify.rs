@@ -10,6 +10,9 @@ const SPACING: f64 = 0.5;
 /// Fewest samples taken along a curve or an arc.
 const CURVE_SAMPLES: usize = 4;
 
+/// Most samples a curve is fitted to; the rest are only checked.
+const FIT_POINTS: usize = 64;
+
 /// Newton steps that move the samples' parameters closer to the curve
 /// before a stretch is given up on.
 const REPARAMETERIZE: usize = 4;
@@ -64,6 +67,12 @@ impl PathMeasure {
     /// 3. If every sample is within `tolerance` of the curve, keep it.
     ///    Otherwise move each parameter to the curve's nearest point to its
     ///    sample with a Newton step and fit again, up to four times.
+    ///
+    /// On a long stretch, the fitting uses at most 64 of its samples,
+    /// evenly spread, which places the control points just as well; a curve
+    /// that fits them is then checked against every sample, at parameters
+    /// taken between those of its neighbours and moved a Newton step
+    /// closer, and kept only if all are within `tolerance`.
     ///
     /// Schneider splits a stretch that does not fit at its furthest sample
     /// and fits both halves, which cuts curves at uneven places and takes
@@ -241,6 +250,7 @@ fn sample(pieces: &[&Piece], tolerance: f64) -> Vec<Sample> {
 fn fit(samples: &[Sample], tan1: Vec2, tan2: Vec2, tolerance: f64, out: &mut Vec<Fitted>) {
     let last = samples.len() - 1;
     let mut start = 0;
+    let mut reach = 1;
     while start < last {
         let leaving = if start == 0 {
             tan1
@@ -259,12 +269,20 @@ fn fit(samples: &[Sample], tan1: Vec2, tan2: Vec2, tolerance: f64, out: &mut Vec
 
         // Gallop: double the stretch until one curve no longer fits it,
         // then binary search between the last that fit and the first that
-        // did not. Two samples always fit.
+        // did not. Two samples always fit. The last curve's stretch is a
+        // good first guess for this one.
         let mut lo = start + 1;
         let mut best = attempt(lo).expect("two samples fit");
         let mut hi = None;
-        let mut step = 1;
-        while lo < last {
+        let guess = (start + reach).min(last);
+        if guess > lo {
+            match attempt(guess) {
+                Some(fitted) => (lo, best) = (guess, fitted),
+                None => hi = Some(guess),
+            }
+        }
+        let mut step = (reach / 2).max(1);
+        while hi.is_none() && lo < last {
             let end = (lo + step).min(last);
             match attempt(end) {
                 Some(fitted) => (lo, best) = (end, fitted),
@@ -286,6 +304,7 @@ fn fit(samples: &[Sample], tan1: Vec2, tan2: Vec2, tolerance: f64, out: &mut Vec
         }
         let (end, fitted) = (lo, best);
         out.push(fitted);
+        reach = end - start;
         start = end;
     }
 }
@@ -310,23 +329,66 @@ fn fit_one(samples: &[Sample], tan1: Vec2, tan2: Vec2, tolerance: f64) -> Option
         )));
     }
 
-    let mut u = chord_parameters(samples);
+    // Fit to at most `FIT_POINTS` of the samples, evenly spread, which is
+    // plenty to place the control points
+    let picked: Vec<usize> = if n <= FIT_POINTS {
+        (0..n).collect()
+    } else {
+        (0..FIT_POINTS)
+            .map(|k| k * (n - 1) / (FIT_POINTS - 1))
+            .collect()
+    };
+    let subset: Vec<Sample> = picked.iter().map(|&i| samples[i]).collect();
+    let mut u = chord_parameters(&subset);
     for iteration in 0..=REPARAMETERIZE {
-        let curve = generate(samples, &u, tan1, tan2);
-        let error = max_error(samples, &curve, &u);
+        let curve = generate(&subset, &u, tan1, tan2);
+        let error = max_error(&subset, &curve, &u, 16.0 * tolerance * tolerance);
         if error <= tolerance * tolerance {
-            return Some(Fitted::Cubic(curve));
+            // Then check every sample, at parameters taken between those of
+            // the picked ones and moved a Newton step closer
+            if picked.len() == n || fits_all(samples, &picked, &u, &curve, tolerance) {
+                return Some(Fitted::Cubic(curve));
+            }
+            return None;
         }
         // Newton steps help when the curve is nearly right, not when it is
         // far off
         if iteration == REPARAMETERIZE || error > 16.0 * tolerance * tolerance {
             break;
         }
-        if !reparameterize(samples, &curve, &mut u) {
+        if !reparameterize(&subset, &curve, &mut u) {
             break;
         }
     }
     None
+}
+
+/// Whether every one of `samples` is within `tolerance` of `curve`, which
+/// was fitted to those at `picked` with parameters `u`.
+fn fits_all(
+    samples: &[Sample],
+    picked: &[usize],
+    u: &[f64],
+    curve: &CubicBez,
+    tolerance: f64,
+) -> bool {
+    let chords = chord_parameters(samples);
+    let mut params = Vec::with_capacity(samples.len());
+    for pair in 0..picked.len() - 1 {
+        let (i, j) = (picked[pair], picked[pair + 1]);
+        let (from, to) = (chords[i], chords[j]);
+        for &chord in &chords[i..j] {
+            let f = if to > from {
+                (chord - from) / (to - from)
+            } else {
+                0.0
+            };
+            params.push(u[pair] + (u[pair + 1] - u[pair]) * f);
+        }
+    }
+    params.push(u[picked.len() - 1]);
+    reparameterize(samples, curve, &mut params);
+    max_error(samples, curve, &params, tolerance * tolerance) <= tolerance * tolerance
 }
 
 /// Whether the samples lie on the line from the first to the last and run
@@ -414,13 +476,17 @@ fn generate(samples: &[Sample], u: &[f64], tan1: Vec2, tan2: Vec2) -> CubicBez {
 }
 
 /// The largest squared distance between a sample and the curve at its
-/// parameter.
-fn max_error(samples: &[Sample], curve: &CubicBez, u: &[f64]) -> f64 {
-    samples
-        .iter()
-        .zip(u)
-        .map(|(sample, &t)| (curve.eval(t) - sample.point).hypot2())
-        .fold(0.0, f64::max)
+/// parameter, or the first one past `stop`, which is enough to know the
+/// curve does not fit.
+fn max_error(samples: &[Sample], curve: &CubicBez, u: &[f64], stop: f64) -> f64 {
+    let mut worst = 0.0f64;
+    for (sample, &t) in samples.iter().zip(u) {
+        worst = worst.max((curve.eval(t) - sample.point).hypot2());
+        if worst > stop {
+            break;
+        }
+    }
+    worst
 }
 
 /// Moves each parameter a Newton step towards the curve's nearest point to
