@@ -328,6 +328,24 @@
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
+//! [`PathMeasure::classify`] tells what kind of curve a segment is: a line,
+//! an arch that bends one way, or a cubic curve with inflections, a cusp or
+//! a loop, and where they are:
+//!
+//! ![classify](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/classify.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//! use svg_path_ops::CurveKind;
+//!
+//! let measure = PathTransformer::parse("M 0 0 C 40 30 -10 30 30 0")?.measure();
+//! let Some(CurveKind::Loop { first, second }) = measure.classify(1) else {
+//!     panic!("a loop");
+//! };
+//! assert!(0.0 < first && first < second && second < 1.0);
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
 //! It also finds the point of the path nearest to another point, and
 //! whether a point is on the path's stroke:
 //!
@@ -475,7 +493,8 @@
 //! ### Intersections
 //!
 //! [`PathMeasure::intersections`] finds the points where two paths meet,
-//! arcs included, and where each point lies on both paths:
+//! arcs included, where each point lies on both paths, and whether the
+//! paths cross there or only touch:
 //!
 //! ![intersections](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/intersections.png)
 //!
@@ -491,6 +510,7 @@
 //! assert!((meets[0].point - Point2D::new(8.0, 6.0)).length() < 1e-9);
 //! // Where the second point lies on the line, by length
 //! assert!((meets[1].other.length - 12.0).abs() < 1e-9);
+//! assert!(meets.iter().all(|meet| meet.crossing));
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
@@ -503,6 +523,12 @@
 //! curves cross while running side by side, the pieces around the crossing
 //! are gathered into one point. Segments that overlap along a stretch have
 //! no single meeting point and are not reported.
+//!
+//! To tell a crossing from a touch, each path is followed a little way back
+//! and on from the point; the other path crosses when its two ends fall on
+//! different sides of this one. That tells a line touching a circle from
+//! one crossing it, and a curve crossing a line where it runs along it, at
+//! an inflection, from one touching it.
 //!
 //! ### Bounding boxes
 //!
@@ -527,6 +553,28 @@
 //!     ..InboxParameters::default()
 //! });
 //! assert_eq!(path.to_string(), "M 0 12.5 L 100 12.5 L 50 87.5 Z");
+//! # Ok::<(), svg_path_ops::svgtypes::Error>(())
+//! ```
+//!
+//! [`PathMeasure::bounds`] gives the exact box around a path, and
+//! [`PathMeasure::stroke_bounds`] the box around its stroke, caps, joins
+//! and miter limit included:
+//!
+//! ![stroke_bounds](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/stroke_bounds.png)
+//!
+//! ```
+//! use svg_path_ops::pt::PathTransformer;
+//! use svg_path_ops::{LineJoin, StrokeStyle};
+//!
+//! let corner = PathTransformer::parse("M 0 10 L 10 0 L 20 10")?.measure();
+//! let style = StrokeStyle {
+//!     width: 2.0,
+//!     join: LineJoin::Round,
+//!     ..StrokeStyle::default()
+//! };
+//! let bounds = corner.stroke_bounds(&style).unwrap();
+//! // The round join reaches one unit above the corner
+//! assert!((bounds.min.y + 1.0).abs() < 1e-12);
 //! # Ok::<(), svg_path_ops::svgtypes::Error>(())
 //! ```
 //!
@@ -589,6 +637,9 @@
 //! [`PathMeasure::intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.intersections
 //! [`PathMeasure::interior_point`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.interior_point
 //! [`PathMeasure::divide_at`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.divide_at
+//! [`PathMeasure::classify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.classify
+//! [`PathMeasure::bounds`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.bounds
+//! [`PathMeasure::stroke_bounds`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.stroke_bounds
 //! [`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
 //! [`PathMeasure::smooth`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.smooth
 //! [`Smoothing::Continuous`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.Continuous
@@ -602,7 +653,9 @@
 
 pub(crate) mod a2c;
 pub mod bbox;
+mod classify;
 mod context;
+mod crossing;
 mod divide;
 pub(crate) mod ellipse;
 mod intersect;
@@ -615,12 +668,14 @@ mod reverse;
 pub mod shapes;
 mod simplify;
 mod smooth;
+mod stroke;
 mod subpaths;
 mod write;
 
 use std::borrow::Borrow;
 
 use a2c::a2c;
+pub use classify::CurveKind;
 pub use context::{segments_with_context, SegmentContext};
 pub use intersect::{Intersection, Location};
 pub use join::join;
@@ -629,6 +684,7 @@ pub use optimize::optimize;
 pub use orient::reorient;
 pub use reverse::reverse;
 pub use smooth::Smoothing;
+pub use stroke::{LineCap, LineJoin, StrokeStyle};
 pub use subpaths::{is_closed, split_subpaths};
 pub use svgtypes::PathSegment;
 pub use write::{write_path, WriteOptions};

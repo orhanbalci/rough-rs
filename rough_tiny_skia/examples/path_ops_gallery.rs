@@ -32,10 +32,14 @@ use svg_path_ops::{
     segments_with_context,
     split_subpaths,
     write_path,
+    CurveKind,
     FillRule,
+    LineCap,
+    LineJoin,
     PathMeasure,
     PathSegment,
     Smoothing,
+    StrokeStyle,
     WriteOptions,
 };
 use tiny_skia::{Paint, PathBuilder, Stroke, StrokeDash, Transform};
@@ -1129,21 +1133,30 @@ fn intersections_strip(out_dir: &Path) {
     let mut canvas = Canvas::new(
         LAYOUT,
         "intersections",
-        "the points where two paths meet (hollow), arcs and curves included",
-        3,
+        "where two paths meet: hollow where they cross, filled where they touch",
+        4,
     );
-    let cells: [(&str, &str); 3] = [
+    let cells: [(&str, &str); 4] = [
         (
             "M -60 0 C -30 -70 -10 70 0 0 S 30 -70 60 0",
             "M 38 0 A 38 38 0 0 1 -38 0 A 38 38 0 0 1 38 0",
         ),
         (
-            "M 55 0 A 55 25 20 0 1 -55 0 A 55 25 20 0 1 55 0",
-            "M 55 0 A 55 25 -35 0 1 -55 0 A 55 25 -35 0 1 55 0",
+            "M 55 0 A 55 25 20 0 1 -55 0 A 55 25 20 0 1 55 0 Z",
+            "M 55 0 A 55 25 -35 0 1 -55 0 A 55 25 -35 0 1 55 0 Z",
         ),
         ("", "M -65 30 L 65 -32"),
+        (
+            "M 30 0 A 30 30 0 0 1 -30 0 A 30 30 0 0 1 30 0 Z",
+            "M -60 -30 H 60 M -60 45 L 60 5",
+        ),
     ];
-    let labels = ["curve and circle", "two ellipses", "ferris and a line"];
+    let labels = [
+        "curve and circle",
+        "two ellipses",
+        "ferris and a line",
+        "touching",
+    ];
     for (i, (first, second)) in cells.iter().enumerate() {
         let center = cell_center(canvas.cell(i));
         let place = |path: &str| {
@@ -1163,7 +1176,7 @@ fn intersections_strip(out_dir: &Path) {
         let meets =
             PathMeasure::new(parse(&first)).intersections(&PathMeasure::new(parse(&second)));
         for meet in meets {
-            draw_dot(&mut canvas, (meet.point.x, meet.point.y), true);
+            draw_dot(&mut canvas, (meet.point.x, meet.point.y), meet.crossing);
         }
         canvas.label(i, labels[i]);
     }
@@ -1587,6 +1600,154 @@ fn interior_divide_strip(out_dir: &Path) {
     canvas.save(out_dir, "interior_divide");
 }
 
+/// Strokes `path` with `style`, as tiny-skia draws it.
+fn draw_styled(canvas: &mut Canvas, path: &str, style: &StrokeStyle) {
+    let Some(tiny_path) = tiny_path(path) else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_color_rgba8(CREAM.0, CREAM.1, CREAM.2, 255);
+    let stroke = Stroke {
+        width: style.width as f32,
+        miter_limit: style.miter_limit as f32,
+        line_cap: match style.cap {
+            LineCap::Butt => tiny_skia::LineCap::Butt,
+            LineCap::Round => tiny_skia::LineCap::Round,
+            LineCap::Square => tiny_skia::LineCap::Square,
+        },
+        line_join: match style.join {
+            LineJoin::Miter => tiny_skia::LineJoin::Miter,
+            LineJoin::Round => tiny_skia::LineJoin::Round,
+            LineJoin::Bevel => tiny_skia::LineJoin::Bevel,
+        },
+        ..Stroke::default()
+    };
+    canvas
+        .pixmap
+        .stroke_path(&tiny_path, &paint, &stroke, Transform::identity(), None);
+}
+
+fn stroke_bounds_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "stroke_bounds",
+        "the box around a stroke, with its caps and joins (dashed)",
+        4,
+    );
+    let zigzag = "M -50 22 L -22 -22 L 6 22 L 34 -22";
+    let cells = [
+        (
+            zigzag,
+            StrokeStyle {
+                width: 14.0,
+                miter_limit: 10.0,
+                ..StrokeStyle::default()
+            },
+            "miter, butt",
+        ),
+        (
+            zigzag,
+            StrokeStyle {
+                width: 14.0,
+                cap: LineCap::Round,
+                join: LineJoin::Round,
+                miter_limit: 4.0,
+            },
+            "round",
+        ),
+        (
+            zigzag,
+            StrokeStyle {
+                width: 14.0,
+                cap: LineCap::Square,
+                join: LineJoin::Bevel,
+                miter_limit: 4.0,
+            },
+            "bevel, square",
+        ),
+        (
+            "M -45 25 C 70 -60 -70 -60 45 25",
+            StrokeStyle {
+                width: 22.0,
+                cap: LineCap::Butt,
+                join: LineJoin::Bevel,
+                miter_limit: 4.0,
+            },
+            "a loop, width 22",
+        ),
+    ];
+    for (i, (path, style, label)) in cells.iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let mut transformer = PathTransformer::new((*path).into());
+        transformer.translate(center.0 + 6.0, center.1);
+        let path = transformer.to_string();
+        draw_styled(&mut canvas, &path, style);
+        draw_stroke(&mut canvas, &path, GHOST_COLOR, 1.0);
+        if let Some(bounds) = PathMeasure::new(parse(&path)).stroke_bounds(style) {
+            let size = bounds.max - bounds.min;
+            draw_box(&mut canvas, (bounds.min.x, bounds.min.y, size.x, size.y));
+        }
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "stroke_bounds");
+}
+
+fn classify_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "classify",
+        "kinds of cubic curves, and the parameters that make them so (dots)",
+        4,
+    );
+    let cells = [
+        (
+            [(-55.0, 20.0), (-20.0, -70.0), (20.0, 70.0), (55.0, -20.0)],
+            "serpentine",
+        ),
+        (
+            [(-40.0, 30.0), (80.0, -60.0), (-80.0, -60.0), (40.0, 30.0)],
+            "loop",
+        ),
+        (
+            [(-45.0, 30.0), (45.0, -40.0), (-45.0, -40.0), (45.0, 30.0)],
+            "cusp",
+        ),
+        (
+            [(-55.0, 30.0), (-40.0, -40.0), (40.0, -40.0), (55.0, 30.0)],
+            "arch",
+        ),
+    ];
+    for (i, (points, label)) in cells.iter().enumerate() {
+        let (cx, cy) = cell_center(canvas.cell(i));
+        let [a, b, c, d] = points.map(|(x, y)| (cx + x, cy + y));
+        let path = format!(
+            "M {} {} C {} {} {} {} {} {}",
+            a.0, a.1, b.0, b.1, c.0, c.1, d.0, d.1
+        );
+        draw_stroke(&mut canvas, &path, BROWN, 2.0);
+        let at = |t: f64| {
+            let mt = 1.0 - t;
+            let weights = [mt * mt * mt, 3.0 * t * mt * mt, 3.0 * t * t * mt, t * t * t];
+            let x = weights[0] * a.0 + weights[1] * b.0 + weights[2] * c.0 + weights[3] * d.0;
+            let y = weights[0] * a.1 + weights[1] * b.1 + weights[2] * c.1 + weights[3] * d.1;
+            (x, y)
+        };
+        let params: Vec<f64> = match PathMeasure::new(parse(&path)).classify(1) {
+            Some(CurveKind::Serpentine { first, second }) => {
+                std::iter::once(first).chain(second).collect()
+            }
+            Some(CurveKind::Cusp { at }) => vec![at],
+            Some(CurveKind::Loop { first, second }) => vec![first, second],
+            _ => Vec::new(),
+        };
+        for t in params {
+            draw_dot(&mut canvas, at(t), true);
+        }
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "classify");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1802,6 +1963,8 @@ fn main() {
     fill_strip(out);
     crop_strip(out);
     intersections_strip(out);
+    stroke_bounds_strip(out);
+    classify_strip(out);
     shapes_strip(out);
     polygons_strip(out);
     reverse_strip(out);

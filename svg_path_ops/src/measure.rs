@@ -11,6 +11,7 @@ use kurbo::{
     ParamCurveArclen,
     ParamCurveArea,
     ParamCurveDeriv,
+    ParamCurveExtrema,
     ParamCurveNearest,
     QuadBez,
     Shape,
@@ -746,7 +747,7 @@ impl PieceShape {
 
     /// The parameter at which the length from the start is `length`, given
     /// the piece's whole length.
-    fn inv_arclen(&self, length: f64, whole: f64) -> f64 {
+    pub(crate) fn inv_arclen(&self, length: f64, whole: f64) -> f64 {
         if whole <= 0.0 {
             return 0.0;
         }
@@ -903,8 +904,41 @@ impl PieceShape {
         }
     }
 
+    /// The parameters strictly inside the piece where it runs vertically
+    /// or horizontally, where x or y is at its furthest. An arc reaches
+    /// them at the angles where the derivative of x or y is zero, every
+    /// half turn.
+    pub(crate) fn axis_turns(&self) -> Vec<f64> {
+        let inside = |t: &f64| *t > 0.0 && *t < 1.0;
+        match self {
+            PieceShape::Line(_) => Vec::new(),
+            PieceShape::Quadratic(quad) => quad.extrema().into_iter().filter(inside).collect(),
+            PieceShape::Cubic(cubic) => cubic.extrema().into_iter().filter(inside).collect(),
+            PieceShape::Arc(arc) => {
+                let (sin, cos) = arc.x_rotation.sin_cos();
+                let (rx, ry) = (arc.radii.x, arc.radii.y);
+                // x' = 0 at tan θ = −ry sin φ / (rx cos φ); y' = 0 at
+                // tan θ = ry cos φ / (rx sin φ)
+                let turns = [(-ry * sin).atan2(rx * cos), (ry * cos).atan2(rx * sin)];
+                let (a, b) = (arc.start_angle, arc.start_angle + arc.sweep_angle);
+                let (low, high) = (a.min(b), a.max(b));
+                let pi = std::f64::consts::PI;
+                let mut params = Vec::new();
+                for turn in turns {
+                    let mut angle = turn + ((low - turn) / pi).ceil() * pi;
+                    while angle <= high {
+                        params.push((angle - arc.start_angle) / arc.sweep_angle);
+                        angle += pi;
+                    }
+                }
+                params.retain(inside);
+                params
+            }
+        }
+    }
+
     /// The signed curvature at `t`, or `None` where the piece does not move.
-    fn curvature(&self, t: f64) -> Option<f64> {
+    pub(crate) fn curvature(&self, t: f64) -> Option<f64> {
         let t = self.moving_at(t)?;
         let (velocity, acceleration) = (self.derivative(t), self.second_derivative(t));
         Some(velocity.cross(acceleration) / velocity.hypot().powi(3))

@@ -95,6 +95,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path as it is, as Paper.js's `divideAt` does.
 - `shapes::Shape::RegularPolygon` and `shapes::Shape::Star`, laid out as
   Paper.js lays them out and drawn clockwise.
+- `PathMeasure::bounds()` gives the exact box around a path, and
+  `PathMeasure::stroke_bounds()` the exact box around its stroke with a
+  `StrokeStyle` (width, `LineCap`, `LineJoin` and miter limit, SVG's
+  defaults by default), including where a tight curve's inner edge turns
+  back on itself. The algorithm is described in the method's docs.
+- `PathMeasure::classify()` and `CurveKind::of_cubic()` tell a segment's
+  kind: line, quadratic, arch, serpentine with its inflections, cusp or
+  loop with where it crosses itself, as Paper.js's `classify` does, by
+  Stone and DeRose's characterization.
+- `Intersection::crossing` tells whether the paths cross at a point or
+  only touch it, including where they run along each other there.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -113,9 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, polygons and stars,
   measure, curvature, nearest, contains, interior_point, divide_at, crop,
-  simplify, smooth, intersections, reverse, reorient, join, split_subpaths,
-  is_closed, unarc, unshort, to_box, inbox and segments_with_context. They
-  replace the examples that only linked to rough_piet programs.
+  stroke_bounds, classify, simplify, smooth, intersections, reverse,
+  reorient, join, split_subpaths, is_closed, unarc, unshort, to_box, inbox
+  and segments_with_context. They replace the examples that only linked to
+  rough_piet programs.
 
 ### Changed
 

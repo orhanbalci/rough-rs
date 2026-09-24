@@ -20,6 +20,7 @@
 use euclid::default::Point2D;
 use kurbo::{Arc, Line, ParamCurve, PathSeg, Rect, Vec2};
 
+use crate::crossing::is_crossing;
 use crate::measure::{PathMeasure, Piece, PieceShape, Position};
 
 /// Where a point lies on one path: its length along the path, and the
@@ -38,6 +39,11 @@ pub struct Intersection {
     pub this: Location,
     /// Where it lies on the other path
     pub other: Location,
+    /// Whether the other path passes from one side of this one to the
+    /// other there, rather than touching it and turning back, as a line
+    /// touching a circle does. A point at an open end of either path is
+    /// not a crossing.
+    pub crossing: bool,
 }
 
 /// Subdivision stops once both parts fit in a box this wide, and Newton's
@@ -48,7 +54,10 @@ const LEAF_SIZE: f64 = 1e-6;
 const LEAF_BUDGET: usize = 4096;
 /// Newton's method stops once the two points are this close.
 const CONVERGED: f64 = 1e-10;
-/// Points closer than this are the same intersection.
+/// Points closer than this, or than this fraction of the paths' size, are
+/// the same intersection. Where curves touch, Newton's method only gets
+/// to about the square root of the rounding error, so the same point can
+/// be found a little apart from two pairs of segments.
 const SAME_POINT: f64 = 1e-7;
 
 impl PathMeasure {
@@ -116,11 +125,17 @@ impl PathMeasure {
                         point: Point2D::new(point.x, point.y),
                         this: location(a, t),
                         other: location(b, s),
+                        crossing: false,
                     });
                 }
             }
         }
 
+        let size = match (self.bounds(), other.bounds()) {
+            (Some(a), Some(b)) => (a.union(&b).max - a.union(&b).min).length(),
+            _ => 0.0,
+        };
+        let same = SAME_POINT.max(SAME_POINT * size);
         found.sort_by(|p, q| {
             p.this
                 .length
@@ -131,10 +146,39 @@ impl PathMeasure {
         for intersection in found {
             let seen = merged
                 .iter()
-                .any(|kept| (kept.point - intersection.point).length() <= SAME_POINT);
+                .any(|kept| (kept.point - intersection.point).length() <= same);
             if !seen {
                 merged.push(intersection);
             }
+        }
+
+        // Crossing or touching, probing no further along either path than
+        // a third of the way to the nearest other intersection
+        let gap = |i: usize, length: fn(&Intersection) -> f64| {
+            merged
+                .iter()
+                .enumerate()
+                .filter(|(j, _)| *j != i)
+                .map(|(_, x)| (length(x) - length(&merged[i])).abs())
+                .fold(f64::INFINITY, f64::min)
+        };
+        let crossings: Vec<bool> = (0..merged.len())
+            .map(|i| {
+                let x = &merged[i];
+                is_crossing(
+                    self,
+                    other,
+                    kurbo::Point::new(x.point.x, x.point.y),
+                    &x.this,
+                    &x.other,
+                    gap(i, |x| x.this.length),
+                    gap(i, |x| x.other.length),
+                    size,
+                )
+            })
+            .collect();
+        for (x, crossing) in merged.iter_mut().zip(crossings) {
+            x.crossing = crossing;
         }
         merged
     }
@@ -219,10 +263,13 @@ fn arc_line(arc: &Arc, line: &Line) -> Vec<(f64, f64)> {
     let d = to_unit(line.p1 - line.p0);
     let (a, b, c) = (d.dot(d), 2.0 * p.dot(d), p.dot(p) - 1.0);
     let discriminant = b * b - 4.0 * a * c;
-    if a == 0.0 || discriminant < 0.0 {
+    // A line touching the ellipse has a zero discriminant, which rounding
+    // turns into a tiny one of either sign
+    let touching = discriminant.abs() <= 1e-12 * (b * b + (4.0 * a * c).abs());
+    if a == 0.0 || (discriminant < 0.0 && !touching) {
         return Vec::new();
     }
-    let root = discriminant.sqrt();
+    let root = if touching { 0.0 } else { discriminant.sqrt() };
     let mut hits = Vec::new();
     for u in [(-b - root) / (2.0 * a), (-b + root) / (2.0 * a)] {
         if !(-1e-12..=1.0 + 1e-12).contains(&u) {
@@ -389,28 +436,14 @@ impl PieceShape {
                 hull(&[part.p0, part.p1, part.p2, part.p3])
             }
             PieceShape::Arc(arc) => {
+                let (low, high) = (t0.min(t1), t0.max(t1));
                 let mut points = vec![arc.eval(t0), arc.eval(t1)];
-                let (sin, cos) = arc.x_rotation.sin_cos();
-                let (rx, ry) = (arc.radii.x, arc.radii.y);
-                // x' = 0 at tan θ = −ry sin φ / (rx cos φ); y' = 0 at
-                // tan θ = ry cos φ / (rx sin φ), each every half turn
-                let turns = [(-ry * sin).atan2(rx * cos), (ry * cos).atan2(rx * sin)];
-                let (low, high) = {
-                    let (a, b) = (
-                        arc.start_angle + arc.sweep_angle * t0,
-                        arc.start_angle + arc.sweep_angle * t1,
-                    );
-                    (a.min(b), a.max(b))
-                };
-                for turn in turns {
-                    let pi = std::f64::consts::PI;
-                    let mut angle = turn + ((low - turn) / pi).ceil() * pi;
-                    while angle <= high {
-                        let t = (angle - arc.start_angle) / arc.sweep_angle;
-                        points.push(arc.eval(t));
-                        angle += pi;
-                    }
-                }
+                points.extend(
+                    self.axis_turns()
+                        .into_iter()
+                        .filter(|t| (low..=high).contains(t))
+                        .map(|t| arc.eval(t)),
+                );
                 hull(&points)
             }
         }
@@ -577,5 +610,62 @@ mod test {
     fn paths_that_draw_nothing_meet_nothing() {
         assert!(points("M 5 5", CIRCLE).is_empty());
         assert!(points(CIRCLE, "").is_empty());
+    }
+
+    /// Whether each meeting point of `a` with `b` is a crossing.
+    fn crossings(a: &str, b: &str) -> Vec<bool> {
+        measure(a)
+            .intersections(&measure(b))
+            .iter()
+            .map(|x| x.crossing)
+            .collect()
+    }
+
+    const CLOSED_CIRCLE: &str = "M 10 0 A 10 10 0 0 1 -10 0 A 10 10 0 0 1 10 0 Z";
+
+    #[test]
+    fn crossing_or_touching() {
+        assert_eq!(crossings("M 0 0 L 10 10", "M 0 10 L 10 0"), [true]);
+        assert_eq!(crossings(CLOSED_CIRCLE, "M -20 5 H 20"), [true, true]);
+        // A line touching a circle, and two circles touching
+        assert_eq!(crossings(CLOSED_CIRCLE, "M -20 10 H 20"), [false]);
+        assert_eq!(
+            crossings(
+                CLOSED_CIRCLE,
+                "M 30 0 A 10 10 0 0 1 10 0 A 10 10 0 0 1 30 0 Z"
+            ),
+            [false]
+        );
+    }
+
+    #[test]
+    fn a_curve_crosses_a_line_it_is_tangent_to_at_an_inflection() {
+        // y = x³, which runs along the x axis at the origin
+        let cubic = "M -10 -10 C -3.3333333333333335 10 3.3333333333333335 -10 10 10";
+        let meets = measure(cubic).intersections(&measure("M -20 0 H 20"));
+        assert!(!meets.is_empty());
+        assert!(meets.iter().all(|x| x.crossing), "{meets:?}");
+    }
+
+    #[test]
+    fn corners_touch_or_cross() {
+        let line = "M -5 0 H 25";
+        assert_eq!(crossings("M 0 10 L 10 0 L 20 10", line), [false]);
+        assert_eq!(crossings("M 0 10 L 10 0 L 20 -10", line), [true]);
+        // Through the corners of a square, its start among them
+        assert_eq!(
+            crossings("M 0 0 H 10 V 10 H 0 Z", "M -5 -5 L 15 15"),
+            [true, true]
+        );
+        assert_eq!(
+            crossings("M 0 0 H 10 V 10 H 0 Z", "M -5 5 L 0 0 L -5 -5"),
+            [false]
+        );
+    }
+
+    #[test]
+    fn an_open_end_does_not_cross() {
+        assert_eq!(crossings("M 0 0 L 10 0", "M 5 0 L 5 10"), [false]);
+        assert_eq!(crossings("M 5 0 L 5 10", "M 0 0 L 10 0"), [false]);
     }
 }
