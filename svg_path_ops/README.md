@@ -519,27 +519,33 @@ an inflection, from one touching it.
 
 [`boolean`] combines the areas two paths cover: their union,
 intersection, difference or exclusive or, drawn with curves within a
-tolerance of the exact outline. It needs the `boolean` feature, on by
+tolerance of the exact outline. [`PathTransformer`] has them too, as
+`union`, `intersect`, `difference` and `xor`, applying both paths'
+pending transforms first. They need the `boolean` feature, on by
 default, which brings in [i_overlay] for the polygon work:
 
 ![boolean](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/boolean.png)
 
 ```rust
+use svg_path_ops::pt::PathTransformer;
 use svg_path_ops::svgtypes::PathParser;
 use svg_path_ops::{boolean, BooleanOp, BooleanOptions, PathMeasure};
 
 let parse = |data| PathParser::from(data).collect::<Result<Vec<_>, _>>();
 let square = parse("M 0 0 H 20 V 20 H 0 Z")?;
 let hole = parse("M 15 10 A 5 5 0 0 1 5 10 A 5 5 0 0 1 15 10 Z")?;
+let options = BooleanOptions::default();
 
-let frame = boolean(
-    &square,
-    &hole,
-    BooleanOp::Difference,
-    &BooleanOptions::default(),
-);
+let frame = boolean(&square, &hole, BooleanOp::Difference, &options);
 let area = PathMeasure::new(&frame).area();
 assert!((area - (400.0 - std::f64::consts::PI * 25.0)).abs() < 0.2);
+
+// The same with transformers, the hole moved into place
+let mut square = PathTransformer::parse("M 0 0 H 20 V 20 H 0 Z")?;
+let mut hole = PathTransformer::parse("M 5 0 A 5 5 0 0 1 -5 0 A 5 5 0 0 1 5 0 Z")?;
+hole.translate(10.0, 10.0);
+square.difference(&hole, &options);
+assert!((square.measure().area() - area).abs() < 0.2);
 ```
 
 The paths are turned into lines within a quarter of the tolerance and

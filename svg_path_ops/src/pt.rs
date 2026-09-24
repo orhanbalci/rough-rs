@@ -8,6 +8,8 @@ use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken}
 use super::ellipse::Ellipse;
 use crate::a2c::a2c;
 use crate::bbox::{BBox, InboxParameters};
+#[cfg(feature = "boolean")]
+use crate::boolean::{boolean, BooleanOp, BooleanOptions};
 use crate::measure::PathMeasure;
 use crate::optimize::optimize;
 use crate::orient::reorient;
@@ -754,13 +756,76 @@ impl PathTransformer {
     /// Measures the path with pending transforms applied, leaving the
     /// transformer unchanged. See [`PathMeasure`].
     pub fn measure(&self) -> PathMeasure {
+        PathMeasure::new(self.evaluated())
+    }
+
+    /// The segments with pending transforms applied, leaving the
+    /// transformer unchanged.
+    fn evaluated(&self) -> VecDeque<PathSegment> {
         if self.stack.is_empty() {
-            PathMeasure::new(&self.path_segments)
+            self.path_segments.clone()
         } else {
             let mut evaluated = self.clone();
             evaluated.evaluate_stack();
-            PathMeasure::new(&evaluated.path_segments)
+            evaluated.path_segments
         }
+    }
+
+    /// Replaces the path with what `op` makes of the areas it and `other`
+    /// cover, both with their pending transforms applied. See
+    /// [`boolean`](crate::boolean) for how, and how close to the exact
+    /// outline the result is.
+    ///
+    /// ```
+    /// use svg_path_ops::pt::PathTransformer;
+    /// use svg_path_ops::{BooleanOp, BooleanOptions};
+    ///
+    /// let mut square = PathTransformer::parse("M 0 0 H 20 V 20 H 0 Z")?;
+    /// let mut moved = square.clone();
+    /// moved.translate(10.0, 10.0);
+    ///
+    /// square.boolean(&moved, BooleanOp::Intersect, &BooleanOptions::default());
+    /// assert!((square.measure().area() - 100.0).abs() < 1e-9);
+    /// # Ok::<(), svg_path_ops::svgtypes::Error>(())
+    /// ```
+    #[cfg(feature = "boolean")]
+    pub fn boolean(
+        &mut self,
+        other: &PathTransformer,
+        op: BooleanOp,
+        options: &BooleanOptions,
+    ) -> &mut Self {
+        self.evaluate_stack();
+        self.path_segments = boolean(&self.path_segments, other.evaluated(), op, options).into();
+        self
+    }
+
+    /// The path joined with `other`: everything either covers. See
+    /// [`boolean`](Self::boolean).
+    #[cfg(feature = "boolean")]
+    pub fn union(&mut self, other: &PathTransformer, options: &BooleanOptions) -> &mut Self {
+        self.boolean(other, BooleanOp::Union, options)
+    }
+
+    /// The part of the path `other` also covers. See
+    /// [`boolean`](Self::boolean).
+    #[cfg(feature = "boolean")]
+    pub fn intersect(&mut self, other: &PathTransformer, options: &BooleanOptions) -> &mut Self {
+        self.boolean(other, BooleanOp::Intersect, options)
+    }
+
+    /// The part of the path `other` does not cover. See
+    /// [`boolean`](Self::boolean).
+    #[cfg(feature = "boolean")]
+    pub fn difference(&mut self, other: &PathTransformer, options: &BooleanOptions) -> &mut Self {
+        self.boolean(other, BooleanOp::Difference, options)
+    }
+
+    /// What exactly one of the path and `other` covers. See
+    /// [`boolean`](Self::boolean).
+    #[cfg(feature = "boolean")]
+    pub fn xor(&mut self, other: &PathTransformer, options: &BooleanOptions) -> &mut Self {
+        self.boolean(other, BooleanOp::Xor, options)
     }
 
     /// Applies pending transforms, then rewrites the path in its shortest
@@ -2249,6 +2314,56 @@ mod test {
                 path.inbox(params);
                 assert_eq!(path.to_box(None).to_string(None), "90 40 10 20");
             }
+        }
+    }
+
+    #[cfg(feature = "boolean")]
+    mod boolean {
+        use crate::pt::PathTransformer;
+        use crate::BooleanOptions;
+
+        fn square() -> PathTransformer {
+            PathTransformer::parse("M 0 0 H 20 V 20 H 0 Z").unwrap()
+        }
+
+        fn area(path: &PathTransformer) -> f64 {
+            path.measure().area()
+        }
+
+        #[test]
+        fn operations_apply_pending_transforms_on_both_sides() {
+            let options = BooleanOptions::default();
+            let mut moved = square();
+            moved.translate(10.0, 0.0);
+            // Pending on this side too: moved back to overlap the same way
+            let mut shifted = square();
+            shifted.translate(-10.0, 0.0);
+            let mut other = square();
+            other.translate(-20.0, 0.0);
+            shifted.intersect(&other, &options);
+            assert!((area(&shifted) - 200.0).abs() < 1e-9);
+
+            let close = |path: &mut PathTransformer, expected: f64| {
+                assert!((area(path) - expected).abs() < 1e-9, "{}", area(path));
+            };
+            close(square().union(&moved, &options), 600.0);
+            close(square().intersect(&moved, &options), 200.0);
+            close(square().difference(&moved, &options), 200.0);
+            close(square().xor(&moved, &options), 400.0);
+        }
+
+        #[test]
+        fn operations_chain() {
+            let options = BooleanOptions::default();
+            let mut right = square();
+            right.translate(10.0, 0.0);
+            let mut below = square();
+            below.translate(0.0, 10.0);
+            let mut path = square();
+            path.union(&right, &options).difference(&below, &options);
+            // A 30 by 20 rectangle less the 20 by 10 the lower square
+            // takes from it
+            assert!((area(&path) - 400.0).abs() < 1e-9, "{}", area(&path));
         }
     }
 }

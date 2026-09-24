@@ -111,8 +111,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paths cover. The paths are flattened within a quarter of the tolerance,
   combined by i_overlay, and fitted with curves by `simplify`, keeping
   corners; the outline stays within the tolerance of the exact one, and
-  specks smaller than the tolerance are left out. Behind the `boolean`
-  feature, on by default, which adds the i_overlay dependency.
+  specks smaller than the tolerance are left out. `pt::PathTransformer`
+  has them as `boolean()`, `union()`, `intersect()`, `difference()` and
+  `xor()`, applying both paths' pending transforms first. Behind the
+  `boolean` feature, on by default, which adds the i_overlay dependency.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
