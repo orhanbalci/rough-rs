@@ -508,6 +508,58 @@ impl PathMeasure {
     }
 }
 
+impl Piece {
+    /// The segment as the path gives it, in absolute coordinates: a close
+    /// path, or its shape ending exactly where the path says.
+    pub(crate) fn as_given(&self) -> PathSegment {
+        if self.closes {
+            return PathSegment::ClosePath { abs: true };
+        }
+        match self.shape.segment(0.0, 1.0) {
+            // The arc's own end, not the one its shape comes back to
+            PathSegment::EllipticalArc { rx, ry, x_axis_rotation, large_arc, sweep, .. } => {
+                PathSegment::EllipticalArc {
+                    abs: true,
+                    rx,
+                    ry,
+                    x_axis_rotation,
+                    large_arc,
+                    sweep,
+                    x: self.to.x,
+                    y: self.to.y,
+                }
+            }
+            segment => segment,
+        }
+    }
+
+    /// The angle the path turns by, in radians from 0 to π, where this
+    /// piece ends and `next` starts.
+    pub(crate) fn turn_to(&self, next: &Piece) -> f64 {
+        match (self.shape.direction(1.0), next.shape.direction(0.0)) {
+            (Some(into), Some(out)) => into.cross(out).atan2(into.dot(out)).abs(),
+            _ => 0.0,
+        }
+    }
+}
+
+/// The runs of `pieces`, which follow each other, between the joins that
+/// turn by more than `corner` radians, as ranges of `pieces`.
+pub(crate) fn corner_runs(pieces: &[&Piece], corner: f64) -> Vec<std::ops::Range<usize>> {
+    let mut runs = Vec::new();
+    let mut first = 0;
+    for i in 1..pieces.len() {
+        if pieces[i - 1].turn_to(pieces[i]) > corner {
+            runs.push(first..i);
+            first = i;
+        }
+    }
+    if !pieces.is_empty() {
+        runs.push(first..pieces.len());
+    }
+    runs
+}
+
 impl PieceShape {
     /// The shape a drawing segment draws, or `None` for a move or for an arc
     /// SVG leaves out because it ends where it starts.

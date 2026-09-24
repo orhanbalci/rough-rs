@@ -68,6 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not shorten keep their segments. The curves are fitted with Schneider's
   algorithm, as in Paper.js, each taking the longest stretch one curve can
   follow; the algorithm is described in the method's docs.
+- `PathMeasure::smooth()` draws smooth cubic curves through the points
+  where a path's segments meet, as Paper.js's `smooth` does, keeping joins
+  that turn more than a given angle as corners. `Smoothing::Continuous` is
+  the cubic spline with chord length parameters, solved exactly for open
+  and closed paths; `Smoothing::CatmullRom { alpha }` the uniform,
+  centripetal or chordal Catmull–Rom spline. Both algorithms are described
+  in the method's docs.
 - `optimize()` and `pt::PathTransformer::optimize()` rewrite a path in its
   shortest form: absolute or relative per segment, `H`/`V` for straight
   lines, `S`/`T` for mirrored curves, lines for curves whose control points
@@ -85,9 +92,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transforming, writing, converting commands, bounding boxes, walking
   segments and handling invalid path data, illustrated by reference images
   for translate, rotate, scale, skew, flip, shapes, measure, curvature,
-  nearest, contains, crop, simplify, intersections, reverse, split_subpaths,
-  is_closed, unarc, unshort, to_box, inbox and segments_with_context. They
-  replace the examples that only linked to rough_piet programs.
+  nearest, contains, crop, simplify, smooth, intersections, reverse,
+  split_subpaths, is_closed, unarc, unshort, to_box, inbox and
+  segments_with_context. They replace the examples that only linked to
+  rough_piet programs.
 
 ### Changed
 

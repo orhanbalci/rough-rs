@@ -357,6 +357,36 @@ least squares, then refined with Newton's method. Each curve takes the
 longest stretch of the path one curve can follow, so the result has few
 curves, and neighbouring curves join smoothly.
 
+### Smoothing
+
+[`PathMeasure::smooth`] draws smooth curves through the points where a
+path's segments meet, rounding a polygon or a path of lines. A
+[`Smoothing::Continuous`] spline keeps the curvature continuous
+everywhere; a [`Smoothing::CatmullRom`] spline shapes each curve from
+its neighbouring points only. Joins that turn more than a given angle
+stay corners:
+
+![smooth](https://raw.githubusercontent.com/orhanbalci/rough-rs/main/svg_path_ops/assets/ops/smooth.png)
+
+```rust
+use svg_path_ops::pt::PathTransformer;
+use svg_path_ops::{PathSegment, Smoothing};
+
+let zigzag = PathTransformer::parse("M 0 0 L 10 10 L 20 0 L 30 10")?;
+let wave = zigzag
+    .measure()
+    .smooth(Smoothing::CatmullRom { alpha: 0.5 }, 180.0);
+
+// Three curves through the same points
+assert!(wave[1..]
+    .iter()
+    .all(|segment| matches!(segment, PathSegment::CurveTo { .. })));
+assert!(matches!(
+    wave[3],
+    PathSegment::CurveTo { x: 30.0, y: 10.0, .. }
+));
+```
+
 ### Intersections
 
 [`PathMeasure::intersections`] finds the points where two paths meet,
@@ -467,6 +497,9 @@ assert_eq!(lenient.to_string(), "M 10 10 L 20 20");
 [`FillRule`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.FillRule.html
 [`PathMeasure::intersections`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.intersections
 [`PathMeasure::simplify`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.simplify
+[`PathMeasure::smooth`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/struct.PathMeasure.html#method.smooth
+[`Smoothing::Continuous`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.Continuous
+[`Smoothing::CatmullRom`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/enum.Smoothing.html#variant.CatmullRom
 [`optimize`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/fn.optimize.html
 [`Shape`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/shapes/enum.Shape.html
 [`flip_x`]: https://docs.rs/svg_path_ops/latest/svg_path_ops/pt/struct.PathTransformer.html#method.flip_x

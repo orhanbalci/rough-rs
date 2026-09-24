@@ -1,7 +1,7 @@
 use kurbo::{CubicBez, ParamCurve, ParamCurveDeriv, Point, Vec2};
 use svgtypes::PathSegment;
 
-use crate::measure::{PathMeasure, Piece};
+use crate::measure::{corner_runs, PathMeasure, Piece};
 
 /// How many tolerances apart samples are at most, along the path. Half a
 /// tolerance keeps the curves within it between samples too.
@@ -107,20 +107,8 @@ impl PathMeasure {
             path.push(PathSegment::MoveTo { abs: true, x: start.x, y: start.y });
             let closed = subpath.last().is_some_and(|piece| piece.closes);
             let drawing: Vec<&Piece> = subpath.iter().filter(|p| p.length > 0.0).collect();
-            let turns = |a: &Piece, b: &Piece| turn(a, b) > corner;
-
-            // The runs between corners, as ranges of `drawing`
-            let mut runs = Vec::new();
-            let mut first = 0;
-            for i in 1..drawing.len() {
-                if turns(drawing[i - 1], drawing[i]) {
-                    runs.push(first..i);
-                    first = i;
-                }
-            }
-            if !drawing.is_empty() {
-                runs.push(first..drawing.len());
-            }
+            let turns = |a: &Piece, b: &Piece| a.turn_to(b) > corner;
+            let runs = corner_runs(&drawing, corner);
 
             // Where a closed subpath turns smoothly at its start, the runs
             // on both sides of it leave and arrive along one tangent: a run
@@ -143,38 +131,8 @@ impl PathMeasure {
 
             for run in runs {
                 let pieces = &drawing[run.clone()];
-                let original = |piece: &&Piece| {
-                    if piece.closes {
-                        PathSegment::ClosePath { abs: true }
-                    } else {
-                        match piece.shape.segment(0.0, 1.0) {
-                            PathSegment::EllipticalArc {
-                                rx,
-                                ry,
-                                x_axis_rotation,
-                                large_arc,
-                                sweep,
-                                ..
-                            } => {
-                                // The arc's own end, not the one its shape
-                                // comes back to
-                                PathSegment::EllipticalArc {
-                                    abs: true,
-                                    rx,
-                                    ry,
-                                    x_axis_rotation,
-                                    large_arc,
-                                    sweep,
-                                    x: piece.to.x,
-                                    y: piece.to.y,
-                                }
-                            }
-                            segment => segment,
-                        }
-                    }
-                };
                 if pieces.len() == 1 {
-                    path.extend(pieces.iter().map(original));
+                    path.extend(pieces.iter().map(|piece| piece.as_given()));
                     continue;
                 }
                 let mut samples = sample(pieces, tolerance);
@@ -197,7 +155,7 @@ impl PathMeasure {
                 );
                 // A run drawn well already, as by hand, keeps its segments
                 if fitted.len() >= pieces.len() {
-                    path.extend(pieces.iter().map(original));
+                    path.extend(pieces.iter().map(|piece| piece.as_given()));
                     continue;
                 }
                 path.extend(fitted.into_iter().map(|segment| match segment {
@@ -226,15 +184,6 @@ impl PathMeasure {
             }
         }
         path
-    }
-}
-
-/// The angle the path turns by, in radians from 0 to π, where piece `a`
-/// ends and piece `b` starts.
-fn turn(a: &Piece, b: &Piece) -> f64 {
-    match (a.shape.direction(1.0), b.shape.direction(0.0)) {
-        (Some(into), Some(out)) => into.cross(out).atan2(into.dot(out)).abs(),
-        _ => 0.0,
     }
 }
 

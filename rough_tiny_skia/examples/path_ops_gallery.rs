@@ -33,6 +33,7 @@ use svg_path_ops::{
     FillRule,
     PathMeasure,
     PathSegment,
+    Smoothing,
     WriteOptions,
 };
 use tiny_skia::{Paint, PathBuilder, Stroke, StrokeDash, Transform};
@@ -1305,6 +1306,74 @@ fn simplify_strip(out_dir: &Path) {
     canvas.save(out_dir, "simplify");
 }
 
+fn smooth_strip(out_dir: &Path) {
+    let mut canvas = Canvas::new(
+        LAYOUT,
+        "smooth",
+        "curves through the points where the segments meet",
+        4,
+    );
+    // A polygon, drawn about the center of a cell
+    let polygon = |center: (f64, f64), points: &[(f64, f64)]| {
+        let mut path = String::new();
+        for (k, (x, y)) in points.iter().enumerate() {
+            let command = if k == 0 { "M" } else { "L" };
+            path += &format!("{command} {} {} ", center.0 + x, center.1 + y);
+        }
+        path + "Z"
+    };
+    let blob = [
+        (-55.0, -10.0),
+        (-25.0, -40.0),
+        (10.0, -20.0),
+        (50.0, -38.0),
+        (58.0, 10.0),
+        (20.0, 40.0),
+        (-30.0, 30.0),
+    ];
+    let dome = [
+        (-55.0, 35.0),
+        (55.0, 35.0),
+        (55.0, 0.0),
+        (40.0, -25.0),
+        (0.0, -40.0),
+        (-40.0, -25.0),
+        (-55.0, 0.0),
+    ];
+    let cells = [
+        (&blob, None, "lines"),
+        (&blob, Some((Smoothing::Continuous, 180.0)), "continuous"),
+        (
+            &blob,
+            Some((Smoothing::CatmullRom { alpha: 0.5 }, 180.0)),
+            "catmull-rom 0.5",
+        ),
+        (
+            &dome,
+            Some((Smoothing::Continuous, 60.0)),
+            "corner angle 60",
+        ),
+    ];
+    for (i, (points, smoothing, label)) in cells.into_iter().enumerate() {
+        let center = cell_center(canvas.cell(i));
+        let path = polygon(center, points);
+        match smoothing {
+            None => draw_stroke(&mut canvas, &path, BROWN, 2.0),
+            Some((smoothing, corner_angle)) => {
+                let smoothed = PathMeasure::new(parse(&path)).smooth(smoothing, corner_angle);
+                draw_dashed(&mut canvas, &path, GHOST_COLOR, 1.0);
+                let written = write_path(&smoothed, &WriteOptions::default());
+                draw_stroke(&mut canvas, &written, BROWN, 2.0);
+            }
+        }
+        for (x, y) in points {
+            draw_small_dot(&mut canvas, (center.0 + x, center.1 + y), true);
+        }
+        canvas.label(i, label);
+    }
+    canvas.save(out_dir, "smooth");
+}
+
 fn split_subpaths_strip(out_dir: &Path) {
     // Ferris is one path whose parts are subpaths: 3 is the body, 1 the
     // legs on one side and 6 an eye
@@ -1513,6 +1582,7 @@ fn main() {
     measure_strip(out);
     curvature_strip(out);
     simplify_strip(out);
+    smooth_strip(out);
     nearest_strip(out);
     fill_strip(out);
     crop_strip(out);
