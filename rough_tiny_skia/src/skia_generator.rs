@@ -76,7 +76,25 @@ impl SkiaGenerator {
 }
 
 impl<F: Float + Trig> SkiaDrawable<F> {
+    /// Draws the drawable onto `ctx` with no transform applied.
+    ///
+    /// Equivalent to [`draw_with_transform`](Self::draw_with_transform) with
+    /// [`Transform::identity`].
     pub fn draw(&self, ctx: &mut PixmapMut) {
+        self.draw_with_transform(ctx, Transform::identity());
+    }
+
+    /// Draws the drawable onto `ctx`, applying `transform` during rasterization.
+    ///
+    /// The transform maps the drawable's own coordinates (the ones passed to
+    /// the generator) to pixmap coordinates, so canvas pan, zoom and HiDPI
+    /// scaling can be applied without rebuilding the drawable.
+    ///
+    /// The transform is applied *after* stroking, as tiny-skia does: stroke
+    /// widths, dash lengths and dash offsets are expressed in drawable space
+    /// and scale together with the geometry. A 2x zoom therefore doubles line
+    /// thickness, exactly as if the whole scene had been generated at 2x.
+    pub fn draw_with_transform(&self, ctx: &mut PixmapMut, transform: Transform) {
         for set in self.sets.iter() {
             match set.op_set_type {
                 OpSetType::Path => {
@@ -119,7 +137,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         );
                         paint.anti_alias = true;
 
-                        ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);
+                        ctx.stroke_path(&set.ops, &paint, &stroke, transform, None);
                     } else {
                         let mut stroke = Stroke::default();
                         stroke.width = self.options.stroke_width.unwrap_or(1.0);
@@ -140,7 +158,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                         );
                         paint.anti_alias = true;
 
-                        ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);
+                        ctx.stroke_path(&set.ops, &paint, &stroke, transform, None);
                     }
                 }
                 OpSetType::FillPath => {
@@ -165,7 +183,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                                 &set.ops,
                                 &paint,
                                 FillRule::EvenOdd,
-                                Transform::identity(),
+                                transform,
                                 None,
                             );
                         }
@@ -174,7 +192,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                                 &set.ops,
                                 &paint,
                                 FillRule::Winding,
-                                Transform::identity(),
+                                transform,
                                 None,
                             );
                         }
@@ -222,7 +240,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                             fill_color_components.3,
                         );
                         paint.anti_alias = true;
-                        ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);
+                        ctx.stroke_path(&set.ops, &paint, &stroke, transform, None);
                     } else {
                         let mut stroke = Stroke::default();
                         stroke.width = fweight;
@@ -246,7 +264,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                             fill_color_components.3,
                         );
                         paint.anti_alias = true;
-                        ctx.stroke_path(&set.ops, &paint, &stroke, Transform::identity(), None);
+                        ctx.stroke_path(&set.ops, &paint, &stroke, transform, None);
                     }
                 }
             }
