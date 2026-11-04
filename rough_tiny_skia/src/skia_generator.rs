@@ -156,6 +156,17 @@ impl<F: Float + Trig> SkiaDrawable<F> {
                     } else {
                         let mut stroke = Stroke::default();
                         stroke.width = self.options.stroke_width.unwrap_or(1.0);
+                        // Only override tiny-skia's defaults (butt cap, miter join)
+                        // when the caller set them explicitly.
+                        if let Some(cap) = self.options.line_cap {
+                            stroke.line_cap = convert_line_cap_from_roughr_to_piet(Some(cap));
+                        }
+                        if let Some(join) = self.options.line_join {
+                            stroke.line_join = convert_line_join_from_roughr_to_piet(Some(join));
+                            if let roughr::core::LineJoin::Miter { limit } = join {
+                                stroke.miter_limit = limit as f32;
+                            }
+                        }
 
                         let stroke_color = self
                             .options
