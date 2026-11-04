@@ -35,17 +35,30 @@ pub struct SkiaOpset<F: Float + Trig> {
 }
 
 pub trait ToSkiaOpset<F: Float + Trig> {
+    /// Converts to a [`SkiaOpset`], panicking if the op set produces no
+    /// drawable geometry (see [`try_to_skia_opset`](Self::try_to_skia_opset)).
     fn to_skia_opset(self) -> SkiaOpset<F>;
+
+    /// Converts to a [`SkiaOpset`], returning `None` when the op set is empty
+    /// or otherwise yields no valid path (tiny-skia cannot represent an empty
+    /// [`Path`]).
+    fn try_to_skia_opset(self) -> Option<SkiaOpset<F>>;
 }
 
 impl<F: Float + Trig + FromPrimitive> ToSkiaOpset<F> for OpSet<F> {
     fn to_skia_opset(self) -> SkiaOpset<F> {
-        SkiaOpset {
+        self.try_to_skia_opset()
+            .expect("op set has no drawable geometry; use try_to_skia_opset")
+    }
+
+    fn try_to_skia_opset(self) -> Option<SkiaOpset<F>> {
+        let ops = opset_to_shape(&self)?;
+        Some(SkiaOpset {
             op_set_type: self.op_set_type.clone(),
             size: self.size,
             path: self.path.clone(),
-            ops: opset_to_shape(&self),
-        }
+            ops,
+        })
     }
 }
 
@@ -60,11 +73,13 @@ pub trait ToSkiaDrawable<F: Float + Trig> {
 }
 
 impl<F: Float + Trig + FromPrimitive> ToSkiaDrawable<F> for Drawable<F> {
+    /// Converts every op set, silently dropping those with no drawable
+    /// geometry (empty sets), so the result never panics on degenerate input.
     fn to_skia_drawable(self) -> SkiaDrawable<F> {
         SkiaDrawable {
             shape: self.shape,
             options: self.options,
-            sets: self.sets.into_iter().map(|s| s.to_skia_opset()).collect(),
+            sets: self.sets.into_iter().filter_map(|s| s.try_to_skia_opset()).collect(),
         }
     }
 }
@@ -272,7 +287,7 @@ impl<F: Float + Trig> SkiaDrawable<F> {
     }
 }
 
-fn opset_to_shape<F: Trig + Float + FromPrimitive>(op_set: &OpSet<F>) -> Path {
+fn opset_to_shape<F: Trig + Float + FromPrimitive>(op_set: &OpSet<F>) -> Option<Path> {
     let mut path: PathBuilder = PathBuilder::new();
     for item in op_set.ops.iter() {
         match item.op {
@@ -296,7 +311,7 @@ fn opset_to_shape<F: Trig + Float + FromPrimitive>(op_set: &OpSet<F>) -> Path {
             }
         }
     }
-    path.finish().unwrap()
+    path.finish()
 }
 
 impl SkiaGenerator {
