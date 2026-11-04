@@ -148,7 +148,7 @@ other workspace crates it depends on. A `—` means there is no dependency.
 | svg_path_ops | 0.12.0 | — | — | — |
 | roughr | 0.14.0 | 0.7.0 | 0.12.0 | — |
 | rough_piet | 0.15.0 | — | 0.12.0 | 0.14.0 |
-| rough_tiny_skia | 0.14.0 | — | 0.12.0 | 0.14.0 |
+| rough_tiny_skia | 0.14.1 | — | 0.12.0 | 0.14.0 |
 | rough_vello | 0.16.0 | — | 0.12.0 | 0.14.0 |
 | rough_iced | 0.15.0 | — | 0.12.0 | 0.14.0 |
 | rough_plotters_svg | 0.3.0 | — | — | 0.14.0 |
