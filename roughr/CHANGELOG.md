@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Documented which adapters honor `Options::line_cap` and `line_join`:
+  `rough_tiny_skia` and `rough_vello` apply them to every stroke,
+  `rough_piet` and `rough_iced` only to dashed strokes.
+
 ## [0.14.0] - 2026-09-24
 
 ### Changed
