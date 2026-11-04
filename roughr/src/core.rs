@@ -44,8 +44,10 @@ impl ToString for FillStyle {
     }
 }
 
-/// How the ends of open strokes are drawn. Applied by the adapter crates when
-/// a dash pattern is set.
+/// How the ends of open strokes are drawn.
+///
+/// `rough_tiny_skia` and `rough_vello` apply it to every stroke; `rough_piet`
+/// and `rough_iced` currently apply it only when a dash pattern is set.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LineCap {
     Butt,
@@ -60,6 +62,10 @@ impl Default for LineCap {
 }
 
 /// Options for angled joins in strokes.
+///
+/// Honored by the same adapters as [`LineCap`]. Note that roughr emits each
+/// segment of a polyline as its own subpath, so joins only show up on shapes
+/// that produce a continuous path.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LineJoin {
     Miter { limit: f64 },
@@ -253,14 +259,16 @@ pub struct Options {
     /// Default: `None`.
     #[builder(default = "None")]
     pub stroke_line_dash_offset: Option<f64>,
-    /// Line cap used together with the dash patterns.
+    /// Line cap for strokes. Which strokes honor it depends on the adapter, see
+    /// [`LineCap`].
     ///
-    /// Default: `None`.
+    /// Default: `None`, in which case the adapter picks its own default.
     #[builder(default = "None")]
     pub line_cap: Option<LineCap>,
-    /// Line join used together with the dash patterns.
+    /// Line join for strokes. Which strokes honor it depends on the adapter, see
+    /// [`LineJoin`].
     ///
-    /// Default: `None`.
+    /// Default: `None`, in which case the adapter picks its own default.
     #[builder(default = "None")]
     pub line_join: Option<LineJoin>,
     /// Dash pattern for the lines of sketched fills, like
