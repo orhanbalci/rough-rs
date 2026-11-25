@@ -48,6 +48,14 @@ impl PathTransformer {
         })
     }
 
+    /// Creates a transformer from a `Vec<svgtypes::PathSegment>` that is consumed.
+    pub fn from_segments(path: Vec<PathSegment>) -> Self {
+        PathTransformer {
+            path_segments: VecDeque::from(path),
+            stack: Vec::new(),
+        }
+    }
+
     /// Writes the path data with pending transforms applied. The transformer
     /// itself is left unchanged.
     pub fn to_string_with(&self, options: &WriteOptions) -> String {
@@ -58,6 +66,27 @@ impl PathTransformer {
             evaluated.evaluate_stack();
             write_path(&evaluated.path_segments, options)
         }
+    }
+
+    /// Returns a `Vec<svgtypes::PathSegment>` with pending transforms applied.
+    /// The transformer itself is left unchanged.
+    pub fn to_segments(&self) -> Vec<PathSegment> {
+        if self.stack.is_empty() {
+            self.path_segments.clone().into()
+        } else {
+            let mut evaluated = self.clone();
+            evaluated.evaluate_stack();
+            evaluated.path_segments.into()
+        }
+    }
+
+    /// Returns a `Vec<svgtypes::PathSegment>` with pending transforms applied.
+    /// The transformer itself is consumed.
+    pub fn into_segments(mut self) -> Vec<PathSegment> {
+        if !self.stack.is_empty() {
+            self.evaluate_stack();
+        }
+        self.path_segments.into()
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
