@@ -1319,8 +1319,6 @@ fn roundp(value: f64, precision: u8) -> f64 {
 
 #[cfg(test)]
 mod test {
-    use svgtypes::PathSegment;
-
     use super::PathTransformer;
     use crate::WriteOptions;
 
