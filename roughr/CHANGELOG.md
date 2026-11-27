@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `rough_tiny_skia` and `rough_vello` apply them to every stroke,
   `rough_piet` and `rough_iced` only to dashed strokes.
 
+### Fixed
+
+- `Generator::ops_to_path`, and so `Generator::to_paths`, wrote move
+  operations as `L` instead of `M`. Every path started without a current
+  point, so browsers and other SVG renderers drew nothing. The renderer
+  adapters build paths from the ops directly and were not affected.
+
 ## [0.14.0] - 2026-09-24
 
 ### Changed

@@ -472,7 +472,7 @@ impl Generator {
 
             match item.op {
                 OpType::Move => {
-                    write!(&mut path, "L{} {} ", item.data[0], item.data[1])
+                    write!(&mut path, "M{} {} ", item.data[0], item.data[1])
                         .expect("Failed to write path string");
                 }
                 OpType::BCurveTo => {
@@ -536,5 +536,53 @@ impl Generator {
             path_infos.push(path_info);
         }
         path_infos
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use svgtypes::{PathParser, PathSegment};
+
+    use super::*;
+    use crate::core::OptionsBuilder;
+
+    fn parse(d: &str) -> Vec<PathSegment> {
+        PathParser::from(d)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap_or_else(|e| panic!("invalid path data {d:?}: {e}"))
+    }
+
+    #[test]
+    fn to_paths_produces_valid_svg_starting_with_move_to() {
+        let generator = Generator::default();
+        let options = Some(OptionsBuilder::default().seed(1_u64).build().unwrap());
+        let drawables = [
+            generator.line(10.0_f32, 10.0, 90.0, 40.0, &options),
+            generator.rectangle(10.0_f32, 10.0, 80.0, 40.0, &options),
+            generator.circle(50.0_f32, 50.0, 30.0, &options),
+        ];
+        for drawable in drawables {
+            for info in Generator::to_paths(drawable) {
+                let segments = parse(&info.d);
+                assert!(
+                    matches!(segments.first(), Some(PathSegment::MoveTo { .. })),
+                    "path must start with a move-to: {:?}",
+                    info.d
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn ops_to_path_writes_each_move_as_a_new_subpath() {
+        let generator = Generator::default();
+        // the default multi-stroke line is two strokes, each with its own move
+        let drawable = generator.line(0.0_f32, 0.0, 100.0, 0.0, &None);
+        let d = Generator::ops_to_path(drawable.sets[0].clone(), Some(2));
+        let moves = parse(&d)
+            .iter()
+            .filter(|s| matches!(s, PathSegment::MoveTo { .. }))
+            .count();
+        assert_eq!(moves, 2, "{d:?}");
     }
 }
