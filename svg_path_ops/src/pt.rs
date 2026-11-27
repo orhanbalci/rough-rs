@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::str::FromStr;
@@ -48,6 +49,16 @@ impl PathTransformer {
         })
     }
 
+    /// Creates a transformer from a `Vec<svgtypes::PathSegment>` that is consumed.
+    /// Unlike `parse`, `from_segments` does not validate its input to check its
+    /// starts with a `MoveTo`.
+    pub fn from_segments(path: impl IntoIterator<Item = impl Borrow<PathSegment>>) -> Self {
+        PathTransformer {
+            path_segments: path.into_iter().map(|s| *s.borrow()).collect(),
+            stack: Vec::new(),
+        }
+    }
+
     /// Writes the path data with pending transforms applied. The transformer
     /// itself is left unchanged.
     pub fn to_string_with(&self, options: &WriteOptions) -> String {
@@ -58,6 +69,19 @@ impl PathTransformer {
             evaluated.evaluate_stack();
             write_path(&evaluated.path_segments, options)
         }
+    }
+
+    /// Returns a `Vec<svgtypes::PathSegment>` with pending transforms applied.
+    /// The transformer itself is left unchanged.
+    pub fn to_segments(&self) -> Vec<PathSegment> {
+        self.evaluated().into()
+    }
+
+    /// Returns a `Vec<svgtypes::PathSegment>` with pending transforms applied.
+    /// The transformer itself is consumed.
+    pub fn into_segments(mut self) -> Vec<PathSegment> {
+        self.evaluate_stack();
+        self.path_segments.into()
     }
 
     pub fn translate(&mut self, tx: f64, ty: f64) -> &mut Self {
@@ -1262,6 +1286,24 @@ impl FromStr for PathTransformer {
     }
 }
 
+impl From<Vec<PathSegment>> for PathTransformer {
+    fn from(path: Vec<PathSegment>) -> Self {
+        Self::from_segments(path)
+    }
+}
+
+impl FromIterator<PathSegment> for PathTransformer {
+    fn from_iter<I: IntoIterator<Item = PathSegment>>(path: I) -> Self {
+        PathTransformer::from_segments(path)
+    }
+}
+
+impl From<PathTransformer> for Vec<PathSegment> {
+    fn from(pt: PathTransformer) -> Vec<PathSegment> {
+        pt.into_segments()
+    }
+}
+
 /// Writes the path data with pending transforms applied, using the default
 /// [`WriteOptions`]. The transformer itself is left unchanged.
 impl fmt::Display for PathTransformer {
@@ -1323,6 +1365,39 @@ mod test {
         transformer.translate(-10.0, 0.0);
         let options = WriteOptions { precision: Some(1), compact: true };
         assert_eq!(transformer.to_string_with(&options), "M0 10 10.6 20");
+    }
+
+    #[test]
+    fn from_segment_reverses_to_segments() {
+        let mut transformer = PathTransformer::new("M 0 0 L 10 0 L 10 10".into());
+        // With an empy stack, from_segments(p.to_segments()) is the same as.
+        assert_eq!(
+            PathTransformer::from_segments(transformer.to_segments()).to_string(),
+            "M 0 0 L 10 0 L 10 10"
+        );
+        // Same test with pending transforms to check they are applied.
+        transformer.rotate(-90.0, 10.0, 0.0).translate(8.0, 4.0);
+        assert_eq!(
+            PathTransformer::from_segments(transformer.to_segments()).to_string(),
+            "M 18 14 L 18 4 L 28 4"
+        );
+    }
+
+    #[test]
+    fn from_segments_reverses_into_segments() {
+        let transformer = PathTransformer::new("M 0 0 L 10 0 L 10 10".into());
+        // With an empy stack, from_segments(p.into_segments()) is the same as p.
+        assert_eq!(
+            PathTransformer::from_segments(transformer.into_segments()).to_string(),
+            "M 0 0 L 10 0 L 10 10"
+        );
+        // Same test with pending transforms to check they are applied.
+        let mut transformer = PathTransformer::new("M 0 0 L 10 0 L 10 10".into());
+        transformer.rotate(-90.0, 10.0, 0.0).translate(8.0, 4.0);
+        assert_eq!(
+            PathTransformer::from_segments(transformer.into_segments()).to_string(),
+            "M 18 14 L 18 4 L 28 4"
+        );
     }
 
     #[test]
