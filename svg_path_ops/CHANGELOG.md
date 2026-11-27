@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `pt::PathTransformer::from_segments()` builds a transformer from any
+  sequence of `PathSegment` values, owned or borrowed. Unlike `parse`, it
+  does not check that the path starts with a move.
+- `pt::PathTransformer::to_segments()` and `into_segments()` return the
+  segments as a `Vec<PathSegment>` with pending transforms applied.
+  `to_segments` leaves the transformer unchanged; `into_segments` consumes
+  it.
+- `pt::PathTransformer` implements `From<Vec<PathSegment>>` and
+  `FromIterator<PathSegment>`, and `Vec<PathSegment>` implements
+  `From<PathTransformer>`.
+
 ## [0.12.0] - 2026-09-24
 
 ### Added
